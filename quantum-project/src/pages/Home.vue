@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { LEVELS, Level, applyH, measure } from '@/game/quantumgame'
 
 const CELL = 56
+
 const canvas = ref<HTMLCanvasElement | null>(null)
 const currentLevelIndex = ref(0)
 let level: Level = LEVELS[currentLevelIndex.value]!
@@ -24,6 +25,29 @@ const SHOOT_MS = 800
 const TRAVEL_MS = 800
 const FPS = 60
 
+// Bloch Sphere
+// ------------------
+
+const blochAngle = computed(() => {
+  if (state.value === '|0⟩') return 90
+  if (state.value === '|+⟩') return 0
+  if (state.value === '|-⟩') return 180
+  if (state.value === '|1⟩') return 270
+  return null
+})
+
+const blochLabel = computed(() => {
+  if (state.value === '|0⟩') return '|0⟩ Ground state'
+  if (state.value === '|+⟩') return '|+⟩ Superposition'
+  if (state.value === '|-⟩') return '|-⟩ Superposition'
+  if (state.value === '|1⟩') return '|1⟩ Excited state'
+  
+  return 'No state'
+})
+
+// Canvas setup
+// ------------------
+
 function setupCanvas() {
   if (!canvas.value) return
   canvas.value.width = level.cols * CELL
@@ -32,8 +56,17 @@ function setupCanvas() {
   history.value = []
 }
 
-function updateUI(s: number[] | null, hitH: boolean, r: number | null) {
-  state.value = s ? (hitH ? '|+⟩' : '|0⟩') : '—'
+function updateUI(s: number[] | null, hitH: boolean, r: number | null, preMeasure: number | null = null) {
+  if (!s) {
+    state.value = '—'
+  } else if (hitH) {
+    // If pre-gate state was 1, show |+⟩; if 0, show |-⟩
+    state.value = preMeasure === 1 ? '|+⟩' : '|-⟩'
+  } else {
+    // |0⟩ when r=0, |1⟩ when r=1
+    state.value = r === 0 ? '|0⟩' : '|1⟩'
+  }
+
   p0.value = s ? Math.round(s[0]! ** 2 * 100) + '%' : '—'
   p1.value = s ? Math.round(s[1]! ** 2 * 100) + '%' : '—'
   result.value = r !== null ? String(r) : 'missed'
@@ -43,6 +76,9 @@ function updateUI(s: number[] | null, hitH: boolean, r: number | null) {
     if (history.value.length > 20) history.value.shift()
   }
 }
+
+// Level Progression
+// ------------------
 
 function startWinTimer() {
   if (winTimer || isTransitioning) return
@@ -69,6 +105,9 @@ function cancelWinTimer() {
   if (winTimer) clearTimeout(winTimer)
   winTimer = null
 }
+
+// Canvas draw loop
+// ------------------
 
 function draw() {
   if (!ctx) return
@@ -199,6 +238,9 @@ function draw() {
   animationFrameId = requestAnimationFrame(draw)
 }
 
+// Mirror Controls
+// ------------------
+
 function clearMirrors() {
   level.grid = Array.from({ length: level.rows }, () => Array(level.cols).fill(null))
 }
@@ -223,6 +265,9 @@ function handleCanvasRightClick(e: MouseEvent) {
   if (!level.isFixed(col, row)) level.grid[row]![col] = null
 }
 
+// Game Loop
+// ------------------
+
 onMounted(() => {
   setupCanvas()
   draw()
@@ -234,15 +279,20 @@ onMounted(() => {
     setTimeout(() => {
       const { hitIon, hitH } = level.trace()
       if (!hitIon) {
-        updateUI(null, false, null)
+        updateUI(null, false, null, null)
         cancelWinTimer()
         return
       }
 
-      let s = [0, 1]
+      let s = [0, 1]  // Start in |1⟩ by default
+      const preMeasure = measure(s)  // Measure before applying gate
+      
+      // Set s to the measured state
+      s = preMeasure === 0 ? [1, 0] : [0, 1]
+      
       if (hitH) s = applyH(s)
       const r = measure(s)
-      updateUI(s, hitH, r)
+      updateUI(s, hitH, r, preMeasure)
 
       let isWinningState = false
       if (level.winCondition === 'any') isWinningState = true
@@ -271,36 +321,113 @@ onUnmounted(() => {
       <button @click="clearMirrors" class="clear-btn">Clear Mirrors</button>
     </div>
 
-    <canvas
-      ref="canvas"
-      @click="handleCanvasClick"
-      @contextmenu="handleCanvasRightClick"
-      class="game-canvas"
-    ></canvas>
-
-    <div class="info">
-      <div>Level: <b>{{ level.name }}</b></div>
-      <div>State: <b :style="{ color: state === '|+⟩' ? '#b47cff' : '#0ef' }">{{ state }}</b> | P(0)=<b>{{ p0 }}</b> P(1)=<b>{{ p1 }}</b></div>
-      <div>Last measurement: <b :style="{ color: result === '1' ? '#f84' : '#0ef' }">{{ result }}</b></div>
-      <div v-if="history.length > 0">History: {{ history.join(' ') }}</div>
+    <!-- Main game area -->
+    <div class="main-area">
+      <!-- Game canvas -->
+      <div class="canvas-wrap">
+        <canvas
+          ref="canvas"
+          @click="handleCanvasClick"
+          @contextmenu="handleCanvasRightClick"
+          class="game-canvas"
+        />
+      </div>
+ 
+      <!-- Sidebar: Bloch sphere + measurement info -->
+      <aside class="sidebar">
+ 
+        <!-- Bloch sphere -->
+        <div class="bloch-panel">
+          <div class="bloch-title">Bloch Sphere</div>
+          <svg class="bloch-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+            <!-- Axis labels -->
+            <text x="80" y="14" class="bloch-label" text-anchor="middle">|1⟩</text>
+            <text x="80" y="156" class="bloch-label" text-anchor="middle">|0⟩</text>
+            <text x="10" y="84" class="bloch-label" text-anchor="middle">−</text>
+            <text x="150" y="84" class="bloch-label" text-anchor="middle">+</text>
+ 
+            <!-- Sphere outline -->
+            <circle cx="80" cy="80" r="52" class="bloch-circle" />
+ 
+            <!-- Dashed equator -->
+            <ellipse cx="80" cy="80" rx="52" ry="14" class="bloch-equator" />
+ 
+            <!-- State arrow — only drawn when ion is hit -->
+            <g v-if="blochAngle !== null">
+              <!-- Arrow line from centre in the direction of blochAngle -->
+              <line
+                x1="80" y1="80"
+                :x2="80 + 44 * Math.cos((blochAngle * Math.PI) / 180)"
+                :y2="80 + 44 * Math.sin((blochAngle * Math.PI) / 180)"
+                class="bloch-arrow"
+              />
+              <!-- Arrowhead circle at tip -->
+              <circle
+                :cx="80 + 46 * Math.cos((blochAngle * Math.PI) / 180)"
+                :cy="80 + 46 * Math.sin((blochAngle * Math.PI) / 180)"
+                r="3"
+                class="bloch-tip"
+              />
+            </g>
+ 
+            <!-- Centre dot -->
+            <circle cx="80" cy="80" r="3" class="bloch-center" />
+          </svg>
+ 
+          <!-- State label below sphere -->
+          <div class="bloch-state" :class="{ superposition: state === '|+⟩' || state === '|-⟩' }">
+            {{ blochLabel }}
+          </div>
+        </div>
+ 
+        <!-- Measurement info panel -->
+        <div class="info-panel">
+          <div class="info-row">
+            <span class="info-key">State</span>
+            <span class="info-val" :class="{ 
+              cyan: state === '|0⟩', 
+              purple: state === '|+⟩', 
+              magenta: state === '|-⟩',
+              orange: state === '|1⟩'
+            }">{{ state }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">P(|0⟩)</span>
+            <span class="info-val">{{ p0 }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">P(|1⟩)</span>
+            <span class="info-val">{{ p1 }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Last</span>
+            <span class="info-val" :class="{ orange: result === '1', cyan: result === '0' }">{{ result }}</span>
+          </div>
+          <div v-if="history.length" class="history">
+            <span class="info-key">History</span>
+            <span class="history-bits">{{ history.join(' ') }}</span>
+          </div>
+        </div>
+ 
+      </aside>
     </div>
-
-    <div v-if="showWin" class="win-overlay">
-      ION SUCCESSFULLY EXCITED
-    </div>
+    <!-- End main-area -->
+ 
+    <!-- Win overlay -->
+    <div v-if="showWin" class="win-overlay">ION SUCCESSFULLY EXCITED</div>
   </div>
 </template>
-
+ 
 <style scoped>
 .game-container {
   background: #000000;
   color: #eee;
   font-family: monospace;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
   margin: 0;
   gap: 10px;
   padding: 20px;
@@ -309,12 +436,13 @@ onUnmounted(() => {
 h1 {
   color: #0ef;
   margin: 0;
+  font-size: 24px;
 }
 
 .hint {
-  color: rgb(255, 255, 255);
+  color: #999;
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .controls {
@@ -325,50 +453,201 @@ h1 {
 }
 
 .controls p {
-  color: #555;
+  color: #666;
   margin: 0;
   font-size: 12px;
 }
 
 .clear-btn {
   cursor: pointer;
-  background: #222;
-  color: #ccc;
-  border: 1px solid #555;
-  padding: 3px 8px;
-  font-size: 10px;
+  background: #1a1a1a;
+  color: #aaa;
+  border: 1px solid #444;
+  padding: 4px 12px;
+  font-size: 11px;
   font-family: monospace;
-  border-radius: 4px;
+  border-radius: 3px;
   transition: 0.2s;
 }
 
 .clear-btn:hover {
-  background: #333;
-  border-color: #777;
+  background: #2a2a2a;
+  border-color: #666;
+  color: #ddd;
+}
+
+.main-area {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.canvas-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
 .game-canvas {
   border: 2px solid #333;
-  cursor: pointer;
+  cursor: crosshair;
+}
+
+.controls-hint {
+  margin: 0;
+  font-size: 11px;
+  color: #555;
 }
 
 .info {
   text-align: center;
   line-height: 2;
-  font-size: 17px;
+  font-size: 15px;
+  color: #ccc;
+}
+
+.info div {
+  color: #999;
+}
+
+.info b {
+  color: #fff;
 }
 
 .win-overlay {
   display: flex;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.92);
   color: #0f0;
   font-size: 32px;
+  font-weight: bold;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
   z-index: 1000;
+  letter-spacing: 0.1em;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 180px;
+}
+
+.bloch-panel {
+  border: 1px solid #333;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: #0a0a0a;
+}
+
+.bloch-title {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #666;
+}
+
+.bloch-svg {
+  width: 160px;
+  height: 160px;
+}
+
+.bloch-label {
+  fill: #777;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.bloch-circle {
+  fill: none;
+  stroke: #333;
+  stroke-width: 1.5;
+}
+
+.bloch-equator {
+  fill: none;
+  stroke: #222;
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+.bloch-arrow {
+  stroke: #0ef;
+  stroke-width: 2;
+}
+
+.bloch-tip {
+  fill: #0ef;
+}
+
+.bloch-center {
+  fill: #555;
+}
+
+.bloch-state {
+  font-size: 12px;
+  color: #0ef;
+  letter-spacing: 0.05em;
+}
+
+.bloch-state.superposition {
+  color: #b47cff;
+}
+
+.info-panel {
+  border: 1px solid #333;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #0a0a0a;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.info-key {
+  color: #666;
+}
+
+.info-val {
+  color: #999;
+}
+
+.info-val.cyan  { color: #0ef; }
+.info-val.purple { color: #b47cff; }
+.info-val.magenta { color: #ff47ff; }
+.info-val.orange { color: #f84; }
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #222;
+}
+
+.history-bits {
+  font-size: 11px;
+  color: #666;
+  word-break: break-all;
+  line-height: 1.6;
 }
 </style>
