@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { LEVELS, Level, applyH, measure } from '@/game/quantumGame'
+import { LEVELS, Level, applyH, measure } from '@/game/quantumgame'
 
 const CELL = 56
 const canvas = ref<HTMLCanvasElement | null>(null)
 const currentLevelIndex = ref(0)
-let level = LEVELS[currentLevelIndex.value]
+let level: Level = LEVELS[currentLevelIndex.value]!
 let ctx: CanvasRenderingContext2D | null = null
 
 const state = ref('|0⟩')
@@ -34,8 +34,8 @@ function setupCanvas() {
 
 function updateUI(s: number[] | null, hitH: boolean, r: number | null) {
   state.value = s ? (hitH ? '|+⟩' : '|0⟩') : '—'
-  p0.value = s ? Math.round(s[0] ** 2 * 100) + '%' : '—'
-  p1.value = s ? Math.round(s[1] ** 2 * 100) + '%' : '—'
+  p0.value = s ? Math.round(s[0]! ** 2 * 100) + '%' : '—'
+  p1.value = s ? Math.round(s[1]! ** 2 * 100) + '%' : '—'
   result.value = r !== null ? String(r) : 'missed'
 
   if (r !== null) {
@@ -55,7 +55,7 @@ function startWinTimer() {
       showWin.value = false
       if (currentLevelIndex.value < LEVELS.length - 1) {
         currentLevelIndex.value++
-        level = LEVELS[currentLevelIndex.value]
+        level = LEVELS[currentLevelIndex.value]!
         setupCanvas()
       }
       isTransitioning = false
@@ -182,7 +182,7 @@ function draw() {
   ctx.lineWidth = 3
   for (let r = 0; r < level.rows; r++) {
     for (let c = 0; c < level.cols; c++) {
-      const m = level.grid[r][c]
+      const m = level.grid[r]![c]!
       if (!m) continue
       ctx.beginPath()
       if (m === 'fwd') {
@@ -210,7 +210,7 @@ function handleCanvasClick(e: MouseEvent) {
   const row = Math.floor((e.clientY - rect.top) / CELL)
 
   if (level.isFixed(col, row)) return
-  level.grid[row][col] = level.grid[row][col] === 'fwd' ? 'back' : 'fwd'
+  level.grid[row]![col]! = level.grid[row]![col]! === 'fwd' ? 'back' : 'fwd'
 }
 
 function handleCanvasRightClick(e: MouseEvent) {
@@ -220,7 +220,7 @@ function handleCanvasRightClick(e: MouseEvent) {
   const col = Math.floor((e.clientX - rect.left) / CELL)
   const row = Math.floor((e.clientY - rect.top) / CELL)
 
-  if (!level.isFixed(col, row)) level.grid[row][col] = null
+  if (!level.isFixed(col, row)) level.grid[row]![col] = null
 }
 
 onMounted(() => {

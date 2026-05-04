@@ -2,13 +2,13 @@ const CELL = 56;
 
 export function applyH(s: number[]) {
   return [
-    (s[0] + s[1]) / Math.sqrt(2),
-    (s[0] - s[1]) / Math.sqrt(2)
+    (s[0]! + s[1]!) / Math.sqrt(2),
+    (s[0]! - s[1]!) / Math.sqrt(2)
   ];
 }
 
 export function measure(s: number[]) {
-  const prob0 = s[0] ** 2;
+  const prob0 = s[0]! ** 2;
   const randomValue = Math.random();
   return randomValue < prob0 ? 0 : 1;
 }
@@ -49,7 +49,7 @@ export class Level {
     let dir: string = 'right', hitIon = false, hitH = false;
 
     while (true) {
-      const [dc, dr] = moves[dir as keyof typeof moves];
+      const [dc, dr] = moves[dir as keyof typeof moves] as [number, number];
       const new_column = col + dc, new_row = row + dr;
 
       segs.push({
@@ -66,9 +66,9 @@ export class Level {
       if (this.walls.some(w => w.col === col && w.row === row)) break;
       if (this.hgates.some(g => g.col === col && g.row === row)) hitH = !hitH;
 
-      const m = this.grid[row][col];
-      if (m === 'fwd') dir = { right: 'up', up: 'right', left: 'down', down: 'left' }[dir];
-      if (m === 'back') dir = { right: 'down', down: 'right', left: 'up', up: 'left' }[dir];
+      const m = this.grid[row]![col]!;
+      if (m === 'fwd') dir = { right: 'up', up: 'right', left: 'down', down: 'left' }[dir]!;
+      if (m === 'back') dir = { right: 'down', down: 'right', left: 'up', up: 'left' }[dir]!;
     }
 
     return { segs, hitIon, hitH };
