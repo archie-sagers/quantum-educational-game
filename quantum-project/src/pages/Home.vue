@@ -1,51 +1,63 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { LEVELS, Level, applyH, measure } from '@/game/quantumgame'
+import styles from './Home.module.css'
+
+
+// Constants
+// ------------------
 
 const CELL = 56
+const SHOOT_MS = 800
+const TRAVEL_MS = 800
+const FPS = 60
+
+
+// State
+// ------------------
 
 const canvas = ref<HTMLCanvasElement | null>(null)
 const currentLevelIndex = ref(0)
-let level: Level = LEVELS[currentLevelIndex.value]!
-let ctx: CanvasRenderingContext2D | null = null
-
 const state = ref('|0⟩')
 const p0 = ref('100%')
 const p1 = ref('0%')
 const result = ref('—')
 const history = ref<number[]>([])
 const showWin = ref(false)
+
+let level: Level = LEVELS[currentLevelIndex.value]!
+let ctx: CanvasRenderingContext2D | null = null
 let isTransitioning = false
 let winTimer: ReturnType<typeof setTimeout> | null = null
 let photon = { progress: 1, segCount: 0 }
 let gameInterval: ReturnType<typeof setInterval> | null = null
 let animationFrameId: number | null = null
 
-const SHOOT_MS = 800
-const TRAVEL_MS = 800
-const FPS = 60
 
 // Bloch Sphere
 // ------------------
 
 const blochAngle = computed(() => {
-  if (state.value === '|0⟩') return 90
-  if (state.value === '|+⟩') return 0
-  if (state.value === '|-⟩') return 180
-  if (state.value === '|1⟩') return 270
-  return null
+  const angleMap: Record<string, number> = {
+    '|0⟩': 90,
+    '|+⟩': 0,
+    '|-⟩': 180,
+    '|1⟩': 270
+  }
+  return angleMap[state.value] ?? null
 })
 
 const blochLabel = computed(() => {
-  if (state.value === '|0⟩') return '|0⟩ Ground state'
-  if (state.value === '|+⟩') return '|+⟩ Superposition'
-  if (state.value === '|-⟩') return '|-⟩ Superposition'
-  if (state.value === '|1⟩') return '|1⟩ Excited state'
-  
-  return 'No state'
+  const labelMap: Record<string, string> = {
+    '|0⟩': '|0⟩ Ground state',
+    '|+⟩': '|+⟩ Superposition',
+    '|-⟩': '|-⟩ Superposition',
+    '|1⟩': '|1⟩ Excited state'
+  }
+  return labelMap[state.value] ?? 'No state'
 })
 
-// Canvas setup
+// Canvas Functions
 // ------------------
 
 function setupCanvas() {
@@ -312,45 +324,45 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="game-container">
-    <h1>Quantum Laser Puzzle Game</h1>
-    <p class="hint">{{ level.hint }}</p>
+  <div :class="styles.gameContainer">
+    <h1 :class="styles.title">Quantum Laser Puzzle Game</h1>
+    <p :class="styles.hint">{{ level.hint }}</p>
 
-    <div class="controls">
-      <p>Left-click to place/rotate mirror · Right-click to remove</p>
-      <button @click="clearMirrors" class="clear-btn">Clear Mirrors</button>
+    <div :class="styles.controls">
+      <p :class="styles.controlsText">Left-click to place/rotate mirror · Right-click to remove</p>
+      <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
     </div>
 
     <!-- Main game area -->
-    <div class="main-area">
+    <div :class="styles.mainArea">
       <!-- Game canvas -->
-      <div class="canvas-wrap">
+      <div :class="styles.canvasWrap">
         <canvas
           ref="canvas"
           @click="handleCanvasClick"
           @contextmenu="handleCanvasRightClick"
-          class="game-canvas"
+          :class="styles.gameCanvas"
         />
       </div>
  
       <!-- Sidebar: Bloch sphere + measurement info -->
-      <aside class="sidebar">
+      <aside :class="styles.sidebar">
  
         <!-- Bloch sphere -->
-        <div class="bloch-panel">
-          <div class="bloch-title">Bloch Sphere</div>
-          <svg class="bloch-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+        <div :class="styles.blochPanel">
+          <div :class="styles.blochTitle">Bloch Sphere</div>
+          <svg :class="styles.blochSvg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
             <!-- Axis labels -->
-            <text x="80" y="14" class="bloch-label" text-anchor="middle">|1⟩</text>
-            <text x="80" y="156" class="bloch-label" text-anchor="middle">|0⟩</text>
-            <text x="10" y="84" class="bloch-label" text-anchor="middle">−</text>
-            <text x="150" y="84" class="bloch-label" text-anchor="middle">+</text>
+            <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>
+            <text x="80" y="156" :class="styles.blochLabel" text-anchor="middle">|0⟩</text>
+            <text x="10" y="84" :class="styles.blochLabel" text-anchor="middle">−</text>
+            <text x="150" y="84" :class="styles.blochLabel" text-anchor="middle">+</text>
  
             <!-- Sphere outline -->
-            <circle cx="80" cy="80" r="52" class="bloch-circle" />
+            <circle cx="80" cy="80" r="52" :class="styles.blochCircle" />
  
             <!-- Dashed equator -->
-            <ellipse cx="80" cy="80" rx="52" ry="14" class="bloch-equator" />
+            <ellipse cx="80" cy="80" rx="52" ry="14" :class="styles.blochEquator" />
  
             <!-- State arrow — only drawn when ion is hit -->
             <g v-if="blochAngle !== null">
@@ -359,53 +371,61 @@ onUnmounted(() => {
                 x1="80" y1="80"
                 :x2="80 + 44 * Math.cos((blochAngle * Math.PI) / 180)"
                 :y2="80 + 44 * Math.sin((blochAngle * Math.PI) / 180)"
-                class="bloch-arrow"
+                :class="styles.blochArrow"
               />
               <!-- Arrowhead circle at tip -->
               <circle
                 :cx="80 + 46 * Math.cos((blochAngle * Math.PI) / 180)"
                 :cy="80 + 46 * Math.sin((blochAngle * Math.PI) / 180)"
                 r="3"
-                class="bloch-tip"
+                :class="styles.blochTip"
               />
             </g>
  
             <!-- Centre dot -->
-            <circle cx="80" cy="80" r="3" class="bloch-center" />
+            <circle cx="80" cy="80" r="3" :class="styles.blochCenter" />
           </svg>
  
           <!-- State label below sphere -->
-          <div class="bloch-state" :class="{ superposition: state === '|+⟩' || state === '|-⟩' }">
+          <div :class="{
+            [styles.blochState as string]: true,
+            [styles.blochStateSuperposition as string]: state === '|+⟩' || state === '|-⟩'
+          }">
             {{ blochLabel }}
           </div>
         </div>
  
         <!-- Measurement info panel -->
-        <div class="info-panel">
-          <div class="info-row">
-            <span class="info-key">State</span>
-            <span class="info-val" :class="{ 
-              cyan: state === '|0⟩', 
-              purple: state === '|+⟩', 
-              magenta: state === '|-⟩',
-              orange: state === '|1⟩'
+        <div :class="styles.infoPanel">
+          <div :class="styles.infoRow">
+            <span :class="styles.infoKey">State</span>
+            <span :class="{
+              [styles.infoVal as string]: true,
+              [styles.infoValCyan as string]: state === '|0⟩', 
+              [styles.infoValPurple as string]: state === '|+⟩', 
+              [styles.infoValMagenta as string]: state === '|-⟩',
+              [styles.infoValOrange as string]: state === '|1⟩'
             }">{{ state }}</span>
           </div>
-          <div class="info-row">
-            <span class="info-key">P(|0⟩)</span>
-            <span class="info-val">{{ p0 }}</span>
+          <div :class="styles.infoRow">
+            <span :class="styles.infoKey">P(|0⟩)</span>
+            <span :class="styles.infoVal">{{ p0 }}</span>
           </div>
-          <div class="info-row">
-            <span class="info-key">P(|1⟩)</span>
-            <span class="info-val">{{ p1 }}</span>
+          <div :class="styles.infoRow">
+            <span :class="styles.infoKey">P(|1⟩)</span>
+            <span :class="styles.infoVal">{{ p1 }}</span>
           </div>
-          <div class="info-row">
-            <span class="info-key">Last</span>
-            <span class="info-val" :class="{ orange: result === '1', cyan: result === '0' }">{{ result }}</span>
+          <div :class="styles.infoRow">
+            <span :class="styles.infoKey">Last</span>
+            <span :class="{
+              [styles.infoVal as string]: true,
+              [styles.infoValOrange as string]: result === '1',
+              [styles.infoValCyan as string]: result === '0'
+            }">{{ result }}</span>
           </div>
-          <div v-if="history.length" class="history">
-            <span class="info-key">History</span>
-            <span class="history-bits">{{ history.join(' ') }}</span>
+          <div v-if="history.length" :class="styles.history">
+            <span :class="styles.infoKey">History</span>
+            <span :class="styles.historyBits">{{ history.join(' ') }}</span>
           </div>
         </div>
  
@@ -414,240 +434,6 @@ onUnmounted(() => {
     <!-- End main-area -->
  
     <!-- Win overlay -->
-    <div v-if="showWin" class="win-overlay">ION SUCCESSFULLY EXCITED</div>
+    <div v-if="showWin" :class="styles.winOverlay">ION SUCCESSFULLY EXCITED</div>
   </div>
 </template>
- 
-<style scoped>
-.game-container {
-  background: #000000;
-  color: #eee;
-  font-family: monospace;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  gap: 10px;
-  padding: 20px;
-}
-
-h1 {
-  color: #0ef;
-  margin: 0;
-  font-size: 24px;
-}
-
-.hint {
-  color: #999;
-  margin: 0;
-  font-size: 14px;
-}
-
-.controls {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 5px;
-}
-
-.controls p {
-  color: #666;
-  margin: 0;
-  font-size: 12px;
-}
-
-.clear-btn {
-  cursor: pointer;
-  background: #1a1a1a;
-  color: #aaa;
-  border: 1px solid #444;
-  padding: 4px 12px;
-  font-size: 11px;
-  font-family: monospace;
-  border-radius: 3px;
-  transition: 0.2s;
-}
-
-.clear-btn:hover {
-  background: #2a2a2a;
-  border-color: #666;
-  color: #ddd;
-}
-
-.main-area {
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.canvas-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
-}
-
-.game-canvas {
-  border: 2px solid #333;
-  cursor: crosshair;
-}
-
-.controls-hint {
-  margin: 0;
-  font-size: 11px;
-  color: #555;
-}
-
-.info {
-  text-align: center;
-  line-height: 2;
-  font-size: 15px;
-  color: #ccc;
-}
-
-.info div {
-  color: #999;
-}
-
-.info b {
-  color: #fff;
-}
-
-.win-overlay {
-  display: flex;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.92);
-  color: #0f0;
-  font-size: 32px;
-  font-weight: bold;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  z-index: 1000;
-  letter-spacing: 0.1em;
-}
-
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 180px;
-}
-
-.bloch-panel {
-  border: 1px solid #333;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  background: #0a0a0a;
-}
-
-.bloch-title {
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #666;
-}
-
-.bloch-svg {
-  width: 160px;
-  height: 160px;
-}
-
-.bloch-label {
-  fill: #777;
-  font-size: 12px;
-  font-family: monospace;
-}
-
-.bloch-circle {
-  fill: none;
-  stroke: #333;
-  stroke-width: 1.5;
-}
-
-.bloch-equator {
-  fill: none;
-  stroke: #222;
-  stroke-width: 1;
-  stroke-dasharray: 4 3;
-}
-
-.bloch-arrow {
-  stroke: #0ef;
-  stroke-width: 2;
-}
-
-.bloch-tip {
-  fill: #0ef;
-}
-
-.bloch-center {
-  fill: #555;
-}
-
-.bloch-state {
-  font-size: 12px;
-  color: #0ef;
-  letter-spacing: 0.05em;
-}
-
-.bloch-state.superposition {
-  color: #b47cff;
-}
-
-.info-panel {
-  border: 1px solid #333;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: #0a0a0a;
-  max-height: 280px;
-  overflow-y: auto;
-}
-
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  font-size: 13px;
-}
-
-.info-key {
-  color: #666;
-}
-
-.info-val {
-  color: #999;
-}
-
-.info-val.cyan  { color: #0ef; }
-.info-val.purple { color: #b47cff; }
-.info-val.magenta { color: #ff47ff; }
-.info-val.orange { color: #f84; }
-
-.history {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-top: 4px;
-  border-top: 1px solid #222;
-}
-
-.history-bits {
-  font-size: 11px;
-  color: #666;
-  word-break: break-all;
-  line-height: 1.6;
-}
-</style>
