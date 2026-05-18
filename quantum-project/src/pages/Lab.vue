@@ -1,11 +1,12 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import styles from './Home.module.css'
+</script>
 
 <template>
-  <h1>LAB PAGE</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <div :class="styles.gameContainer">
+    <h1 :class="styles.title">Lab</h1>
+    <p :class="styles.hint">Lab coming soon</p>
+  </div>
 </template>
 
 <style scoped></style>

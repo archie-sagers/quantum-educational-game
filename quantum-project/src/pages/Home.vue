@@ -24,13 +24,11 @@ const p1 = ref('0%')
 const result = ref('—')
 const history = ref<number[]>([])
 const showWin = ref(false)
+const canMeasure = ref(false)
 
 let level: Level = LEVELS[currentLevelIndex.value]!
 let ctx: CanvasRenderingContext2D | null = null
-let isTransitioning = false
-let winTimer: ReturnType<typeof setTimeout> | null = null
 let photon = { progress: 1, segCount: 0 }
-let gameInterval: ReturnType<typeof setInterval> | null = null
 let animationFrameId: number | null = null
 
 
@@ -68,54 +66,48 @@ function setupCanvas() {
   history.value = []
 }
 
-function updateUI(s: number[] | null, hitH: boolean, r: number | null, preMeasure: number | null = null) {
-  if (!s) {
+function updateStateForTracing() {
+  const { hitIon, hitH } = level.trace()
+  
+  if (!hitIon) {
     state.value = '—'
-  } else if (hitH) {
-    // If pre-gate state was 1, show |+⟩; if 0, show |-⟩
-    state.value = preMeasure === 1 ? '|+⟩' : '|-⟩'
+    p0.value = '—'
+    p1.value = '—'
+    canMeasure.value = false
+    return
+  }
+
+  let s = [1, 0]  // Start in |0⟩
+  const preMeasure = 1  
+  
+  if (hitH) s = applyH(s)
+  
+  p0.value = Math.round(s[0]! ** 2 * 100) + '%'
+  p1.value = Math.round(s[1]! ** 2 * 100) + '%'
+  
+  // Show current superposition
+  if (hitH) {
+    state.value = '|+⟩'  // Show superposition state
   } else {
-    // |0⟩ when r=0, |1⟩ when r=1
-    state.value = r === 0 ? '|0⟩' : '|1⟩'
+    state.value = '|0⟩'  // Show ground state
   }
-
-  p0.value = s ? Math.round(s[0]! ** 2 * 100) + '%' : '—'
-  p1.value = s ? Math.round(s[1]! ** 2 * 100) + '%' : '—'
-  result.value = r !== null ? String(r) : 'missed'
-
-  if (r !== null) {
-    history.value.push(r)
-    if (history.value.length > 20) history.value.shift()
-  }
+  
+  canMeasure.value = true
 }
 
 // Level Progression
 // ------------------
 
-function startWinTimer() {
-  if (winTimer || isTransitioning) return
-  isTransitioning = true
-
-  winTimer = setTimeout(() => {
-    showWin.value = true
-
-    setTimeout(() => {
-      showWin.value = false
-      if (currentLevelIndex.value < LEVELS.length - 1) {
-        currentLevelIndex.value++
-        level = LEVELS[currentLevelIndex.value]!
-        setupCanvas()
-      }
-      isTransitioning = false
-    }, 2000)
-    winTimer = null
-  }, 2000)
-}
-
-function cancelWinTimer() {
-  if (isTransitioning) return
-  if (winTimer) clearTimeout(winTimer)
-  winTimer = null
+function nextLevel() {
+  showWin.value = false
+  if (currentLevelIndex.value < LEVELS.length - 1) {
+    currentLevelIndex.value++
+    level = LEVELS[currentLevelIndex.value]!
+    setupCanvas()
+    updateStateForTracing()
+    result.value = '—'
+    history.value = []
+  }
 }
 
 // Canvas draw loop
@@ -255,6 +247,35 @@ function draw() {
 
 function clearMirrors() {
   level.grid = Array.from({ length: level.rows }, () => Array(level.cols).fill(null))
+  updateStateForTracing()
+}
+
+function handleMeasure() {
+  if (!canMeasure.value) return
+  canMeasure.value = false
+  
+  const { hitH } = level.trace()
+  photon = { progress: 0, segCount: level.trace().segs.length }
+
+  setTimeout(() => {
+    let s = [1, 0]
+    if (hitH) s = applyH(s)
+    const r = measure(s)
+    
+    state.value = r === 0 ? '|0⟩' : '|1⟩'
+    p0.value = r === 0 ? '100%' : '0%'
+    p1.value = r === 1 ? '100%' : '0%'
+    result.value = String(r)
+    history.value.push(r)
+    if (history.value.length > 20) history.value.shift()
+
+    canMeasure.value = true
+    if ((level.winCondition === 'any') || 
+        (level.winCondition === 'superposition' && hitH) || 
+        (level.winCondition === 'normal' && !hitH)) {
+      showWin.value = true
+    }
+  }, TRAVEL_MS)
 }
 
 function handleCanvasClick(e: MouseEvent) {
@@ -265,6 +286,7 @@ function handleCanvasClick(e: MouseEvent) {
 
   if (level.isFixed(col, row)) return
   level.grid[row]![col]! = level.grid[row]![col]! === 'fwd' ? 'back' : 'fwd'
+  updateStateForTracing()
 }
 
 function handleCanvasRightClick(e: MouseEvent) {
@@ -275,6 +297,7 @@ function handleCanvasRightClick(e: MouseEvent) {
   const row = Math.floor((e.clientY - rect.top) / CELL)
 
   if (!level.isFixed(col, row)) level.grid[row]![col] = null
+  updateStateForTracing()
 }
 
 // Game Loop
@@ -282,44 +305,12 @@ function handleCanvasRightClick(e: MouseEvent) {
 
 onMounted(() => {
   setupCanvas()
+  updateStateForTracing()
   draw()
-
-  gameInterval = setInterval(() => {
-    const { segs } = level.trace()
-    photon = { progress: 0, segCount: segs.length }
-
-    setTimeout(() => {
-      const { hitIon, hitH } = level.trace()
-      if (!hitIon) {
-        updateUI(null, false, null, null)
-        cancelWinTimer()
-        return
-      }
-
-      let s = [0, 1]  // Start in |1⟩ by default
-      const preMeasure = measure(s)  // Measure before applying gate
-      
-      // Set s to the measured state
-      s = preMeasure === 0 ? [1, 0] : [0, 1]
-      
-      if (hitH) s = applyH(s)
-      const r = measure(s)
-      updateUI(s, hitH, r, preMeasure)
-
-      let isWinningState = false
-      if (level.winCondition === 'any') isWinningState = true
-      else if (level.winCondition === 'superposition' && hitH) isWinningState = true
-      else if (level.winCondition === 'normal' && !hitH) isWinningState = true
-
-      isWinningState ? startWinTimer() : cancelWinTimer()
-    }, TRAVEL_MS)
-  }, SHOOT_MS)
 })
 
 onUnmounted(() => {
-  if (gameInterval) clearInterval(gameInterval)
   if (animationFrameId) cancelAnimationFrame(animationFrameId)
-  if (winTimer) clearTimeout(winTimer)
 })
 </script>
 
@@ -331,6 +322,14 @@ onUnmounted(() => {
     <div :class="styles.controls">
       <p :class="styles.controlsText">Left-click to place/rotate mirror · Right-click to remove</p>
       <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
+    </div>
+
+    <!-- Success message box - reserves space when not visible -->
+    <div :class="styles.successBoxContainer">
+      <div v-if="showWin" :class="styles.successBox">
+        <div :class="styles.successText">ION SUCCESSFULLY EXCITED</div>
+        <button @click="nextLevel" :class="styles.nextBtn">{{ currentLevelIndex < LEVELS.length - 1 ? 'Next Level' : 'Completed!' }}</button>
+      </div>
     </div>
 
     <!-- Main game area -->
@@ -415,6 +414,16 @@ onUnmounted(() => {
             <span :class="styles.infoKey">P(|1⟩)</span>
             <span :class="styles.infoVal">{{ p1 }}</span>
           </div>
+          
+          <!-- Measure Button -->
+          <button 
+            @click="handleMeasure"
+            :disabled="!canMeasure"
+            :class="styles.measureBtn"
+          >
+            Measure
+          </button>
+          
           <div :class="styles.infoRow">
             <span :class="styles.infoKey">Last</span>
             <span :class="{
@@ -432,8 +441,5 @@ onUnmounted(() => {
       </aside>
     </div>
     <!-- End main-area -->
- 
-    <!-- Win overlay -->
-    <div v-if="showWin" :class="styles.winOverlay">ION SUCCESSFULLY EXCITED</div>
   </div>
 </template>

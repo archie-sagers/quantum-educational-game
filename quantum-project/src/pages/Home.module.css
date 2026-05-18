@@ -2,7 +2,7 @@
   background: #000000;
   color: #eee;
   font-family: monospace;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -10,6 +10,7 @@
   margin: 0;
   gap: 10px;
   padding: 20px;
+  overflow: hidden;
 }
 
 .title {
@@ -61,6 +62,8 @@
   align-items: flex-start;
   flex-wrap: wrap;
   justify-content: center;
+  flex: 1;
+  min-height: 0;
 }
 
 .canvasWrap {
@@ -74,6 +77,10 @@
 .gameCanvas {
   border: 2px solid #333;
   cursor: crosshair;
+  max-height: 60vh;
+  max-width: 100%;
+  height: auto;
+  width: auto;
 }
 
 .winOverlay {
@@ -97,6 +104,8 @@
   flex-direction: column;
   gap: 12px;
   min-width: 180px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .blochPanel {
@@ -170,7 +179,7 @@
   flex-direction: column;
   gap: 6px;
   background: #0a0a0a;
-  max-height: 280px;
+  max-height: 300px;
   overflow-y: auto;
 }
 
@@ -219,3 +228,77 @@
   word-break: break-all;
   line-height: 1.6;
 }
+
+.measureBtn {
+  cursor: pointer;
+  background: #0a3a0a;
+  color: #0f0;
+  border: 1px solid #0f0;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-family: monospace;
+  border-radius: 3px;
+  transition: 0.2s;
+  margin: 8px 0;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+}
+
+.measureBtn:hover:not(:disabled) {
+  background: #0d5a0d;
+  border-color: #0ff;
+  color: #0ff;
+  box-shadow: 0 0 8px #0f0;
+}
+
+.measureBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: #333;
+  color: #555;
+}
+
+.successBoxContainer {
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.successBox {
+  border: 2px solid #0f0;
+  background: #0a2a0a;
+  padding: 12px 20px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+}
+
+.successText {
+  color: #0f0;
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.nextBtn {
+  cursor: pointer;
+  background: #0f0;
+  color: #000;
+  border: none;
+  padding: 10px 24px;
+  font-size: 13px;
+  font-family: monospace;
+  font-weight: bold;
+  border-radius: 3px;
+  transition: 0.2s;
+}
+
+.nextBtn:hover {
+  background: #0ff;
+  box-shadow: 0 0 12px #0f0;
+}
+
