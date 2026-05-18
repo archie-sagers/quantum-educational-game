@@ -5,7 +5,7 @@ import styles from './Home.module.css'
 <template>
   <div :class="styles.gameContainer">
     <h1 :class="styles.title">Lab</h1>
-    <p :class="styles.hint">Lab coming soon</p>
+    <p :class="styles.hint">Coming Soon</p>
   </div>
 </template>
 
