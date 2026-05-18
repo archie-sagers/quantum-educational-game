@@ -25,6 +25,7 @@ const result = ref('—')
 const history = ref<number[]>([])
 const showWin = ref(false)
 const canMeasure = ref(false)
+const showLevelSelector = ref(false)
 
 let level: Level = LEVELS[currentLevelIndex.value]!
 let ctx: CanvasRenderingContext2D | null = null
@@ -108,6 +109,17 @@ function nextLevel() {
     result.value = '—'
     history.value = []
   }
+}
+
+function selectLevel(index: number) {
+  showLevelSelector.value = false
+  currentLevelIndex.value = index
+  level = LEVELS[currentLevelIndex.value]!
+  setupCanvas()
+  updateStateForTracing()
+  result.value = '—'
+  history.value = []
+  showWin.value = false
 }
 
 // Canvas draw loop
@@ -324,11 +336,16 @@ onUnmounted(() => {
       <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
     </div>
 
-    <!-- Success message box - reserves space when not visible -->
-    <div :class="styles.successBoxContainer">
-      <div v-if="showWin" :class="styles.successBox">
-        <div :class="styles.successText">ION SUCCESSFULLY EXCITED</div>
-        <button @click="nextLevel" :class="styles.nextBtn">{{ currentLevelIndex < LEVELS.length - 1 ? 'Next Level' : 'Completed!' }}</button>
+    <!-- Level select and success message on same line -->
+    <div :class="styles.controlsRow">
+      <button @click="showLevelSelector = true" :class="styles.levelIndicator">
+        Level {{ currentLevelIndex + 1 }}
+      </button>
+      <div :class="styles.successBoxContainer">
+        <div v-if="showWin" :class="styles.successBox">
+          <div :class="styles.successText">ION SUCCESSFULLY EXCITED</div>
+          <button @click="nextLevel" :class="styles.nextBtn">{{ currentLevelIndex < LEVELS.length - 1 ? 'Next Level' : 'Completed!' }}</button>
+        </div>
       </div>
     </div>
 
@@ -441,5 +458,19 @@ onUnmounted(() => {
       </aside>
     </div>
     <!-- End main-area -->
+
+    <!-- Level selector modal -->
+    <div v-if="showLevelSelector" :class="styles.levelSelectorOverlay" @click="showLevelSelector = false">
+      <div :class="styles.levelSelectorGrid" @click.stop>
+        <div
+          v-for="(_, index) in LEVELS"
+          :key="index"
+          @click="selectLevel(index)"
+          :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: index === currentLevelIndex }]"
+        >
+          {{ index + 1 }}
+        </div>
+      </div>
+    </div>
   </div>
 </template>
