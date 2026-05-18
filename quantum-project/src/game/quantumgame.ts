@@ -24,8 +24,11 @@ export class Level {
   winCondition: string;
   hint: string;
   grid: (string | null)[][];
+  availableGates: string[];
+  gatePlacementPositions: Array<[number, number]>;
+  showResetButton: boolean;
 
-  constructor({ name, cols, rows, src, ion, hgates, walls, hint, winCondition }: any) {
+  constructor({ name, cols, rows, src, ion, hgates, walls, hint, winCondition, availableGates, gatePlacementPositions, showResetButton }: any) {
     this.name = name;
     this.cols = cols;
     this.rows = rows;
@@ -36,6 +39,9 @@ export class Level {
     this.winCondition = winCondition || 'any';
     this.hint = hint || 'Route the beam to the ion';
     this.grid = Array.from({ length: rows }, () => Array(cols).fill(null));
+    this.availableGates = availableGates || [];
+    this.gatePlacementPositions = gatePlacementPositions || [];
+    this.showResetButton = showResetButton || false;
   }
 
   isFixed(col: number, row: number) {
@@ -98,27 +104,33 @@ export const LEVELS = [
     cols: 12, rows: 8,
     src: { col: 0, row: 5 },
     ion: { col: 11, row: 5 },
-    hgates: [{ col: 6, row: 2 }],
+    availableGates: ['H'],
+    gatePlacementPositions: [[6, 2]],
     winCondition: 'superposition',
-    hint: 'Route the beam through the Hadamard Gate to create a superposition and excite the ion'
+    hint: 'Route the beam through the Hadamard Gate to create a superposition and excite the ion',
+    showResetButton: true
   }),
   new Level({
     name: '4 - The Hadamard Gate',
     cols: 12, rows: 8,
     src: { col: 0, row: 5 },
     ion: { col: 11, row: 7 },
-    hgates: [{ col: 6, row: 2 }],
     walls: [{ col: 9, row: 4 }, { col: 9, row: 5 }, { col: 9, row: 6 }, { col: 9, row: 7 }],
+    availableGates: ['H'],
+    gatePlacementPositions: [[6, 2]],
     winCondition: 'superposition',
-    hint: 'Route the beam through the Hadamard Gate to create a superposition and excite the ion'
+    hint: 'Route the beam through the Hadamard Gate to create a superposition and excite the ion',
+    showResetButton: true
   }),
   new Level({
     name: '5 - Cancellation',
     cols: 12, rows: 8,
     src: { col: 0, row: 0 },
     ion: { col: 11, row: 0 },
-    hgates: [{ col: 1, row: 0 }, { col: 8, row: 3 }],
+    availableGates: ['H', 'H'],
+    gatePlacementPositions: [[1, 0], [8, 3]],
     winCondition: 'normal',
-    hint: 'Pass through BOTH H-gates to cancel out the superposition and return to |0>'
+    hint: 'Pass through BOTH H-gates to cancel out the superposition and return to |0>',
+    showResetButton: true
   })
 ];

@@ -26,6 +26,10 @@ const history = ref<number[]>([])
 const showWin = ref(false)
 const canMeasure = ref(false)
 const showLevelSelector = ref(false)
+const showLaserGates = ref(false)
+const laserGates = ref<string[]>([])
+const isMeasured = ref(false)
+const measuredValue = ref<number | null>(null)
 
 let level: Level = LEVELS[currentLevelIndex.value]!
 let ctx: CanvasRenderingContext2D | null = null
@@ -56,6 +60,10 @@ const blochLabel = computed(() => {
   return labelMap[state.value] ?? 'No state'
 })
 
+const laserColor = computed(() => {
+  return laserGates.value.length > 0 ? '#b47cff' : '#0ef'
+})
+
 // Canvas Functions
 // ------------------
 
@@ -68,6 +76,15 @@ function setupCanvas() {
 }
 
 function updateStateForTracing() {
+  // If already measured, keep showing the measured state
+  if (isMeasured.value) {
+    state.value = measuredValue.value === 0 ? '|0⟩' : '|1⟩'
+    p0.value = measuredValue.value === 0 ? '100%' : '0%'
+    p1.value = measuredValue.value === 1 ? '100%' : '0%'
+    canMeasure.value = false
+    return
+  }
+
   const { hitIon, hitH } = level.trace()
   
   if (!hitIon) {
@@ -79,7 +96,11 @@ function updateStateForTracing() {
   }
 
   let s = [1, 0]  // Start in |0⟩
-  const preMeasure = 1  
+  
+  // Apply laser gates
+  for (const gate of laserGates.value) {
+    if (gate === 'H') s = applyH(s)
+  }
   
   if (hitH) s = applyH(s)
   
@@ -87,7 +108,8 @@ function updateStateForTracing() {
   p1.value = Math.round(s[1]! ** 2 * 100) + '%'
   
   // Show current superposition
-  if (hitH) {
+  const hasSuperposition = laserGates.value.length > 0 && laserGates.value.length % 2 === 1 ? true : (hitH ? true : false)
+  if (hasSuperposition) {
     state.value = '|+⟩'  // Show superposition state
   } else {
     state.value = '|0⟩'  // Show ground state
@@ -104,6 +126,9 @@ function nextLevel() {
   if (currentLevelIndex.value < LEVELS.length - 1) {
     currentLevelIndex.value++
     level = LEVELS[currentLevelIndex.value]!
+    laserGates.value = []
+    isMeasured.value = false
+    measuredValue.value = null
     setupCanvas()
     updateStateForTracing()
     result.value = '—'
@@ -115,11 +140,45 @@ function selectLevel(index: number) {
   showLevelSelector.value = false
   currentLevelIndex.value = index
   level = LEVELS[currentLevelIndex.value]!
+  laserGates.value = []
+  isMeasured.value = false
+  measuredValue.value = null
   setupCanvas()
   updateStateForTracing()
   result.value = '—'
   history.value = []
   showWin.value = false
+}
+
+// Laser Gate Placement
+// ------------------
+
+function openLaserGates() {
+  showLaserGates.value = true
+}
+
+function onGateDragStart(e: DragEvent, gateType: string) {
+  e.dataTransfer!.effectAllowed = 'copy'
+  e.dataTransfer!.setData('gateType', gateType)
+}
+
+function onLaserDragOver(e: DragEvent) {
+  e.preventDefault()
+  e.dataTransfer!.dropEffect = 'copy'
+}
+
+function onLaserDrop(e: DragEvent) {
+  e.preventDefault()
+  const gateType = e.dataTransfer!.getData('gateType')
+  if (gateType) {
+    laserGates.value.push(gateType)
+    updateStateForTracing()
+  }
+}
+
+function removeLaserGate(index: number) {
+  laserGates.value.splice(index, 1)
+  updateStateForTracing()
 }
 
 // Canvas draw loop
@@ -150,7 +209,7 @@ function draw() {
   const { segs } = level.trace()
   ctx.lineWidth = 2
   for (const s of segs) {
-    const col = s.afterH ? '#b47cff' : '#0ef'
+    const col = laserColor.value === '#b47cff' || s.afterH ? '#b47cff' : '#0ef'
     ctx.strokeStyle = col
     ctx.shadowColor = col
     ctx.shadowBlur = 8
@@ -170,7 +229,7 @@ function draw() {
     const f = t - Math.floor(t)
     const px = seg.x1 + (seg.x2 - seg.x1) * f
     const py = seg.y1 + (seg.y2 - seg.y1) * f
-    const col = seg.afterH ? '#d4aaff' : '#fff'
+    const col = laserColor.value === '#b47cff' || seg.afterH ? '#d4aaff' : '#fff'
     ctx.fillStyle = col
     ctx.shadowColor = col
     ctx.shadowBlur = 10
@@ -183,7 +242,7 @@ function draw() {
   // Laser source
   const sx = level.src.col * CELL
   const sy = level.src.row * CELL
-  ctx.fillStyle = '#0ef'
+  ctx.fillStyle = laserColor.value
   ctx.fillRect(sx + 4, sy + 4, CELL - 8, CELL - 8)
   ctx.fillStyle = '#000'
   ctx.font = '9px monospace'
@@ -270,10 +329,33 @@ function handleMeasure() {
   photon = { progress: 0, segCount: level.trace().segs.length }
 
   setTimeout(() => {
+    // If already measured, keep showing the same value but add to history
+    if (isMeasured.value) {
+      result.value = String(measuredValue.value)
+      history.value.push(measuredValue.value!)
+      if (history.value.length > 20) history.value.shift()
+      canMeasure.value = true
+      return
+    }
+
+    // Calculate the quantum state with laser gates applied
     let s = [1, 0]
+    
+    // Apply laser gates
+    for (const gate of laserGates.value) {
+      if (gate === 'H') s = applyH(s)
+    }
+    
     if (hitH) s = applyH(s)
+    
+    // Measure with proper probabilities
     const r = measure(s)
     
+    // Store the measured value and mark as measured
+    measuredValue.value = r
+    isMeasured.value = true
+    
+    // Update display
     state.value = r === 0 ? '|0⟩' : '|1⟩'
     p0.value = r === 0 ? '100%' : '0%'
     p1.value = r === 1 ? '100%' : '0%'
@@ -290,11 +372,38 @@ function handleMeasure() {
   }, TRAVEL_MS)
 }
 
+function handleCanvasMouseMove(e: MouseEvent) {
+  if (!canvas.value) return
+  const rect = canvas.value.getBoundingClientRect()
+  const col = Math.floor((e.clientX - rect.left) / CELL)
+  const row = Math.floor((e.clientY - rect.top) / CELL)
+
+  // Change cursor when hovering over laser if gates are available
+  if (col === level.src.col && row === level.src.row && level.availableGates.length > 0) {
+    canvas.value.style.cursor = 'pointer'
+  } else {
+    canvas.value.style.cursor = 'crosshair'
+  }
+}
+
+function handleReset() {
+  isMeasured.value = false
+  measuredValue.value = null
+  result.value = '—'
+  updateStateForTracing()
+}
+
 function handleCanvasClick(e: MouseEvent) {
   if (!canvas.value) return
   const rect = canvas.value.getBoundingClientRect()
   const col = Math.floor((e.clientX - rect.left) / CELL)
   const row = Math.floor((e.clientY - rect.top) / CELL)
+
+  // Check if clicked on laser
+  if (col === level.src.col && row === level.src.row && level.availableGates.length > 0) {
+    openLaserGates()
+    return
+  }
 
   if (level.isFixed(col, row)) return
   level.grid[row]![col]! = level.grid[row]![col]! === 'fwd' ? 'back' : 'fwd'
@@ -357,6 +466,7 @@ onUnmounted(() => {
           ref="canvas"
           @click="handleCanvasClick"
           @contextmenu="handleCanvasRightClick"
+          @mousemove="handleCanvasMouseMove"
           :class="styles.gameCanvas"
         />
       </div>
@@ -440,6 +550,16 @@ onUnmounted(() => {
           >
             Measure
           </button>
+
+          <!-- Reset Button (only on certain levels) -->
+          <button
+            v-if="level.showResetButton"
+            @click="handleReset"
+            :disabled="!isMeasured"
+            :class="styles.resetBtn"
+          >
+            Reset Ion
+          </button>
           
           <div :class="styles.infoRow">
             <span :class="styles.infoKey">Last</span>
@@ -470,6 +590,58 @@ onUnmounted(() => {
         >
           {{ index + 1 }}
         </div>
+      </div>
+    </div>
+
+    <!-- Laser Gates modal -->
+    <div v-if="showLaserGates" :class="styles.laserGatesOverlay" @click="showLaserGates = false">
+      <div :class="styles.laserGatesModal" @click.stop>
+        <div :class="styles.laserGatesTitle">Laser Gates</div>
+        
+        <div :class="styles.gateContainer">
+          <!-- Applied gates -->
+          <div :class="styles.appliedSection">
+            <div :class="styles.sectionLabel">Applied to Laser</div>
+            <div
+              @dragover="onLaserDragOver"
+              @drop="onLaserDrop"
+              :class="styles.laserDropZone"
+            >
+              <div v-if="laserGates.length > 0" :class="styles.gateStack">
+                <div
+                  v-for="(gate, index) in laserGates"
+                  :key="`laser-gate-${index}`"
+                  :class="styles.laserGate"
+                >
+                  <button @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
+                  <div>{{ gate }}</div>
+                </div>
+              </div>
+              <div v-else :class="styles.dropHint">Drag gates here</div>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div :class="styles.divider"></div>
+
+          <!-- Available gates -->
+          <div :class="styles.gatesSection">
+            <div :class="styles.sectionLabel">Available Gates</div>
+            <div :class="styles.gateGrid">
+              <div
+                v-for="(gate, index) in level.availableGates"
+                :key="`gate-${index}`"
+                draggable="true"
+                @dragstart="onGateDragStart($event, gate)"
+                :class="styles.gateItem"
+              >
+                {{ gate }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button @click="showLaserGates = false" :class="styles.doneBtn">Done</button>
       </div>
     </div>
   </div>

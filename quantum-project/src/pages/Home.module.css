@@ -1,7 +1,21 @@
 .gameContainer {
-  background: #000000;
-  color: #eee;
-  font-family: monospace;
+  --color-primary: #0ef;
+  --color-secondary: #b47cff;
+  --color-success: #0f0;
+  --color-danger: #f84;
+  --color-text: #eee;
+  --color-text-dim: #999;
+  --color-text-darker: #666;
+  --color-bg: #000000;
+  --color-bg-light: #0a0a0a;
+  --color-border: #333;
+  --border-radius: 3px;
+  --transition: 0.2s;
+  --font-mono: monospace;
+
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-mono);
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -14,13 +28,13 @@
 }
 
 .title {
-  color: #0ef;
+  color: var(--color-primary);
   margin: 0;
   font-size: 24px;
 }
 
 .hint {
-  color: #999;
+  color: var(--color-text-dim);
   margin: 0;
   font-size: 14px;
 }
@@ -33,7 +47,7 @@
 }
 
 .controlsText {
-  color: #666;
+  color: var(--color-text-darker);
   margin: 0;
   font-size: 12px;
 }
@@ -49,13 +63,13 @@
 .clearBtn {
   cursor: pointer;
   background: #1a1a1a;
-  color: #aaa;
-  border: 1px solid #444;
+  color: var(--color-text-dim);
+  border: 1px solid var(--color-border);
   padding: 4px 12px;
   font-size: 11px;
-  font-family: monospace;
-  border-radius: 3px;
-  transition: 0.2s;
+  font-family: var(--font-mono);
+  border-radius: var(--border-radius);
+  transition: var(--transition);
 }
 
 .clearBtn:hover {
@@ -83,7 +97,7 @@
 }
 
 .gameCanvas {
-  border: 2px solid #333;
+  border: 2px solid var(--color-border);
   cursor: crosshair;
   max-height: 60vh;
   max-width: 100%;
@@ -96,7 +110,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.92);
-  color: #0f0;
+  color: var(--color-success);
   font-size: 32px;
   font-weight: bold;
   flex-direction: column;
@@ -112,25 +126,27 @@
   flex-direction: column;
   gap: 12px;
   min-width: 180px;
-  max-height: 70vh;
+  max-height: 80vh;
   overflow-y: auto;
 }
 
 .blochPanel {
-  border: 1px solid #333;
+  border: 1px solid var(--color-border);
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  background: #0a0a0a;
+  background: var(--color-bg-light);
+  transition: var(--transition);
+  flex: 2;
 }
 
 .blochTitle {
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #666;
+  color: var(--color-text-darker);
 }
 
 .blochSvg {
@@ -139,14 +155,14 @@
 }
 
 .blochLabel {
-  fill: #777;
+  fill: var(--color-text-dim);
   font-size: 12px;
-  font-family: monospace;
+  font-family: var(--font-mono);
 }
 
 .blochCircle {
   fill: none;
-  stroke: #333;
+  stroke: var(--color-border);
   stroke-width: 1.5;
 }
 
@@ -158,36 +174,36 @@
 }
 
 .blochArrow {
-  stroke: #0ef;
+  stroke: var(--color-primary);
   stroke-width: 2;
 }
 
 .blochTip {
-  fill: #0ef;
+  fill: var(--color-primary);
 }
 
 .blochCenter {
-  fill: #555;
+  fill: var(--color-text-dim);
 }
 
 .blochState {
-  font-size: 12px;
-  color: #0ef;
+  font-size: 11px;
+  color: var(--color-primary);
   letter-spacing: 0.05em;
 }
 
 .blochStateSuperposition {
-  color: #b47cff;
+  color: var(--color-secondary);
 }
 
 .infoPanel {
-  border: 1px solid #333;
+  border: 1px solid var(--color-border);
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background: #0a0a0a;
-  max-height: 300px;
+  gap: 8px;
+  background: var(--color-bg-light);
+  flex: 1;
   overflow-y: auto;
 }
 
@@ -195,23 +211,24 @@
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  font-size: 13px;
+  font-size: 12px;
+  flex-shrink: 0;
 }
 
 .infoKey {
-  color: #666;
+  color: var(--color-text-darker);
 }
 
 .infoVal {
-  color: #999;
+  color: var(--color-text-dim);
 }
 
 .infoValCyan {
-  color: #0ef;
+  color: var(--color-primary);
 }
 
 .infoValPurple {
-  color: #b47cff;
+  color: var(--color-secondary);
 }
 
 .infoValMagenta {
@@ -219,7 +236,7 @@
 }
 
 .infoValOrange {
-  color: #f84;
+  color: var(--color-danger);
 }
 
 .history {
@@ -228,11 +245,13 @@
   gap: 4px;
   padding-top: 4px;
   border-top: 1px solid #222;
+  overflow-y: auto;
+  max-height: 80px;
 }
 
 .historyBits {
   font-size: 11px;
-  color: #666;
+  color: var(--color-text-darker);
   word-break: break-all;
   line-height: 1.6;
 }
@@ -240,30 +259,61 @@
 .measureBtn {
   cursor: pointer;
   background: #0a3a0a;
-  color: #0f0;
-  border: 1px solid #0f0;
-  padding: 8px 16px;
-  font-size: 12px;
-  font-family: monospace;
-  border-radius: 3px;
-  transition: 0.2s;
-  margin: 8px 0;
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  margin: 0;
   font-weight: bold;
   letter-spacing: 0.05em;
+  flex-shrink: 0;
 }
 
 .measureBtn:hover:not(:disabled) {
   background: #0d5a0d;
-  border-color: #0ff;
-  color: #0ff;
-  box-shadow: 0 0 8px #0f0;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: 0 0 8px var(--color-success);
 }
 
 .measureBtn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  border-color: #333;
-  color: #555;
+  border-color: var(--color-border);
+  color: var(--color-text-dim);
+}
+
+.resetBtn {
+  cursor: pointer;
+  background: #0a2a3a;
+  color: var(--color-text-dim);
+  border: 1px solid var(--color-primary);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  margin: 0;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.resetBtn:hover:not(:disabled) {
+  background: #0d4a5a;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: 0 0 8px var(--color-primary);
+}
+
+.resetBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--color-border);
+  color: var(--color-text-dim);
 }
 
 .successBoxContainer {
@@ -275,20 +325,20 @@
 
 .levelIndicator {
   cursor: pointer;
-  background: #0a0a0a;
-  color: #0ef;
-  border: 1px solid #0ef;
+  background: var(--color-bg-light);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
   padding: 12px 16px;
   font-size: 13px;
-  font-family: monospace;
-  border-radius: 3px;
-  transition: 0.2s;
+  font-family: var(--font-mono);
+  border-radius: var(--border-radius);
+  transition: var(--transition);
   font-weight: bold;
 }
 
 .levelIndicator:hover {
   background: #1a1a1a;
-  box-shadow: 0 0 8px #0ef;
+  box-shadow: 0 0 8px var(--color-primary);
 }
 
 .levelSelectorOverlay {
@@ -306,8 +356,8 @@
   grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   gap: 12px;
   padding: 40px;
-  background: #0a0a0a;
-  border: 2px solid #0ef;
+  background: var(--color-bg-light);
+  border: 2px solid var(--color-primary);
   border-radius: 4px;
   max-width: 90vw;
   max-height: 90vh;
@@ -320,28 +370,28 @@
   align-items: center;
   justify-content: center;
   background: #1a1a1a;
-  border: 1px solid #0ef;
-  color: #0ef;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
   font-size: 18px;
   font-weight: bold;
-  font-family: monospace;
+  font-family: var(--font-mono);
   cursor: pointer;
-  border-radius: 3px;
-  transition: 0.2s;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
 }
 
 .levelSelectorSquare:hover {
   background: #2a2a2a;
-  box-shadow: 0 0 12px #0ef;
+  box-shadow: 0 0 12px var(--color-primary);
 }
 
 .levelSelectorActive {
-  background: #0ef;
+  background: var(--color-primary);
   color: #000;
 }
 
 .successBox {
-  border: 2px solid #0f0;
+  border: 2px solid var(--color-success);
   background: #0a2a0a;
   padding: 12px 20px;
   border-radius: 4px;
@@ -352,7 +402,7 @@
 }
 
 .successText {
-  color: #0f0;
+  color: var(--color-success);
   font-size: 16px;
   font-weight: bold;
   letter-spacing: 0.1em;
@@ -361,19 +411,194 @@
 
 .nextBtn {
   cursor: pointer;
-  background: #0f0;
+  background: var(--color-success);
   color: #000;
   border: none;
   padding: 10px 24px;
   font-size: 13px;
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-weight: bold;
-  border-radius: 3px;
-  transition: 0.2s;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
 }
 
 .nextBtn:hover {
-  background: #0ff;
-  box-shadow: 0 0 12px #0f0;
+  background: var(--color-primary);
+  box-shadow: 0 0 12px var(--color-success);
 }
 
+.laserGatesOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.laserGatesModal {
+  background: var(--color-bg-light);
+  border: 2px solid var(--color-secondary);
+  border-radius: 4px;
+  padding: 24px;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.laserGatesTitle {
+  color: var(--color-secondary);
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.gateContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.appliedSection,
+.slotsSection,
+.gatesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionLabel {
+  color: var(--color-text-darker);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.divider {
+  height: 2px;
+  background: var(--color-border);
+  width: 100%;
+}
+
+.laserDropZone {
+  background: #1a1a1a;
+  border: 2px dashed #666;
+  border-radius: var(--border-radius);
+  height: 100px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: var(--transition);
+  position: relative;
+}
+
+.laserDropZone:hover {
+  border-color: #999;
+  background: #222;
+}
+
+.gateStack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.laserGate {
+  background: var(--color-secondary);
+  color: #000;
+  border-radius: var(--border-radius);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  font-weight: bold;
+  gap: 8px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dropHint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--color-text-darker);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.gateGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+  gap: 8px;
+}
+
+.gateItem {
+  background: #1a1a1a;
+  border: 2px solid var(--color-secondary);
+  color: var(--color-secondary);
+  padding: 4px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  border-radius: var(--border-radius);
+  cursor: grab;
+  transition: var(--transition);
+  font-weight: bold;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.gateItem:hover {
+  background: #2a2a2a;
+  box-shadow: 0 0 8px var(--color-secondary);
+}
+
+.gateItem:active {
+  cursor: grabbing;
+}
+
+.removeBtn {
+  background: var(--color-danger);
+  border: none;
+  color: #000;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  font-weight: bold;
+  z-index: 1;
+}
+
+.removeBtn:hover {
+  background: #ff6644;
+}
+
+.doneBtn {
+  cursor: pointer;
+  background: var(--color-secondary);
+  color: #000;
+  border: none;
+  padding: 10px 24px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  font-weight: bold;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  align-self: center;
+}
+
+.doneBtn:hover {
+  background: #d4aaff;
+  box-shadow: 0 0 12px var(--color-secondary);
+}
