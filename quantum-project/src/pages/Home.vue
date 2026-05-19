@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { LEVELS, Level, applyH, measure, getBlochAngle, getBlochLabel, calculateQuantumState } from '@/game/quantumgame'
+import { LEVELS, Level, applyH, applyX, measure, getBlochAngle, getBlochLabel, calculateQuantumState } from '@/game/quantumgame'
 import styles from './Home.module.css'
 
 
@@ -10,6 +10,15 @@ import styles from './Home.module.css'
 const CELL = 56
 const TRAVEL_MS = 800
 const FPS = 60
+
+// Colors defined here match the CSS custom properties in Home.module.css
+const COLORS = {
+  cyan: '#0ef',        // --color-primary
+  purple: '#b47cff',   // --color-secondary
+  red: '#f84',         // --color-danger
+  lightPurple: '#d4aaff',  // --color-secondary-light
+  lightRed: '#ff6644'      // --color-danger-light
+}
 
 
 // State
@@ -29,11 +38,20 @@ const showLaserGates = ref(false)
 const laserGates = ref<string[]>([])
 const isMeasured = ref(false)
 const measuredValue = ref<number | null>(null)
+const ionInitialized = ref(false)
+const showPopup = ref(false)
+const popupIndex = ref(0)
+const currentPopup = computed(() => {
+  const popups = level.popups
+  return popups[popupIndex.value]
+})
 
 let level: Level = LEVELS[currentLevelIndex.value]!
 let ctx: CanvasRenderingContext2D | null = null
 let photon = { progress: 1, segCount: 0 }
 let animationFrameId: number | null = null
+const shownPopupIndices = ref(new Set<number>())
+let lastPopupTrigger: string | null = null
 
 
 // Bloch Sphere
@@ -44,7 +62,8 @@ const blochAngle = computed(() => getBlochAngle(state.value))
 const blochLabel = computed(() => getBlochLabel(state.value))
 
 const laserColor = computed(() => {
-  return laserGates.value.length > 0 ? '#b47cff' : '#0ef'
+  if (laserGates.value.includes('X')) return COLORS.red
+  return laserGates.value.length > 0 ? COLORS.purple : COLORS.cyan
 })
 
 // Canvas Functions
@@ -59,6 +78,21 @@ function setupCanvas() {
 }
 
 function updateStateForTracing() {
+  // If ion is not initialized on this level, show unknown state
+  if (!ionInitialized.value && !level.preInitialized) {
+    state.value = '?'
+    p0.value = '?'
+    p1.value = '?'
+    canMeasure.value = false
+    return
+  }
+
+  // Check if laser hits ion and show popup if triggered
+  const { hitIon } = level.trace()
+  if (hitIon) {
+    showPopupByTrigger('onLaserToIon')
+  }
+
   const result = calculateQuantumState(level, laserGates.value, isMeasured.value ? measuredValue.value : null)
   state.value = result.state
   p0.value = result.p0
@@ -77,10 +111,15 @@ function nextLevel() {
     laserGates.value = []
     isMeasured.value = false
     measuredValue.value = null
+    ionInitialized.value = level.preInitialized
+    shownPopupIndices.value.clear()
+    lastPopupTrigger = null
     setupCanvas()
     updateStateForTracing()
     result.value = '—'
     history.value = []
+    popupIndex.value = 0
+    showPopupByTrigger('onLoad')
   }
 }
 
@@ -91,18 +130,25 @@ function selectLevel(index: number) {
   laserGates.value = []
   isMeasured.value = false
   measuredValue.value = null
+  ionInitialized.value = level.preInitialized
+  shownPopupIndices.value.clear()
+  lastPopupTrigger = null
   setupCanvas()
   updateStateForTracing()
   result.value = '—'
   history.value = []
   showWin.value = false
+  popupIndex.value = 0
+  showPopupByTrigger('onLoad')
 }
 
 // Laser Gate Placement
 // ------------------
 
 function openLaserGates() {
-  showLaserGates.value = true
+  if (!showPopupByTrigger('onLaserGatesOpen')) {
+    showLaserGates.value = true
+  }
 }
 
 function onGateDragStart(e: DragEvent, gateType: string) {
@@ -120,12 +166,16 @@ function onLaserDrop(e: DragEvent) {
   const gateType = e.dataTransfer!.getData('gateType')
   if (gateType) {
     laserGates.value.push(gateType)
+    isMeasured.value = false
+    measuredValue.value = null
     updateStateForTracing()
   }
 }
 
 function removeLaserGate(index: number) {
   laserGates.value.splice(index, 1)
+  isMeasured.value = false
+  measuredValue.value = null
   updateStateForTracing()
 }
 
@@ -157,7 +207,12 @@ function draw() {
   const { segs } = level.trace()
   ctx.lineWidth = 2
   for (const s of segs) {
-    const col = laserColor.value === '#b47cff' || s.afterH ? '#b47cff' : '#0ef'
+    let col = COLORS.cyan
+    if (s.afterH) {
+      col = COLORS.purple
+    } else if (laserColor.value === COLORS.red) {
+      col = COLORS.red
+    }
     ctx.strokeStyle = col
     ctx.shadowColor = col
     ctx.shadowBlur = 8
@@ -177,7 +232,12 @@ function draw() {
     const f = t - Math.floor(t)
     const px = seg.x1 + (seg.x2 - seg.x1) * f
     const py = seg.y1 + (seg.y2 - seg.y1) * f
-    const col = laserColor.value === '#b47cff' || seg.afterH ? '#d4aaff' : '#fff'
+    let col = '#fff'
+    if (seg.afterH || laserColor.value === COLORS.purple) {
+      col = COLORS.lightPurple
+    } else if (laserColor.value === COLORS.red) {
+      col = COLORS.lightRed
+    }
     ctx.fillStyle = col
     ctx.shadowColor = col
     ctx.shadowBlur = 10
@@ -261,6 +321,50 @@ function draw() {
   animationFrameId = requestAnimationFrame(draw)
 }
 
+// Popup Control
+// ------------------
+
+function showPopupByTrigger(trigger: string): boolean {
+  const nextPopupIndex = level.popups.findIndex((p, idx) => p.trigger === trigger && !shownPopupIndices.value.has(idx))
+  
+  if (nextPopupIndex !== -1) {
+    popupIndex.value = nextPopupIndex
+    showPopup.value = true
+    shownPopupIndices.value.add(nextPopupIndex)
+    lastPopupTrigger = trigger
+    return true
+  }
+  return false
+}
+
+function closePopup() {
+  showPopup.value = false
+  
+  // Handle post-popup actions based on the trigger that opened this popup
+  if (lastPopupTrigger === 'onLaserGatesOpen') {
+    showLaserGates.value = true
+  }
+  
+  lastPopupTrigger = null
+}
+
+function advancePopup() {
+  // Mark current popup as shown before advancing
+  shownPopupIndices.value.add(popupIndex.value)
+  
+  if (popupIndex.value < level.popups.length - 1) {
+    const nextPopup = level.popups[popupIndex.value + 1]
+    // If the next popup has a trigger other than 'onLoad', don't advance - wait for the trigger
+    if (nextPopup?.trigger && nextPopup.trigger !== 'onLoad') {
+      closePopup()
+      return
+    }
+    popupIndex.value++
+  } else {
+    closePopup()
+  }
+}
+
 // Mirror Controls
 // ------------------
 
@@ -292,6 +396,7 @@ function handleMeasure() {
     // Apply laser gates
     for (const gate of laserGates.value) {
       if (gate === 'H') s = applyH(s)
+      if (gate === 'X') s = applyX(s)
     }
     
     if (hitH) s = applyH(s)
@@ -337,10 +442,12 @@ function handleCanvasMouseMove(e: MouseEvent) {
 }
 
 function handleReset() {
+  ionInitialized.value = true
   isMeasured.value = false
   measuredValue.value = null
   result.value = '—'
   updateStateForTracing()
+  showPopupByTrigger('onReset')
 }
 
 function handleCanvasClick(e: MouseEvent) {
@@ -379,9 +486,12 @@ function handleCanvasRightClick(e: MouseEvent) {
 // ------------------
 
 onMounted(() => {
+  ionInitialized.value = level.preInitialized
   setupCanvas()
   updateStateForTracing()
   draw()
+  popupIndex.value = 0
+  showPopupByTrigger('onLoad')
 })
 
 onUnmounted(() => {
@@ -509,7 +619,6 @@ onUnmounted(() => {
           <button
             v-if="level.showResetButton"
             @click="handleReset"
-            :disabled="!isMeasured"
             :class="styles.resetBtn"
           >
             Reset Ion
@@ -565,7 +674,7 @@ onUnmounted(() => {
                 <div
                   v-for="(gate, index) in laserGates"
                   :key="`laser-gate-${index}`"
-                  :class="styles.laserGate"
+                  :class="[styles.laserGate, { [styles.laserGateX as string]: gate === 'X' }]"
                 >
                   <button @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
                   <div>{{ gate }}</div>
@@ -587,7 +696,7 @@ onUnmounted(() => {
                 :key="`gate-${index}`"
                 draggable="true"
                 @dragstart="onGateDragStart($event, gate)"
-                :class="styles.gateItem"
+                :class="[styles.gateItem, { [styles.gateItemX as string]: gate === 'X' }]"
               >
                 {{ gate }}
               </div>
@@ -596,6 +705,17 @@ onUnmounted(() => {
         </div>
 
         <button @click="showLaserGates = false" :class="styles.doneBtn">Done</button>
+      </div>
+    </div>
+
+    <!-- Tutorial popup modal -->
+    <div v-if="showPopup && currentPopup" :class="styles.popupOverlay" @click="closePopup()">
+      <div :class="styles.popupModal" @click.stop>
+        <div :class="styles.popupTitle">{{ currentPopup.title }}</div>
+        <div :class="styles.popupText">{{ currentPopup.text }}</div>
+        <button @click="advancePopup()" :class="styles.popupBtn">
+          {{ popupIndex < level.popups.length - 1 ? 'Next' : 'Got it' }}
+        </button>
       </div>
     </div>
   </div>

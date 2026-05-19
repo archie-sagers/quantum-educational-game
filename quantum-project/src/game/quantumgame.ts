@@ -7,6 +7,10 @@ export function applyH(s: number[]) {
   ];
 }
 
+export function applyX(s: number[]) {
+  return [s[1]!, s[0]!];
+}
+
 export function measure(s: number[]) {
   const prob0 = s[0]! ** 2;
   const randomValue = Math.random();
@@ -64,6 +68,7 @@ export function calculateQuantumState(
   // Apply laser gates
   for (const gate of laserGates) {
     if (gate === 'H') s = applyH(s);
+    if (gate === 'X') s = applyX(s);
   }
 
   if (hitH) s = applyH(s);
@@ -71,11 +76,18 @@ export function calculateQuantumState(
   const p0 = Math.round(s[0]! ** 2 * 100) + '%';
   const p1 = Math.round(s[1]! ** 2 * 100) + '%';
 
-  // Determine if in superposition
-  const laserGateCount = laserGates.length;
-  const hasSuperposition =
-    (laserGateCount > 0 && laserGateCount % 2 === 1) || hitH;
-  const state = hasSuperposition ? '|+⟩' : '|0⟩';
+  // Determine the state
+  const xGateCount = laserGates.filter(g => g === 'X').length;
+  const hGateCount = laserGates.filter(g => g === 'H').length;
+
+  // Base state after X gates
+  const baseState = xGateCount % 2 === 1 ? '|1⟩' : '|0⟩';
+
+  // Check for superposition from H gates
+  const hasSuperposition = (hGateCount > 0 && hGateCount % 2 === 1) || hitH;
+  const state = hasSuperposition
+    ? (baseState === '|0⟩' ? '|+⟩' : '|-⟩')
+    : baseState;
 
   return { state, p0, p1, canMeasure: true };
 }
@@ -93,6 +105,8 @@ interface LevelConfig {
   availableGates?: string[];
   gatePlacementPositions?: Array<[number, number]>;
   showResetButton?: boolean;
+  preInitialized?: boolean;
+  popups?: Array<{ title: string; text: string; trigger?: string }>;
 }
 
 interface TraceSegment {
@@ -117,8 +131,10 @@ export class Level {
   availableGates: string[];
   gatePlacementPositions: Array<[number, number]>;
   showResetButton: boolean;
+  preInitialized: boolean;
+  popups: Array<{ title: string; text: string; trigger?: string }>;
 
-  constructor({ name, cols, rows, src, ion, hgates, walls, hint, winCondition, availableGates, gatePlacementPositions, showResetButton }: LevelConfig) {
+  constructor({ name, cols, rows, src, ion, hgates, walls, hint, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, popups }: LevelConfig) {
     this.name = name;
     this.cols = cols;
     this.rows = rows;
@@ -132,6 +148,8 @@ export class Level {
     this.availableGates = availableGates || [];
     this.gatePlacementPositions = gatePlacementPositions || [];
     this.showResetButton = showResetButton || false;
+    this.preInitialized = preInitialized || false;
+    this.popups = popups || [];
   }
 
   isFixed(col: number, row: number) {
@@ -173,32 +191,51 @@ export class Level {
 
 export const LEVELS = [
   new Level({
-    name: '1',
-    cols: 12, rows: 8,
-    src: { col: 0, row: 2 },
-    ion: { col: 11, row: 7 },
-    winCondition: 'normal',
-    hint: 'Route the beam to excite the ion'
-  }),
-  new Level({
-    name: '2 - The Wall',
+    name: '1 - Initialisation and Measurement',
     cols: 12, rows: 8,
     src: { col: 0, row: 4 },
     ion: { col: 11, row: 4 },
-    walls: [{ col: 6, row: 4 }, { col: 6, row: 5 }, { col: 6, row: 6 }, { col: 6, row: 7 }],
     winCondition: 'normal',
-    hint: 'Route the beam to excite the ion'
+    hint: 'Press reset to initialise the ion, then measure it',
+    showResetButton: true,
+    preInitialized: false,
+    popups: [
+      { title: 'Unknown State', text: 'The ion is in an unknown quantum state. It needs optical pumping to reset it to a ground state.', trigger: 'onLoad' },
+      { title: 'Step 1', text: 'Click the Reset button to initialize the ion to the ground state |0⟩.', trigger: 'onLoad' },
+      { title: 'Step 2', text: 'Click the Measure button to read out the state of the ion.', trigger: 'onReset' }
+    ]
   }),
   new Level({
-    name: '3 - The Hadamard Gate',
+    name: '2 - Reflection',
     cols: 12, rows: 8,
-    src: { col: 0, row: 5 },
-    ion: { col: 11, row: 5 },
-    availableGates: ['H'],
-    gatePlacementPositions: [[6, 2]],
-    winCondition: 'superposition',
-    hint: 'Route the beam through the Hadamard Gate to create a superposition and excite the ion',
-    showResetButton: true
+    src: { col: 0, row: 4 },
+    ion: { col: 11, row: 4 },
+    walls: [{ col: 6, row: 3 }, { col: 6, row: 4 }, { col: 6, row: 5 }],
+    winCondition: 'normal',
+    hint: 'Place mirrors to route the laser around the wall and hit the ion',
+    showResetButton: true,
+    preInitialized: false,
+    popups: [
+      { title: 'Mirrors', text: 'The wall is blocking the direct path. Use mirrors to route the laser beam around it.', trigger: 'onLoad' },
+      { title: 'How to Place Mirrors', text: 'Left-click on the grid to place or rotate mirrors. Right-click to remove them.', trigger: 'onLoad' },
+      { title: 'Reset and Measure', text: 'Once you route the beam to the ion, press Reset, then Measure to complete the level.', trigger: 'onLaserToIon' }
+    ]
+  }),
+  new Level({
+    name: '3 - The X-Gate',
+    cols: 12, rows: 8,
+    src: { col: 0, row: 4 },
+    ion: { col: 11, row: 4 },
+    availableGates: ['X'],
+    winCondition: 'normal',
+    hint: 'Select the X-gate from the laser menu and measure the ion',
+    showResetButton: false,
+    preInitialized: true,
+    popups: [
+      { title: 'Ion Initialised', text: 'The ion has been initialised to the ground state |0⟩ for you.', trigger: 'onLoad' },
+      { title: 'The X-Gate', text: 'Click on the laser source to open the laser gates menu.', trigger: 'onLoad' },
+      { title: 'Apply X-Gate', text: 'Select the red X-gate and drag it to the laser. This will flip the qubit to |1⟩.', trigger: 'onLaserGatesOpen' }
+    ]
   }),
   new Level({
     name: '4 - The Hadamard Gate',

@@ -1,8 +1,11 @@
 .gameContainer {
   --color-primary: #0ef;
+  --color-primary-light: #1af;
   --color-secondary: #b47cff;
-  --color-success: #0f0;
+  --color-secondary-light: #d4aaff;
   --color-danger: #f84;
+  --color-danger-light: #ff6644;
+  --color-success: #0f0;
   --color-text: #eee;
   --color-text-dim: #999;
   --color-text-darker: #666;
@@ -601,4 +604,72 @@
 .doneBtn:hover {
   background: #d4aaff;
   box-shadow: 0 0 12px var(--color-secondary);
+}
+
+.gateItemX {
+  border-color: var(--color-danger) !important;
+  color: var(--color-danger) !important;
+}
+
+.gateItemX:hover {
+  box-shadow: 0 0 8px var(--color-danger) !important;
+}
+
+.laserGateX {
+  background: var(--color-danger) !important;
+  color: #000 !important;
+}
+
+.popupOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+
+.popupModal {
+  background: var(--color-bg-light);
+  border: 2px solid var(--color-primary);
+  border-radius: 4px;
+  padding: 32px;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 0 20px rgba(0, 238, 255, 0.3);
+}
+
+.popupTitle {
+  color: var(--color-primary);
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+}
+
+.popupText {
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.popupBtn {
+  cursor: pointer;
+  background: var(--color-primary);
+  color: #000;
+  border: none;
+  padding: 10px 24px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  font-weight: bold;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  align-self: flex-end;
+}
+
+.popupBtn:hover {
+  background: #1af;
+  box-shadow: 0 0 12px var(--color-primary);
 }
