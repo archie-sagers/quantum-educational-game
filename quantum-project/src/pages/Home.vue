@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { LEVELS, Level, applyH, measure } from '@/game/quantumgame'
+import { LEVELS, Level, applyH, measure, getBlochAngle, getBlochLabel, calculateQuantumState } from '@/game/quantumgame'
 import styles from './Home.module.css'
 
 
@@ -8,7 +8,6 @@ import styles from './Home.module.css'
 // ------------------
 
 const CELL = 56
-const SHOOT_MS = 800
 const TRAVEL_MS = 800
 const FPS = 60
 
@@ -40,25 +39,9 @@ let animationFrameId: number | null = null
 // Bloch Sphere
 // ------------------
 
-const blochAngle = computed(() => {
-  const angleMap: Record<string, number> = {
-    '|0⟩': 90,
-    '|+⟩': 0,
-    '|-⟩': 180,
-    '|1⟩': 270
-  }
-  return angleMap[state.value] ?? null
-})
+const blochAngle = computed(() => getBlochAngle(state.value))
 
-const blochLabel = computed(() => {
-  const labelMap: Record<string, string> = {
-    '|0⟩': '|0⟩ Ground state',
-    '|+⟩': '|+⟩ Superposition',
-    '|-⟩': '|-⟩ Superposition',
-    '|1⟩': '|1⟩ Excited state'
-  }
-  return labelMap[state.value] ?? 'No state'
-})
+const blochLabel = computed(() => getBlochLabel(state.value))
 
 const laserColor = computed(() => {
   return laserGates.value.length > 0 ? '#b47cff' : '#0ef'
@@ -76,46 +59,11 @@ function setupCanvas() {
 }
 
 function updateStateForTracing() {
-  // If already measured, keep showing the measured state
-  if (isMeasured.value) {
-    state.value = measuredValue.value === 0 ? '|0⟩' : '|1⟩'
-    p0.value = measuredValue.value === 0 ? '100%' : '0%'
-    p1.value = measuredValue.value === 1 ? '100%' : '0%'
-    canMeasure.value = false
-    return
-  }
-
-  const { hitIon, hitH } = level.trace()
-  
-  if (!hitIon) {
-    state.value = '—'
-    p0.value = '—'
-    p1.value = '—'
-    canMeasure.value = false
-    return
-  }
-
-  let s = [1, 0]  // Start in |0⟩
-  
-  // Apply laser gates
-  for (const gate of laserGates.value) {
-    if (gate === 'H') s = applyH(s)
-  }
-  
-  if (hitH) s = applyH(s)
-  
-  p0.value = Math.round(s[0]! ** 2 * 100) + '%'
-  p1.value = Math.round(s[1]! ** 2 * 100) + '%'
-  
-  // Show current superposition
-  const hasSuperposition = laserGates.value.length > 0 && laserGates.value.length % 2 === 1 ? true : (hitH ? true : false)
-  if (hasSuperposition) {
-    state.value = '|+⟩'  // Show superposition state
-  } else {
-    state.value = '|0⟩'  // Show ground state
-  }
-  
-  canMeasure.value = true
+  const result = calculateQuantumState(level, laserGates.value, isMeasured.value ? measuredValue.value : null)
+  state.value = result.state
+  p0.value = result.p0
+  p1.value = result.p1
+  canMeasure.value = result.canMeasure
 }
 
 // Level Progression
@@ -225,7 +173,7 @@ function draw() {
   if (photon.progress < 1 && segs.length > 0) {
     const t = photon.progress * photon.segCount
     const idx = Math.min(Math.floor(t), segs.length - 1)
-    const seg = segs[idx]
+    const seg = segs[idx]!
     const f = t - Math.floor(t)
     const px = seg.x1 + (seg.x2 - seg.x1) * f
     const py = seg.y1 + (seg.y2 - seg.y1) * f
@@ -375,8 +323,10 @@ function handleMeasure() {
 function handleCanvasMouseMove(e: MouseEvent) {
   if (!canvas.value) return
   const rect = canvas.value.getBoundingClientRect()
-  const col = Math.floor((e.clientX - rect.left) / CELL)
-  const row = Math.floor((e.clientY - rect.top) / CELL)
+  const scaleX = canvas.value.width / rect.width
+  const scaleY = canvas.value.height / rect.height
+  const col = Math.floor(((e.clientX - rect.left - 2) * scaleX) / CELL)
+  const row = Math.floor(((e.clientY - rect.top - 2) * scaleY) / CELL)
 
   // Change cursor when hovering over laser if gates are available
   if (col === level.src.col && row === level.src.row && level.availableGates.length > 0) {
@@ -396,8 +346,10 @@ function handleReset() {
 function handleCanvasClick(e: MouseEvent) {
   if (!canvas.value) return
   const rect = canvas.value.getBoundingClientRect()
-  const col = Math.floor((e.clientX - rect.left) / CELL)
-  const row = Math.floor((e.clientY - rect.top) / CELL)
+  const scaleX = canvas.value.width / rect.width
+  const scaleY = canvas.value.height / rect.height
+  const col = Math.floor(((e.clientX - rect.left - 2) * scaleX) / CELL)
+  const row = Math.floor(((e.clientY - rect.top - 2) * scaleY) / CELL)
 
   // Check if clicked on laser
   if (col === level.src.col && row === level.src.row && level.availableGates.length > 0) {
@@ -414,8 +366,10 @@ function handleCanvasRightClick(e: MouseEvent) {
   e.preventDefault()
   if (!canvas.value) return
   const rect = canvas.value.getBoundingClientRect()
-  const col = Math.floor((e.clientX - rect.left) / CELL)
-  const row = Math.floor((e.clientY - rect.top) / CELL)
+  const scaleX = canvas.value.width / rect.width
+  const scaleY = canvas.value.height / rect.height
+  const col = Math.floor(((e.clientX - rect.left - 2) * scaleX) / CELL)
+  const row = Math.floor(((e.clientY - rect.top - 2) * scaleY) / CELL)
 
   if (!level.isFixed(col, row)) level.grid[row]![col] = null
   updateStateForTracing()

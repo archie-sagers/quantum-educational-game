@@ -13,6 +13,96 @@ export function measure(s: number[]) {
   return randomValue < prob0 ? 0 : 1;
 }
 
+export function getBlochAngle(state: string): number | null {
+  const angleMap: Record<string, number> = {
+    '|0⟩': 90,
+    '|+⟩': 0,
+    '|-⟩': 180,
+    '|1⟩': 270
+  };
+  return angleMap[state] ?? null;
+}
+
+export function getBlochLabel(state: string): string {
+  const labelMap: Record<string, string> = {
+    '|0⟩': '|0⟩ Ground state',
+    '|+⟩': '|+⟩ Superposition',
+    '|-⟩': '|-⟩ Superposition',
+    '|1⟩': '|1⟩ Excited state'
+  };
+  return labelMap[state] ?? 'No state';
+}
+
+export function calculateQuantumState(
+  level: Level,
+  laserGates: string[],
+  measuredValue: number | null
+): { state: string; p0: string; p1: string; canMeasure: boolean } {
+  // If already measured, keep showing the measured state
+  if (measuredValue !== null) {
+    return {
+      state: measuredValue === 0 ? '|0⟩' : '|1⟩',
+      p0: measuredValue === 0 ? '100%' : '0%',
+      p1: measuredValue === 1 ? '100%' : '0%',
+      canMeasure: false
+    };
+  }
+
+  const { hitIon, hitH } = level.trace();
+
+  if (!hitIon) {
+    return {
+      state: '—',
+      p0: '—',
+      p1: '—',
+      canMeasure: false
+    };
+  }
+
+  let s = [1, 0]; // Start in |0⟩
+
+  // Apply laser gates
+  for (const gate of laserGates) {
+    if (gate === 'H') s = applyH(s);
+  }
+
+  if (hitH) s = applyH(s);
+
+  const p0 = Math.round(s[0]! ** 2 * 100) + '%';
+  const p1 = Math.round(s[1]! ** 2 * 100) + '%';
+
+  // Determine if in superposition
+  const laserGateCount = laserGates.length;
+  const hasSuperposition =
+    (laserGateCount > 0 && laserGateCount % 2 === 1) || hitH;
+  const state = hasSuperposition ? '|+⟩' : '|0⟩';
+
+  return { state, p0, p1, canMeasure: true };
+}
+
+interface LevelConfig {
+  name: string;
+  cols: number;
+  rows: number;
+  src: { col: number; row: number };
+  ion: { col: number; row: number };
+  hgates?: Array<{ col: number; row: number }>;
+  walls?: Array<{ col: number; row: number }>;
+  hint?: string;
+  winCondition?: string;
+  availableGates?: string[];
+  gatePlacementPositions?: Array<[number, number]>;
+  showResetButton?: boolean;
+}
+
+interface TraceSegment {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  afterH: boolean;
+}
+
 export class Level {
   name: string;
   cols: number;
@@ -28,7 +118,7 @@ export class Level {
   gatePlacementPositions: Array<[number, number]>;
   showResetButton: boolean;
 
-  constructor({ name, cols, rows, src, ion, hgates, walls, hint, winCondition, availableGates, gatePlacementPositions, showResetButton }: any) {
+  constructor({ name, cols, rows, src, ion, hgates, walls, hint, winCondition, availableGates, gatePlacementPositions, showResetButton }: LevelConfig) {
     this.name = name;
     this.cols = cols;
     this.rows = rows;
@@ -50,7 +140,7 @@ export class Level {
 
   trace() {
     const moves = { right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1] };
-    const segs: any[] = [];
+    const segs: TraceSegment[] = [];
     let { col, row } = this.src;
     let dir: string = 'right', hitIon = false, hitH = false;
 
