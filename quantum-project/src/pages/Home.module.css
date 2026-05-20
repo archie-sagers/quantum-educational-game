@@ -152,6 +152,30 @@
   color: var(--color-text-darker);
 }
 
+.goalSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid #222;
+  width: 100%;
+}
+
+.goalLabel {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-darker);
+}
+
+.goalValue {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--color-primary);
+  letter-spacing: 0.05em;
+}
+
 .blochSvg {
   width: 160px;
   height: 160px;
@@ -672,4 +696,60 @@
 .popupBtn:hover {
   background: #1af;
   box-shadow: 0 0 12px var(--color-primary);
+}
+
+.welcomeOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+}
+
+.welcomeModal {
+  background: var(--color-bg-light);
+  border: 2px solid var(--color-primary);
+  border-radius: 4px;
+  padding: 48px;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: 0 0 30px rgba(0, 238, 255, 0.4);
+  text-align: center;
+}
+
+.welcomeTitle {
+  color: var(--color-primary);
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+}
+
+.welcomeText {
+  color: var(--color-text);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.welcomeBtn {
+  cursor: pointer;
+  background: var(--color-primary);
+  color: #000;
+  border: none;
+  padding: 12px 32px;
+  font-size: 14px;
+  font-family: var(--font-mono);
+  font-weight: bold;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  align-self: center;
+  margin-top: 12px;
+}
+
+.welcomeBtn:hover {
+  background: #1af;
+  box-shadow: 0 0 16px var(--color-primary);
 }

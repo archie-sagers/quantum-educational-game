@@ -65,6 +65,12 @@ export function calculateQuantumState(
 
   let s = [1, 0]; // Start in |0⟩
 
+  // Apply initial gates (set up starting superposition, etc)
+  for (const gate of level.initialGates) {
+    if (gate === 'H') s = applyH(s);
+    if (gate === 'X') s = applyX(s);
+  }
+
   // Apply laser gates
   for (const gate of laserGates) {
     if (gate === 'H') s = applyH(s);
@@ -77,8 +83,8 @@ export function calculateQuantumState(
   const p1 = Math.round(s[1]! ** 2 * 100) + '%';
 
   // Determine the state
-  const xGateCount = laserGates.filter(g => g === 'X').length;
-  const hGateCount = laserGates.filter(g => g === 'H').length;
+  const xGateCount = level.initialGates.filter(g => g === 'X').length + laserGates.filter(g => g === 'X').length;
+  const hGateCount = level.initialGates.filter(g => g === 'H').length + laserGates.filter(g => g === 'H').length;
 
   // Base state after X gates
   const baseState = xGateCount % 2 === 1 ? '|1⟩' : '|0⟩';
@@ -101,11 +107,13 @@ interface LevelConfig {
   hgates?: Array<{ col: number; row: number }>;
   walls?: Array<{ col: number; row: number }>;
   hint?: string;
+  goal?: string;
   winCondition?: string;
   availableGates?: string[];
   gatePlacementPositions?: Array<[number, number]>;
   showResetButton?: boolean;
   preInitialized?: boolean;
+  initialGates?: string[];
   popups?: Array<{ title: string; text: string; trigger?: string }>;
 }
 
@@ -127,14 +135,16 @@ export class Level {
   walls: Array<{ col: number; row: number }>;
   winCondition: string;
   hint: string;
+  goal: string;
   grid: (string | null)[][];
   availableGates: string[];
   gatePlacementPositions: Array<[number, number]>;
   showResetButton: boolean;
   preInitialized: boolean;
+  initialGates: string[];
   popups: Array<{ title: string; text: string; trigger?: string }>;
 
-  constructor({ name, cols, rows, src, ion, hgates, walls, hint, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, popups }: LevelConfig) {
+  constructor({ name, cols, rows, src, ion, hgates, walls, hint, goal, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, initialGates, popups }: LevelConfig) {
     this.name = name;
     this.cols = cols;
     this.rows = rows;
@@ -144,11 +154,13 @@ export class Level {
     this.walls = walls || [];
     this.winCondition = winCondition || 'any';
     this.hint = hint || 'Route the beam to the ion';
+    this.goal = goal || '—';
     this.grid = Array.from({ length: rows }, () => Array(cols).fill(null));
     this.availableGates = availableGates || [];
     this.gatePlacementPositions = gatePlacementPositions || [];
     this.showResetButton = showResetButton || false;
     this.preInitialized = preInitialized || false;
+    this.initialGates = initialGates || [];
     this.popups = popups || [];
   }
 
@@ -189,75 +201,7 @@ export class Level {
   }
 }
 
-export const LEVELS = [
-  new Level({
-    name: '1 - Initialisation and Measurement',
-    cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ion: { col: 11, row: 4 },
-    winCondition: 'normal',
-    hint: 'Press reset to initialise the ion, then measure it',
-    showResetButton: true,
-    preInitialized: false,
-    popups: [
-      { title: 'Unknown State', text: 'The ion is in an unknown quantum state. It needs optical pumping to reset it to a ground state.', trigger: 'onLoad' },
-      { title: 'Step 1', text: 'Click the Reset button to initialize the ion to the ground state |0⟩.', trigger: 'onLoad' },
-      { title: 'Step 2', text: 'Click the Measure button to read out the state of the ion.', trigger: 'onReset' }
-    ]
-  }),
-  new Level({
-    name: '2 - Reflection',
-    cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ion: { col: 11, row: 4 },
-    walls: [{ col: 6, row: 3 }, { col: 6, row: 4 }, { col: 6, row: 5 }],
-    winCondition: 'normal',
-    hint: 'Place mirrors to route the laser around the wall and hit the ion',
-    showResetButton: true,
-    preInitialized: false,
-    popups: [
-      { title: 'Mirrors', text: 'The wall is blocking the direct path. Use mirrors to route the laser beam around it.', trigger: 'onLoad' },
-      { title: 'How to Place Mirrors', text: 'Left-click on the grid to place or rotate mirrors. Right-click to remove them.', trigger: 'onLoad' },
-      { title: 'Reset and Measure', text: 'Once you route the beam to the ion, press Reset, then Measure to complete the level.', trigger: 'onLaserToIon' }
-    ]
-  }),
-  new Level({
-    name: '3 - The X-Gate',
-    cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ion: { col: 11, row: 4 },
-    availableGates: ['X'],
-    winCondition: 'normal',
-    hint: 'Select the X-gate from the laser menu and measure the ion',
-    showResetButton: false,
-    preInitialized: true,
-    popups: [
-      { title: 'Ion Initialised', text: 'The ion has been initialised to the ground state |0⟩ for you.', trigger: 'onLoad' },
-      { title: 'The X-Gate', text: 'Click on the laser source to open the laser gates menu.', trigger: 'onLoad' },
-      { title: 'Apply X-Gate', text: 'Select the red X-gate and drag it to the laser. This will flip the qubit to |1⟩.', trigger: 'onLaserGatesOpen' }
-    ]
-  }),
-  new Level({
-    name: '4 - The Hadamard Gate',
-    cols: 12, rows: 8,
-    src: { col: 0, row: 5 },
-    ion: { col: 11, row: 7 },
-    walls: [{ col: 9, row: 4 }, { col: 9, row: 5 }, { col: 9, row: 6 }, { col: 9, row: 7 }],
-    availableGates: ['H'],
-    gatePlacementPositions: [[6, 2]],
-    winCondition: 'superposition',
-    hint: 'Route the beam through the Hadamard Gate to create a superposition and excite the ion',
-    showResetButton: true
-  }),
-  new Level({
-    name: '5 - Cancellation',
-    cols: 12, rows: 8,
-    src: { col: 0, row: 0 },
-    ion: { col: 11, row: 0 },
-    availableGates: ['H', 'H'],
-    gatePlacementPositions: [[1, 0], [8, 3]],
-    winCondition: 'normal',
-    hint: 'Pass through BOTH H-gates to cancel out the superposition and return to |0>',
-    showResetButton: true
-  })
-];
+export const WELCOME_POPUP = {
+  title: 'Welcome to the Quantum Laser Puzzle',
+  text: 'Explore how quantum logic transitions affect the probability state and phase of a qubit prior to final measurement.'
+};

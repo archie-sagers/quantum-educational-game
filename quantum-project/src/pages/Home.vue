@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { LEVELS, Level, applyH, applyX, measure, getBlochAngle, getBlochLabel, calculateQuantumState } from '@/game/quantumgame'
+import { applyH, applyX, measure, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level } from '@/game/quantumgame'
+import { LEVELS } from '@/game/levels'
 import styles from './Home.module.css'
 
 
@@ -41,7 +42,10 @@ const measuredValue = ref<number | null>(null)
 const ionInitialized = ref(false)
 const showPopup = ref(false)
 const popupIndex = ref(0)
+const tempPopup = ref<{ title: string; text: string } | null>(null)
+const showWelcome = ref(true)
 const currentPopup = computed(() => {
+  if (tempPopup.value) return tempPopup.value
   const popups = level.popups
   return popups[popupIndex.value]
 })
@@ -64,6 +68,17 @@ const blochLabel = computed(() => getBlochLabel(state.value))
 const laserColor = computed(() => {
   if (laserGates.value.includes('X')) return COLORS.red
   return laserGates.value.length > 0 ? COLORS.purple : COLORS.cyan
+})
+
+const stateColorClass = computed(() => {
+  if (state.value === '|+⟩' || state.value === '|-⟩') return styles.infoValPurple
+  if (state.value === '|1⟩') return styles.infoValOrange
+  return styles.infoValCyan
+})
+
+const resultColorClass = computed(() => {
+  if (result.value === '1') return styles.infoValOrange
+  return styles.infoValCyan
 })
 
 // Canvas Functions
@@ -97,7 +112,8 @@ function updateStateForTracing() {
   state.value = result.state
   p0.value = result.p0
   p1.value = result.p1
-  canMeasure.value = result.canMeasure
+  // On level 5, only allow measuring when the state is in the ground state |0⟩
+  canMeasure.value = result.canMeasure && !(currentLevelIndex.value === 4 && state.value !== '|0⟩')
 }
 
 // Level Progression
@@ -105,10 +121,15 @@ function updateStateForTracing() {
 
 function nextLevel() {
   showWin.value = false
+  tempPopup.value = null
   if (currentLevelIndex.value < LEVELS.length - 1) {
     currentLevelIndex.value++
     level = LEVELS[currentLevelIndex.value]!
     laserGates.value = []
+    // Pre-apply H gate for level 5
+    if (currentLevelIndex.value === 4) {
+      laserGates.value = ['H']
+    }
     isMeasured.value = false
     measuredValue.value = null
     ionInitialized.value = level.preInitialized
@@ -125,9 +146,14 @@ function nextLevel() {
 
 function selectLevel(index: number) {
   showLevelSelector.value = false
+  tempPopup.value = null
   currentLevelIndex.value = index
   level = LEVELS[currentLevelIndex.value]!
   laserGates.value = []
+  // Pre-apply H gate for level 5
+  if (index === 4) {
+    laserGates.value = ['H']
+  }
   isMeasured.value = false
   measuredValue.value = null
   ionInitialized.value = level.preInitialized
@@ -173,6 +199,10 @@ function onLaserDrop(e: DragEvent) {
 }
 
 function removeLaserGate(index: number) {
+  // On level 5, prevent removing the first H gate
+  if (currentLevelIndex.value === 4 && index === 0) {
+    return
+  }
   laserGates.value.splice(index, 1)
   isMeasured.value = false
   measuredValue.value = null
@@ -324,6 +354,10 @@ function draw() {
 // Popup Control
 // ------------------
 
+function closeWelcome() {
+  showWelcome.value = false
+}
+
 function showPopupByTrigger(trigger: string): boolean {
   const nextPopupIndex = level.popups.findIndex((p, idx) => p.trigger === trigger && !shownPopupIndices.value.has(idx))
   
@@ -393,6 +427,12 @@ function handleMeasure() {
     // Calculate the quantum state with laser gates applied
     let s = [1, 0]
     
+    // Apply initial gates
+    for (const gate of level.initialGates) {
+      if (gate === 'H') s = applyH(s)
+      if (gate === 'X') s = applyX(s)
+    }
+    
     // Apply laser gates
     for (const gate of laserGates.value) {
       if (gate === 'H') s = applyH(s)
@@ -403,6 +443,11 @@ function handleMeasure() {
     
     // Measure with proper probabilities
     const r = measure(s)
+    
+    // Check if we're in superposition before measurement (for level 5 special logic)
+    const hGateCount = level.initialGates.filter(g => g === 'H').length + laserGates.value.filter(g => g === 'H').length
+    const xGateCount = level.initialGates.filter(g => g === 'X').length + laserGates.value.filter(g => g === 'X').length
+    const isInSuperposition = (hGateCount > 0 && hGateCount % 2 === 1) || hitH
     
     // Store the measured value and mark as measured
     measuredValue.value = r
@@ -504,6 +549,15 @@ onUnmounted(() => {
     <h1 :class="styles.title">Quantum Laser Puzzle Game</h1>
     <p :class="styles.hint">{{ level.hint }}</p>
 
+    <!-- Welcome popup modal -->
+    <div v-if="showWelcome" :class="styles.welcomeOverlay">
+      <div :class="styles.welcomeModal">
+        <div :class="styles.welcomeTitle">{{ WELCOME_POPUP.title }}</div>
+        <div :class="styles.welcomeText">{{ WELCOME_POPUP.text }}</div>
+        <button @click="closeWelcome()" :class="styles.welcomeBtn">Continue</button>
+      </div>
+    </div>
+
     <div :class="styles.controls">
       <p :class="styles.controlsText">Left-click to place/rotate mirror · Right-click to remove</p>
       <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
@@ -541,6 +595,10 @@ onUnmounted(() => {
         <!-- Bloch sphere -->
         <div :class="styles.blochPanel">
           <div :class="styles.blochTitle">Bloch Sphere</div>
+          <div :class="styles.goalSection">
+            <div :class="styles.goalLabel">Goal</div>
+            <div :class="styles.goalValue">{{ level.goal }}</div>
+          </div>
           <svg :class="styles.blochSvg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
             <!-- Axis labels -->
             <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>
@@ -589,13 +647,7 @@ onUnmounted(() => {
         <div :class="styles.infoPanel">
           <div :class="styles.infoRow">
             <span :class="styles.infoKey">State</span>
-            <span :class="{
-              [styles.infoVal as string]: true,
-              [styles.infoValCyan as string]: state === '|0⟩', 
-              [styles.infoValPurple as string]: state === '|+⟩', 
-              [styles.infoValMagenta as string]: state === '|-⟩',
-              [styles.infoValOrange as string]: state === '|1⟩'
-            }">{{ state }}</span>
+            <span :class="[styles.infoVal, stateColorClass]">{{ state }}</span>
           </div>
           <div :class="styles.infoRow">
             <span :class="styles.infoKey">P(|0⟩)</span>
@@ -626,11 +678,7 @@ onUnmounted(() => {
           
           <div :class="styles.infoRow">
             <span :class="styles.infoKey">Last</span>
-            <span :class="{
-              [styles.infoVal as string]: true,
-              [styles.infoValOrange as string]: result === '1',
-              [styles.infoValCyan as string]: result === '0'
-            }">{{ result }}</span>
+            <span :class="[styles.infoVal, resultColorClass]">{{ result }}</span>
           </div>
           <div v-if="history.length" :class="styles.history">
             <span :class="styles.infoKey">History</span>
@@ -676,7 +724,7 @@ onUnmounted(() => {
                   :key="`laser-gate-${index}`"
                   :class="[styles.laserGate, { [styles.laserGateX as string]: gate === 'X' }]"
                 >
-                  <button @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
+                  <button v-if="!(currentLevelIndex === 4 && index === 0)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
                   <div>{{ gate }}</div>
                 </div>
               </div>
