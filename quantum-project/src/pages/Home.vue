@@ -752,6 +752,6 @@ onUnmounted(() => {
     </div>
 
     <!-- Manual Modal Component -->
-    <ManualModal :isOpen="showManual" @close="showManual = false" />
+    <ManualModal :isOpen="showManual" @close="showManual = false" @selectLevel="selectLevel" />
   </div>
 </template>

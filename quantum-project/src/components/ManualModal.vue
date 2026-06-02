@@ -3,9 +3,15 @@ defineProps<{
   isOpen: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   close: []
+  selectLevel: [index: number]
 }>()
+
+function goToLevel(index: number) {
+  emit('selectLevel', index)
+  emit('close')
+}
 </script>
 
 <template>
@@ -29,7 +35,7 @@ defineEmits<{
           <li>Right-click on a grid cell to remove a mirror</li>
           <li>You can remove all mirrors using the reset mirrors button at the top of the screen</li>
         </ul>
-        <p><strong>Practice:</strong> Level 2 - Reflection</p>
+        <p><strong>Practice:</strong> <span @click="goToLevel(1)" class="manualLink">Level 2 - Reflection</span></p>
 
         <h3 class="manualH3">Resetting and Measuring the Ion</h3>
         <p><strong>Reset Button:</strong></p>
@@ -45,7 +51,7 @@ defineEmits<{
           <li>Historical measurements are displayed in the measurement history panel</li>
           <li>You can measure and reset multiple times to see the probability distribution</li>
         </ul>
-        <p><strong>Practice:</strong> Level 1 - Initialisation and Measurement</p>
+        <p><strong>Practice:</strong> <span @click="goToLevel(0)" class="manualLink">Level 1 - Initialisation and Measurement</span></p>
 
         <h3 class="manualH3">Adding Logic Gates to the Laser</h3>
         <p><strong>Opening the Gate Menu:</strong></p>
@@ -65,6 +71,8 @@ defineEmits<{
           <li>Note: Some levels may lock certain gates to prevent removal (like the hadamard gate in Level 5)</li>
         </ul>
 
+        <p><strong>Practice:</strong> <span @click="goToLevel(2)" class="manualLink">Level 3 - X-Gate</span></p>
+
         <h2 class="manualH2">Quantum Logic Gates</h2>
 
         <h3 class="manualH3">X-Gate</h3>
@@ -82,6 +90,8 @@ defineEmits<{
           <li>|-⟩ -> |-⟩</li>
         </ul>
 
+        <p><strong>Practice:</strong> <span @click="goToLevel(2)" class="manualLink">Level 3 - X-Gate</span></p>
+
         <h3 class="manualH3">Hadamard Gate</h3>
         <p><strong>What It Does:</strong></p>
         <ul>
@@ -90,19 +100,21 @@ defineEmits<{
         </ul>
         <p><strong>Effect:</strong></p>
         <ul>
-          <li>|0⟩ -> |+⟩ (ground state to <a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a>)</li>
-          <li>|1⟩ -> |-⟩ (excited state to <a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a>)</li>
-          <li>|+⟩ -> |0⟩ (<a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a> back to ground state)</li>
-          <li>|-⟩ -> |1⟩ (<a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a> back to excited state)</li>
+          <li>|0⟩ -> |+⟩ (ground state to superposition)</li>
+          <li>|1⟩ -> |-⟩ (excited state to superposition)</li>
+          <li>|+⟩ -> |0⟩ (superposition back to ground state)</li>
+          <li>|-⟩ -> |1⟩ (superposition back to excited state)</li>
         </ul>
         <p><strong>Key Insight:</strong> Applying Hadamard twice returns to the original state!</p>
+
+        <p><strong>Practice:</strong> <span @click="goToLevel(4)" class="manualLink">Level 5 - Hadamard-Gate</span></p>
 
         <h3 class="manualH3">C-NOT Gate</h3>
         <p><strong>What It Does:</strong></p>
         <ul>
           <li>The <a href="https://www.quera.com/glossary/controlled-not-gate" target="_blank" class="manualLink">Controlled-NOT (C-NOT) gate</a> is a two-<a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a> gate</li>
-          <li>It flips a target <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a> only when a control <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a> is in state |1⟩</li>
-          <li>This is a fundamental gate for creating entanglement</li>
+          <li>It flips a target qubit only when a control qubit is in state |1⟩</li>
+          <li>This is a fundamental gate for creating <a href="https://www.quera.com/glossary/entanglement" target="_blank" class="manualLink">entanglement</a></li>
         </ul>
 
         <h2 class="manualH2">Quantum Mechanics</h2>
@@ -115,27 +127,27 @@ defineEmits<{
         </ul>
         <p><strong>In The Game:</strong></p>
         <ul>
-          <li>States like |+⟩ and |-⟩ represent <a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a> states</li>
+          <li>States like |+⟩ and |-⟩ represent a superposition of states</li>
           <li>They have a 50% probability of measuring as either 0 or 1</li>
-          <li>The Hadamard gate creates <a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superpositions</a> from |0⟩ and |1⟩</li>
+          <li>The Hadamard gate creates superpositions from |0⟩ and |1⟩</li>
         </ul>
         <p><strong>Example:</strong></p>
         <ul>
           <li>Starting state: |0⟩ (ground state)</li>
-          <li>After Hadamard: |+⟩ (<a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a> an equal chance of 0 or 1)</li>
+          <li>After Hadamard: |+⟩ (superposition an equal chance of 0 or 1)</li>
           <li>After another Hadamard: |0⟩ (back to ground state)</li>
         </ul>
+        <p><strong>Practice:</strong> <span @click="goToLevel(4)" class="manualLink">Level 5 - Hadamard-Gate</span></p>
 
         <h3 class="manualH3">Entanglement</h3>
         <p><strong>What Is It?</strong></p>
         <ul>
-          <li>Entanglement occurs when two or more <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubits</a> are correlated in a way that cannot be described independently</li>
-          <li>Measuring one entangled <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a> instantly affects the others, regardless of distance</li>
+          <li><a href="https://www.quera.com/glossary/entanglement" target="_blank" class="manualLink">Entanglement</a> occurs when two or more <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubits</a> are correlated in a way that cannot be described independently</li>
+          <li>Measuring one entangled qubit instantly affects the others, regardless of distance</li>
         </ul>
         <p><strong>In The Game:</strong></p>
         <ul>
-          <li>Entanglement is created using multi-<a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a> gates like C-NOT</li>
-          <li>The game uses a two-<a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a> system under the hood</li>
+          <li>Entanglement is created using multi-qubit gates like <a href="https://www.quera.com/glossary/controlled-not-gate" target="_blank" class="manualLink">Controlled-NOT (C-NOT)</a></li>
         </ul>
 
         <h2 class="manualH2">The Bloch Sphere</h2>
@@ -145,14 +157,14 @@ defineEmits<{
           <li>The north pole represents |0⟩ (ground state)</li>
           <li>The south pole represents |1⟩ (excited state)</li>
           <li>Points on the equator represent <a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a> in the positive or negative state like |+⟩ and |-⟩</li>
-          <li>The arrow shows the current <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a> state</li>
+          <li>The arrow shows the current qubit state</li>
         </ul>
 
         <h2 class="manualH2">Tips for Success</h2>
         <ol>
-          <li><strong>Use the Bloch Sphere Visualization:</strong> The circular diagram on the right shows the current quantum state. Track how it changes as you apply gates.</li>
+          <li><strong>Use the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a> Visualization:</strong> The circular diagram on the right shows the current quantum state. Track how it changes as you apply gates.</li>
           <li><strong>Check the Probability Display:</strong> The P(0) and P(1) values show the <a href="https://www.quera.com/glossary/measurement" target="_blank" class="manualLink">measurement</a> probabilities before you measure.</li>
-          <li><strong>Review the History:</strong> The <a href="https://www.quera.com/glossary/measurement" target="_blank" class="manualLink">measurement</a> history panel shows previous results, helping you verify the probability distribution.</li>
+          <li><strong>Review the History:</strong> The measurement history panel shows previous results, helping you verify the probability distribution.</li>
           <li><strong>Experiment:</strong> Try different mirror configurations or gate combinations to see how they affect the quantum state.</li>
           <li><strong>Reset Between Attempts:</strong> Use the Reset button to return the ion to its initial state when starting over.</li>
         </ol>
@@ -167,8 +179,9 @@ defineEmits<{
           <li><strong>—</strong> - State undefined (beam hasn't hit ion yet)</li>
         </ul>
 
-        <h2 class="manualH2">What Is a <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped Ion</a>?</h2>
-        <p><a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped ions</a> are one of the leading platforms for building quantum computers. In this game, you're manipulating a simulated <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">trapped ion</a> using laser pulses to apply <a href="https://www.quera.com/glossary/quantum-gates" target="_blank" class="manualLink">quantum gates</a>.</p>
+        <h2 class="manualH2">What Is a <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped Ion?</a>?</h2>
+        <p><a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped ions</a> are one of the leading platforms for building quantum computers and their technology is currently being researched at the <a href="https://www.sussex.ac.uk/physics/iqt/" target="_blank" class="manualLink">University of Sussex</a>.</p> 
+        <p>In this game, you're manipulating a simulated <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">trapped ion</a> using laser pulses to apply <a href="https://www.quera.com/glossary/quantum-gates" target="_blank" class="manualLink">quantum gates</a>.</p>
       </div>
     </div>
   </div>
