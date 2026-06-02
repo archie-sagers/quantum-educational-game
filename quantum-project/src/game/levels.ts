@@ -13,6 +13,7 @@ export const LEVELS = [
     preInitialized: false,
     popups: [
       { title: 'Unknown State', text: 'The ion is in an unknown quantum state. It needs optical pumping to reset it to a ground state.', trigger: 'onLoad' },
+      { title: 'Your Goal', text: 'Notice the goal box above the Bloch sphere: we need to measure the ion in the ground state |0⟩.', trigger: 'onLoad' },
       { title: 'Step 1', text: 'Click the Reset button to initialise the ion to the ground state |0⟩.', trigger: 'onLoad' },
       { title: 'Step 2', text: 'Click the Measure button to read out the state of the ion.', trigger: 'onReset' }
     ]

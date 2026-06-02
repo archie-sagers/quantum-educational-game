@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { applyH, applyX, measure, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level } from '@/game/quantumgame'
+import { measure, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level, type QuantumState } from '@/game/quantumgame'
 import { LEVELS } from '@/game/levels'
 import styles from './Home.module.css'
+
+defineOptions({ name: 'GameHome' })
 
 
 // Constants
@@ -424,32 +426,9 @@ function handleMeasure() {
       return
     }
 
-    // Calculate the quantum state with laser gates applied
-    let s = [1, 0]
+    const stateInfo = calculateQuantumState(level, laserGates.value, null)
+    const r = measure(stateInfo.state as QuantumState)
     
-    // Apply initial gates
-    for (const gate of level.initialGates) {
-      if (gate === 'H') s = applyH(s)
-      if (gate === 'X') s = applyX(s)
-    }
-    
-    // Apply laser gates
-    for (const gate of laserGates.value) {
-      if (gate === 'H') s = applyH(s)
-      if (gate === 'X') s = applyX(s)
-    }
-    
-    if (hitH) s = applyH(s)
-    
-    // Measure with proper probabilities
-    const r = measure(s)
-    
-    // Check if we're in superposition before measurement (for level 5 special logic)
-    const hGateCount = level.initialGates.filter(g => g === 'H').length + laserGates.value.filter(g => g === 'H').length
-    const xGateCount = level.initialGates.filter(g => g === 'X').length + laserGates.value.filter(g => g === 'X').length
-    const isInSuperposition = (hGateCount > 0 && hGateCount % 2 === 1) || hitH
-    
-    // Store the measured value and mark as measured
     measuredValue.value = r
     isMeasured.value = true
     
@@ -563,11 +542,15 @@ onUnmounted(() => {
       <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
     </div>
 
-    <!-- Level select and success message on same line -->
+    <!-- Level select, goal and success message on same line -->
     <div :class="styles.controlsRow">
       <button @click="showLevelSelector = true" :class="styles.levelIndicator">
         Level {{ currentLevelIndex + 1 }}
       </button>
+      <div :class="styles.goalBox">
+        <div :class="styles.goalLabel">Goal</div>
+        <div :class="styles.goalValue">{{ level.goal }}</div>
+      </div>
       <div :class="styles.successBoxContainer">
         <div v-if="showWin" :class="styles.successBox">
           <div :class="styles.successText">ION SUCCESSFULLY EXCITED</div>
@@ -595,10 +578,6 @@ onUnmounted(() => {
         <!-- Bloch sphere -->
         <div :class="styles.blochPanel">
           <div :class="styles.blochTitle">Bloch Sphere</div>
-          <div :class="styles.goalSection">
-            <div :class="styles.goalLabel">Goal</div>
-            <div :class="styles.goalValue">{{ level.goal }}</div>
-          </div>
           <svg :class="styles.blochSvg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
             <!-- Axis labels -->
             <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>

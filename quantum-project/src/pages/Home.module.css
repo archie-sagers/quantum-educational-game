@@ -152,6 +152,32 @@
   color: var(--color-text-darker);
 }
 
+.goalBox {
+  border: 2px solid var(--color-primary);
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-bg-light);
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+.goalLabel {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-darker);
+}
+
+.goalValue {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--color-primary);
+  letter-spacing: 0.1em;
+}
+
 .goalSection {
   display: flex;
   flex-direction: column;
@@ -160,20 +186,6 @@
   padding: 8px 0;
   border-bottom: 1px solid #222;
   width: 100%;
-}
-
-.goalLabel {
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-text-darker);
-}
-
-.goalValue {
-  font-size: 14px;
-  font-weight: bold;
-  color: var(--color-primary);
-  letter-spacing: 0.05em;
 }
 
 .blochSvg {
