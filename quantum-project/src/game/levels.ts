@@ -7,7 +7,7 @@ export const LEVELS = [
     src: { col: 0, row: 4 },
     ion: { col: 11, row: 4 },
     goal: '|0⟩',
-    winCondition: 'normal',
+    winCondition: 'positive-superposition',
     hint: 'Press reset to initialise the ion, then measure it',
     showResetButton: true,
     preInitialized: false,
@@ -97,5 +97,23 @@ export const LEVELS = [
       { title: 'Hadamard Gate', text: 'Now we want the ion in a superposition. Use the Hadamard gate to put the ion into |+⟩.', trigger: 'onLoad' },
       { title: 'Automated Measurement', text: 'We will now automatically reset and measure the ion 10 times to show the effect of superposition (roughly 50/50 split between |0⟩ and |1⟩).', trigger: 'onAutomatedStart' },
     ]
-  })
+  }),
+    new Level({
+      name: '7 - Negative Superposition',
+      cols: 12, rows: 8,
+      src: { col: 0, row: 4 },
+      ion: { col: 11, row: 4 },
+      availableGates: ['X', 'H'],
+      walls: [{ col: 6, row: 3 }, { col: 6, row: 4 }, { col: 6, row: 5 },{ col: 6, row: 6 },{ col: 3, row: 4 },{ col: 3, row: 3 },{ col: 3, row: 2 }],
+      goal: '|-⟩',
+      winCondition: 'negative-superposition',
+      hint: 'Flip the ion with an X-gate, then apply H to create |-⟩ and measure the distribution',
+      showResetButton: true,
+      preInitialized: true,
+      automateMeasurement: true,
+      popups: [
+        { title: 'Negative Superposition', text: 'Create a negative superposition (|-⟩)', trigger: 'onLoad' },
+        { title: 'Automated Measurement', text: 'The ion will be automatically reset and measured 10 times to show the superposition. You will see that phase is not visible in measurement statistics.', trigger: 'onAutomatedStart' },
+      ]
+    })
 ]

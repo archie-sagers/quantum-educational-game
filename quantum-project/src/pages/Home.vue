@@ -439,7 +439,8 @@ function closePopup() {
       // Show popup with history
       tempPopup.value = {
         title: 'Measurement Demo Results',
-        text: `Measurements: ${results.join(' ')}`
+        text: `Measurements: ${results.join(' ')}
+        (A superposition state will randomly collapse to either |0⟩ or |1⟩ when measured.)`
       }
       showPopup.value = true
 
@@ -476,8 +477,7 @@ function clearMirrors() {
 function handleMeasure() {
   if (!canMeasure.value) return
   canMeasure.value = false
-  
-  const { hitH } = level.trace()
+
   photon = { progress: 0, segCount: level.trace().segs.length }
 
   setTimeout(() => {
@@ -505,11 +505,19 @@ function handleMeasure() {
     if (history.value.length > 20) history.value.shift()
 
     canMeasure.value = true
-    if ((level.winCondition === 'any') || 
-        (level.winCondition === 'superposition' && hitH) || 
-        (level.winCondition === 'normal' && !hitH)) {
-      showWin.value = true
-    }
+    // Evaluate win condition based on the pre-measure quantum state
+    const preState = stateInfo.state
+    const wc = level.winCondition
+    let win = false
+    if (wc === 'any') win = true
+    else if (wc === 'superposition') win = preState === '|+⟩' || preState === '|-⟩'
+    else if (wc === 'positive-superposition') win = preState === '|+⟩'
+    else if (wc === 'negative-superposition') win = preState === '|-⟩'
+    else if (wc === 'normal') win = preState === '|0⟩' || preState === '|1⟩'
+    else if (wc === '|0⟩' || wc === '0') win = preState === '|0⟩'
+    else if (wc === '|1⟩' || wc === '1') win = preState === '|1⟩'
+
+    if (win) showWin.value = true
 
     // If the level requests an automated measurement demo
     // show the automated-demo popup & fallback to starting immediately
