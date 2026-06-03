@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { measure, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level, type QuantumState } from '@/game/quantumgame'
 import { LEVELS } from '@/game/levels'
+import ManualModal from '@/components/ManualModal.vue'
 import styles from './Home.module.css'
 
 defineOptions({ name: 'GameHome' })
@@ -46,6 +47,7 @@ const showPopup = ref(false)
 const popupIndex = ref(0)
 const tempPopup = ref<{ title: string; text: string } | null>(null)
 const showWelcome = ref(true)
+const showManual = ref(false)
 const currentPopup = computed(() => {
   if (tempPopup.value) return tempPopup.value
   const popups = level.popups
@@ -547,6 +549,9 @@ onUnmounted(() => {
       <button @click="showLevelSelector = true" :class="styles.levelIndicator">
         Level {{ currentLevelIndex + 1 }}
       </button>
+      <button @click="showManual = true" :class="styles.manualBtn">
+        Manual
+      </button>
       <div :class="styles.goalBox">
         <div :class="styles.goalLabel">Goal</div>
         <div :class="styles.goalValue">{{ level.goal }}</div>
@@ -554,7 +559,7 @@ onUnmounted(() => {
       <div :class="styles.successBoxContainer">
         <div v-if="showWin" :class="styles.successBox">
           <div :class="styles.successText">ION SUCCESSFULLY EXCITED</div>
-          <button @click="nextLevel" :class="styles.nextBtn">{{ currentLevelIndex < LEVELS.length - 1 ? 'Next Level' : 'Completed!' }}</button>
+          <button @click="nextLevel" :class="styles.nextBtn">{{  LEVELS.length - 1 > currentLevelIndex ? 'Next Level' : 'Completed!' }}</button>
         </div>
       </div>
     </div>
@@ -741,9 +746,12 @@ onUnmounted(() => {
         <div :class="styles.popupTitle">{{ currentPopup.title }}</div>
         <div :class="styles.popupText">{{ currentPopup.text }}</div>
         <button @click="advancePopup()" :class="styles.popupBtn">
-          {{ popupIndex < level.popups.length - 1 ? 'Next' : 'Got it' }}
+          {{ level.popups.length - 1 > popupIndex ? 'Next' : 'Got it' }}
         </button>
       </div>
     </div>
+
+    <!-- Manual Modal Component -->
+    <ManualModal :isOpen="showManual" @close="showManual = false" @selectLevel="selectLevel" />
   </div>
 </template>
