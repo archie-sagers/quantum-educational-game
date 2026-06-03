@@ -516,6 +516,12 @@
   text-transform: uppercase;
 }
 
+.gateCount {
+  color: var(--color-primary);
+  font-weight: bold;
+  margin-left: 6px;
+}
+
 .divider {
   height: 2px;
   background: var(--color-border);
@@ -590,9 +596,11 @@
   font-weight: bold;
   min-height: 50px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+  position: relative;
 }
 
 .gateItem:hover {
@@ -649,6 +657,25 @@
 
 .gateItemX:hover {
   box-shadow: 0 0 8px var(--color-danger) !important;
+}
+
+.gateItemDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--color-text-darker) !important;
+  color: var(--color-text-darker) !important;
+}
+
+.gateItemDisabled:hover {
+  background: #1a1a1a;
+  box-shadow: none !important;
+}
+
+.gateItemCount {
+  font-size: 9px;
+  color: var(--color-primary);
+  font-weight: bold;
+  margin-top: 2px;
 }
 
 .laserGateX {
