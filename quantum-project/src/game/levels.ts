@@ -80,5 +80,22 @@ export const LEVELS = [
     popups: [
       { title: 'Superposition', text: 'The ion is already in a superposition |+⟩. We want to measure |0⟩. Can you apply another Hadamard gate to collapse the superposition back to |0⟩?', trigger: 'onLoad' }
     ]
+  }),
+  new Level({
+    name: '6 - Hadamard Gate',
+    cols: 12, rows: 8,
+    src: { col: 0, row: 4 },
+    ion: { col: 11, row: 4 },
+    availableGates: ['H'],
+    goal: '|+⟩',
+    winCondition: 'normal',
+    hint: 'Use the Hadamard gate to put the ion into a superposition, then measure to see the distribution',
+    showResetButton: true,
+    preInitialized: true,
+    automateMeasurement: true,
+    popups: [
+      { title: 'Hadamard Gate', text: 'Now we want the ion in a superposition. Use the Hadamard gate to put the ion into |+⟩.', trigger: 'onLoad' },
+      { title: 'Automated Measurement', text: 'We will now automatically reset and measure the ion 10 times to show the effect of superposition (roughly 50/50 split between |0⟩ and |1⟩).', trigger: 'onAutomatedStart' },
+    ]
   })
 ]

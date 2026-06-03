@@ -236,6 +236,7 @@ interface LevelConfig {
   gatePlacementPositions?: Array<[number, number]>;
   showResetButton?: boolean;
   preInitialized?: boolean;
+  automateMeasurement?: boolean;
   initialGates?: string[];
   popups?: Array<{ title: string; text: string; trigger?: string }>;
 }
@@ -264,10 +265,11 @@ export class Level {
   gatePlacementPositions: Array<[number, number]>;
   showResetButton: boolean;
   preInitialized: boolean;
+  automateMeasurement: boolean;
   initialGates: string[];
   popups: Array<{ title: string; text: string; trigger?: string }>;
 
-  constructor({ name, cols, rows, src, ion, hgates, walls, hint, goal, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, initialGates, popups }: LevelConfig) {
+  constructor({ name, cols, rows, src, ion, hgates, walls, hint, goal, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, automateMeasurement, initialGates, popups }: LevelConfig) {
     this.name = name;
     this.cols = cols;
     this.rows = rows;
@@ -283,6 +285,7 @@ export class Level {
     this.gatePlacementPositions = gatePlacementPositions || [];
     this.showResetButton = showResetButton || false;
     this.preInitialized = preInitialized || false;
+    this.automateMeasurement = automateMeasurement || false;
     this.initialGates = initialGates || [];
     this.popups = popups || [];
   }

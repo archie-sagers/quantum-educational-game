@@ -43,6 +43,8 @@ const laserGates = ref<string[]>([])
 const isMeasured = ref(false)
 const measuredValue = ref<number | null>(null)
 const ionInitialized = ref(false)
+const automatedRunning = ref(false)
+const automatedDone = ref(false)
 const showPopup = ref(false)
 const popupIndex = ref(0)
 const tempPopup = ref<{ title: string; text: string } | null>(null)
@@ -377,15 +379,75 @@ function showPopupByTrigger(trigger: string): boolean {
 
 function closePopup() {
   showPopup.value = false
+  // clear any temporary popup content
+  tempPopup.value = null
   
   // Handle post-popup actions based on the trigger that opened this popup
   if (lastPopupTrigger === 'onLaserGatesOpen') {
     showLaserGates.value = true
   }
   
-  lastPopupTrigger = null
+    // If  popup was confirmation to start the automated demo, start it after it's closed
+    if (lastPopupTrigger === 'onAutomatedStart') {
+      startAutomatedDemo()
+    }
+  
+    lastPopupTrigger = null
 }
 
+  // Start the automated reset / measure demo (10 iterations)
+  function startAutomatedDemo() {
+    automatedRunning.value = true
+    ;(async () => {
+      const iterations = 10
+      const results: number[] = []
+      for (let i = 0; i < iterations; i++) {
+
+        // visual reset
+        ionInitialized.value = true
+        isMeasured.value = false
+        measuredValue.value = null
+        result.value = '—'
+        updateStateForTracing()
+
+        // photon travel
+        photon = { progress: 0, segCount: level.trace().segs.length }
+        await new Promise((res) => setTimeout(res, TRAVEL_MS))
+
+        // perform measurement
+        const sInfo = calculateQuantumState(level, laserGates.value, null)
+        const mr = measure(sInfo.state as QuantumState)
+        results.push(mr)
+
+        // update UI 
+        measuredValue.value = mr
+        isMeasured.value = true
+        state.value = mr === 0 ? '|0⟩' : '|1⟩'
+        p0.value = mr === 0 ? '100%' : '0%'
+        p1.value = mr === 1 ? '100%' : '0%'
+        result.value = String(mr)
+        history.value.push(mr)
+        if (history.value.length > 50) history.value.shift()
+
+        // small pause 
+        await new Promise((res) => setTimeout(res, 100))
+      }
+
+      automatedRunning.value = false
+      automatedDone.value = true
+
+      // Show popup with history
+      tempPopup.value = {
+        title: 'Measurement Demo Results',
+        text: `Measurements: ${results.join(' ')}`
+      }
+      showPopup.value = true
+
+      // mark level complete after demo
+      showWin.value = true
+      canMeasure.value = true
+    })()
+  }
 function advancePopup() {
   // Mark current popup as shown before advancing
   shownPopupIndices.value.add(popupIndex.value)
@@ -447,6 +509,17 @@ function handleMeasure() {
         (level.winCondition === 'superposition' && hitH) || 
         (level.winCondition === 'normal' && !hitH)) {
       showWin.value = true
+    }
+
+    // If the level requests an automated measurement demo
+    // show the automated-demo popup & fallback to starting immediately
+    if (level.automateMeasurement && !automatedRunning.value) {
+      if (currentLevelIndex.value === 5 && stateInfo.state === '|+⟩' || stateInfo.state === '|-⟩') {
+        const shown = showPopupByTrigger('onAutomatedStart')
+        if (!shown) startAutomatedDemo()
+      } else {
+        // If not in superposition, no automated demo
+      }
     }
   }, TRAVEL_MS)
 }
