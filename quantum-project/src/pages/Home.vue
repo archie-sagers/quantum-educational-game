@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { measure, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level, type QuantumState, CELL } from '@/game/quantumgame'
 import { LEVELS } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
@@ -10,8 +10,6 @@ defineOptions({ name: 'GameHome' })
 
 // Constants
 // ------------------
-
-const CELL = 56
 const TRAVEL_MS = 800
 const FPS = 60
 
@@ -64,6 +62,17 @@ let animationFrameId: number | null = null
 const shownPopupIndices = ref(new Set<number>())
 let lastPopupTrigger: string | null = null
 
+
+// SAVE/LOAD LOGIC
+const savedLevel = localStorage.getItem('quantum_save_level')
+if (savedLevel !== null) {
+  currentLevelIndex.value = parseInt(savedLevel, 10)
+}
+
+// When the level changes, save the new number to the browser
+watch(currentLevelIndex, (newLevel) => {
+  localStorage.setItem('quantum_save_level', newLevel.toString())
+})
 
 // Bloch Sphere
 // ------------------
@@ -659,6 +668,7 @@ function handleCanvasRightClick(e: MouseEvent) {
 // ------------------
 
 onMounted(() => {
+  level = LEVELS[currentLevelIndex.value]!
   ionInitialized.value = level.preInitialized
   setupCanvas()
   updateStateForTracing()
