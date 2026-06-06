@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { measure, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level, type QuantumState } from '@/game/quantumgame'
+import { measure, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level, type QuantumState, CELL } from '@/game/quantumgame'
 import { LEVELS } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
 import styles from './Home.module.css'
@@ -43,11 +43,14 @@ const laserGates = ref<string[]>([])
 const isMeasured = ref(false)
 const measuredValue = ref<number | null>(null)
 const ionInitialized = ref(false)
+const automatedRunning = ref(false)
+const automatedDone = ref(false)
 const showPopup = ref(false)
 const popupIndex = ref(0)
 const tempPopup = ref<{ title: string; text: string } | null>(null)
 const showWelcome = ref(true)
 const showManual = ref(false)
+const gateInventory = ref<Record<string, number>>({})
 const currentPopup = computed(() => {
   if (tempPopup.value) return tempPopup.value
   const popups = level.popups
@@ -116,8 +119,7 @@ function updateStateForTracing() {
   state.value = result.state
   p0.value = result.p0
   p1.value = result.p1
-  // On level 5, only allow measuring when the state is in the ground state |0⟩
-  canMeasure.value = result.canMeasure && !(currentLevelIndex.value === 4 && state.value !== '|0⟩')
+  canMeasure.value = result.canMeasure
 }
 
 // Level Progression
@@ -129,10 +131,15 @@ function nextLevel() {
   if (currentLevelIndex.value < LEVELS.length - 1) {
     currentLevelIndex.value++
     level = LEVELS[currentLevelIndex.value]!
+    // Pre-apply any locked gates (insert at locked indices)
     laserGates.value = []
-    // Pre-apply H gate for level 5
-    if (currentLevelIndex.value === 4) {
-      laserGates.value = ['H']
+    // Pre-apply locked gate for levels that require it
+    if (level.lockedGateIndices.length > 0) {
+      for (const idx of level.lockedGateIndices) {
+        if (idx === 0 && level.availableGates.length > 0) {
+          laserGates.value.push(level.availableGates[0]!)
+        }
+      }
     }
     isMeasured.value = false
     measuredValue.value = null
@@ -140,6 +147,18 @@ function nextLevel() {
     shownPopupIndices.value.clear()
     lastPopupTrigger = null
     setupCanvas()
+    // Initialise gate inventory
+    gateInventory.value = { ...level.gateInventory }
+    // Decrement inventory for locked gates
+    for (const idx of level.lockedGateIndices) {
+      if (idx < laserGates.value.length) {
+        const gate = laserGates.value[idx]!
+        if (gateInventory.value[gate] !== undefined) {
+          gateInventory.value[gate]--
+        }
+      }
+    }
+    
     updateStateForTracing()
     result.value = '—'
     history.value = []
@@ -154,7 +173,15 @@ function selectLevel(index: number) {
   currentLevelIndex.value = index
   level = LEVELS[currentLevelIndex.value]!
   laserGates.value = []
-  // Pre-apply H gate for level 5
+  // Pre-apply locked gate for levels that require it
+  if (level.lockedGateIndices.length > 0) {
+    for (const idx of level.lockedGateIndices) {
+      if (idx === 0 && level.availableGates.length > 0) {
+        laserGates.value.push(level.availableGates[0]!)
+      }
+    }
+  }
+  // Pre-apply H gate for level 5 (special case)
   if (index === 4) {
     laserGates.value = ['H']
   }
@@ -164,6 +191,21 @@ function selectLevel(index: number) {
   shownPopupIndices.value.clear()
   lastPopupTrigger = null
   setupCanvas()
+  // Initialise gate inventory
+  gateInventory.value = { ...level.gateInventory }
+  // Decrement inventory for locked gates
+  for (const idx of level.lockedGateIndices) {
+    if (idx < laserGates.value.length) {
+      const gate = laserGates.value[idx]!
+      if (gateInventory.value[gate] !== undefined) {
+        gateInventory.value[gate]--
+      }
+    }
+  }
+  // Special case for level 5's pre-applied H gate
+  if (index === 4 && gateInventory.value['H'] !== undefined) {
+    gateInventory.value['H']--
+  }
   updateStateForTracing()
   result.value = '—'
   history.value = []
@@ -182,6 +224,12 @@ function openLaserGates() {
 }
 
 function onGateDragStart(e: DragEvent, gateType: string) {
+  // Check if gate is available in inventory
+  const available = gateInventory.value[gateType] ?? -1
+  if (available === 0) {
+    e.preventDefault()
+    return
+  }
   e.dataTransfer!.effectAllowed = 'copy'
   e.dataTransfer!.setData('gateType', gateType)
 }
@@ -195,6 +243,14 @@ function onLaserDrop(e: DragEvent) {
   e.preventDefault()
   const gateType = e.dataTransfer!.getData('gateType')
   if (gateType) {
+    // Decrement inventory if it exists
+    if (gateInventory.value[gateType] !== undefined) {
+      if (gateInventory.value[gateType]! > 0) {
+        gateInventory.value[gateType]!--
+      } else {
+        return // Can't add gate, no inventory left
+      }
+    }
     laserGates.value.push(gateType)
     isMeasured.value = false
     measuredValue.value = null
@@ -203,11 +259,16 @@ function onLaserDrop(e: DragEvent) {
 }
 
 function removeLaserGate(index: number) {
-  // On level 5, prevent removing the first H gate
-  if (currentLevelIndex.value === 4 && index === 0) {
+  // Prevent removing locked gates
+  if (level.lockedGateIndices.includes(index)) {
     return
   }
+  const gate = laserGates.value[index]!
   laserGates.value.splice(index, 1)
+  // Restore inventory
+  if (gateInventory.value[gate] !== undefined) {
+    gateInventory.value[gate]!++
+  }
   isMeasured.value = false
   measuredValue.value = null
   updateStateForTracing()
@@ -377,15 +438,76 @@ function showPopupByTrigger(trigger: string): boolean {
 
 function closePopup() {
   showPopup.value = false
+  // clear any temporary popup content
+  tempPopup.value = null
   
   // Handle post-popup actions based on the trigger that opened this popup
   if (lastPopupTrigger === 'onLaserGatesOpen') {
     showLaserGates.value = true
   }
   
-  lastPopupTrigger = null
+    // If  popup was confirmation to start the automated demo, start it after it's closed
+    if (lastPopupTrigger === 'onAutomatedStart') {
+      startAutomatedDemo()
+    }
+  
+    lastPopupTrigger = null
 }
 
+  // Start the automated reset / measure demo (10 iterations)
+  function startAutomatedDemo() {
+    automatedRunning.value = true
+    ;(async () => {
+      const iterations = 10
+      const results: number[] = []
+      for (let i = 0; i < iterations; i++) {
+
+        // visual reset
+        ionInitialized.value = true
+        isMeasured.value = false
+        measuredValue.value = null
+        result.value = '—'
+        updateStateForTracing()
+
+        // photon travel
+        photon = { progress: 0, segCount: level.trace().segs.length }
+        await new Promise((res) => setTimeout(res, TRAVEL_MS))
+
+        // perform measurement
+        const sInfo = calculateQuantumState(level, laserGates.value, null)
+        const mr = measure(sInfo.state as QuantumState)
+        results.push(mr)
+
+        // update UI 
+        measuredValue.value = mr
+        isMeasured.value = true
+        state.value = mr === 0 ? '|0⟩' : '|1⟩'
+        p0.value = mr === 0 ? '100%' : '0%'
+        p1.value = mr === 1 ? '100%' : '0%'
+        result.value = String(mr)
+        history.value.push(mr)
+        if (history.value.length > 50) history.value.shift()
+
+        // small pause 
+        await new Promise((res) => setTimeout(res, 100))
+      }
+
+      automatedRunning.value = false
+      automatedDone.value = true
+
+      // Show popup with history
+      tempPopup.value = {
+        title: 'Measurement Demo Results',
+        text: `Measurements: ${results.join(' ')}
+        (A superposition state will randomly collapse to either |0⟩ or |1⟩ when measured.)`
+      }
+      showPopup.value = true
+
+      // mark level complete after demo
+      showWin.value = true
+      canMeasure.value = true
+    })()
+  }
 function advancePopup() {
   // Mark current popup as shown before advancing
   shownPopupIndices.value.add(popupIndex.value)
@@ -414,8 +536,7 @@ function clearMirrors() {
 function handleMeasure() {
   if (!canMeasure.value) return
   canMeasure.value = false
-  
-  const { hitH } = level.trace()
+
   photon = { progress: 0, segCount: level.trace().segs.length }
 
   setTimeout(() => {
@@ -443,10 +564,36 @@ function handleMeasure() {
     if (history.value.length > 20) history.value.shift()
 
     canMeasure.value = true
-    if ((level.winCondition === 'any') || 
-        (level.winCondition === 'superposition' && hitH) || 
-        (level.winCondition === 'normal' && !hitH)) {
-      showWin.value = true
+    // Check if required gate count is met
+    if (level.requiredGateCount !== null && laserGates.value.length !== level.requiredGateCount) {
+      // Don't allow winning without the correct number of gates
+      showWin.value = false
+      return
+    }
+    
+    // Evaluate win condition based on the pre-measure quantum state
+    const preState = stateInfo.state
+    const wc = level.winCondition
+    let win = false
+    if (wc === 'any') win = true
+    else if (wc === 'superposition') win = preState === '|+⟩' || preState === '|-⟩'
+    else if (wc === 'positive-superposition') win = preState === '|+⟩'
+    else if (wc === 'negative-superposition') win = preState === '|-⟩'
+    else if (wc === 'normal') win = preState === '|0⟩' || preState === '|1⟩'
+    else if (wc === '|0⟩' || wc === '0') win = preState === '|0⟩'
+    else if (wc === '|1⟩' || wc === '1') win = preState === '|1⟩'
+
+    if (win) showWin.value = true
+
+    // If the level requests an automated measurement demo
+    // show the automated-demo popup & fallback to starting immediately
+    if (level.automateMeasurement && !automatedRunning.value) {
+      if (currentLevelIndex.value === 5 && stateInfo.state === '|+⟩' || stateInfo.state === '|-⟩') {
+        const shown = showPopupByTrigger('onAutomatedStart')
+        if (!shown) startAutomatedDemo()
+      } else {
+        // If not in superposition, no automated demo
+      }
     }
   }, TRAVEL_MS)
 }
@@ -696,7 +843,11 @@ onUnmounted(() => {
         <div :class="styles.gateContainer">
           <!-- Applied gates -->
           <div :class="styles.appliedSection">
-            <div :class="styles.sectionLabel">Applied to Laser</div>
+            <div :class="styles.sectionLabel">Applied to Laser
+              <span v-if="level.requiredGateCount !== null" :class="styles.gateCount">
+                ({{ laserGates.length }}/{{ level.requiredGateCount }})
+              </span>
+            </div>
             <div
               @dragover="onLaserDragOver"
               @drop="onLaserDrop"
@@ -708,7 +859,7 @@ onUnmounted(() => {
                   :key="`laser-gate-${index}`"
                   :class="[styles.laserGate, { [styles.laserGateX as string]: gate === 'X' }]"
                 >
-                  <button v-if="!(currentLevelIndex === 4 && index === 0)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
+                  <button v-if="!level.lockedGateIndices.includes(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
                   <div>{{ gate }}</div>
                 </div>
               </div>
@@ -728,9 +879,15 @@ onUnmounted(() => {
                 :key="`gate-${index}`"
                 draggable="true"
                 @dragstart="onGateDragStart($event, gate)"
-                :class="[styles.gateItem, { [styles.gateItemX as string]: gate === 'X' }]"
+                :class="[styles.gateItem, 
+                  { [styles.gateItemX as string]: gate === 'X' },
+                  { [styles.gateItemDisabled as string]: (gateInventory[gate] ?? -1) === 0 }
+                ]"
               >
-                {{ gate }}
+                <div>{{ gate }}</div>
+                <div v-if="gateInventory[gate] !== undefined" :class="styles.gateItemCount">
+                  {{ gateInventory[gate] }}
+                </div>
               </div>
             </div>
           </div>

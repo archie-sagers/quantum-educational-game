@@ -107,7 +107,7 @@ function goToLevel(index: number) {
         </ul>
         <p><strong>Key Insight:</strong> Applying Hadamard twice returns to the original state!</p>
 
-        <p><strong>Practice:</strong> <span @click="goToLevel(4)" class="manualLink">Level 5 - Hadamard-Gate</span></p>
+        <p><strong>Practice:</strong> <span @click="goToLevel(4)" class="manualLink">Level 5</span> <span @click="goToLevel(5)" class="manualLink">Level 6</span></p>
 
         <h3 class="manualH3">C-NOT Gate</h3>
         <p><strong>What It Does:</strong></p>
@@ -137,7 +137,7 @@ function goToLevel(index: number) {
           <li>After Hadamard: |+⟩ (superposition an equal chance of 0 or 1)</li>
           <li>After another Hadamard: |0⟩ (back to ground state)</li>
         </ul>
-        <p><strong>Practice:</strong> <span @click="goToLevel(4)" class="manualLink">Level 5 - Hadamard-Gate</span></p>
+        <p><strong>Practice:</strong> <span @click="goToLevel(4)" class="manualLink">Level 5</span> <span @click="goToLevel(5)" class="manualLink">Level 6</span></p>
 
         <h3 class="manualH3">Entanglement</h3>
         <p><strong>What Is It?</strong></p>

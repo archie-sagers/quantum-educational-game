@@ -1,139 +1,53 @@
-const CELL = 56;
+import { QuantumSystem } from './quantumsystem';
+
+export const CELL = 56;
 
 export type QuantumState = '|0⟩' | '|1⟩' | '|+⟩' | '|-⟩';
 
-type Complex = { real: number; imaginary: number };
+let lastQuantumSystem: QuantumSystem | null = null;
 
-class TwoQubitSystem {
-  public amplitudes: Complex[] = [
-    // Two qubit system. Starts in |00⟩ state
-    { real: 1, imaginary: 0 }, // |00⟩
-    { real: 0, imaginary: 0 }, // |01⟩
-    { real: 0, imaginary: 0 }, // |10⟩
-    { real: 0, imaginary: 0 } // |11⟩
-  ];
+// Function for 1 qubit quantum state
+// Reads amplitudes and probabilities to determine the exact state,
+// Has tolerance for floating-point rounding
+ 
+function getLabelFromMath(qs: QuantumSystem): QuantumState {
+  // translates the math of the quantum system into a label for the UI
+  const [prob0, prob1] = qs.getQubitProbability(0);
+  const amp0 = qs.getAmplitude(0);
+  const amp1 = qs.getAmplitude(1);
 
-  applyHadamardQ0() {
-    const factor = 1 / Math.sqrt(2);
-    const newAmps = [...this.amplitudes];
+  // Accounts for floating point errors
+  const p0normalised = Math.abs(prob0 - 0.5) < 0.01;
+  const p1normalised = Math.abs(prob1 - 0.5) < 0.01;
 
-    // [0] = |00⟩, [1] = |01⟩, [2] = |10⟩, [3] = |11⟩
-
-    newAmps[0] = this.scale(this.add(this.amplitudes[0]!, this.amplitudes[2]!), factor);
-    newAmps[2] = this.scale(this.sub(this.amplitudes[0]!, this.amplitudes[2]!), factor);
-    
-    newAmps[1] = this.scale(this.add(this.amplitudes[1]!, this.amplitudes[3]!), factor);
-    newAmps[3] = this.scale(this.sub(this.amplitudes[1]!, this.amplitudes[3]!), factor);
-
-    this.amplitudes = newAmps;
+  if (Math.abs(prob0 - 1) < 0.01) {
+    return '|0⟩';
+  }
+  if (Math.abs(prob1 - 1) < 0.01) {
+    return '|1⟩';
   }
 
-  applyHadamardQ1() {
-    const factor = 1 / Math.sqrt(2);
-    const newAmps = [...this.amplitudes];
+  if (p0normalised && p1normalised) {
+    // If in superposition, check phase to determine if it's |+⟩ or |-⟩
+    const phase = Math.atan2(amp0.imaginary, amp0.real) - Math.atan2(amp1.imaginary, amp1.real);
+    // Prevents issues with negative angles and angles greater than 2 PI
+    const normalisedPhase = ((phase % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
 
-    newAmps[0] = this.scale(this.add(this.amplitudes[0]!, this.amplitudes[1]!), factor);
-    newAmps[1] = this.scale(this.sub(this.amplitudes[0]!, this.amplitudes[1]!), factor);
-    
-    newAmps[2] = this.scale(this.add(this.amplitudes[2]!, this.amplitudes[3]!), factor);
-    newAmps[3] = this.scale(this.sub(this.amplitudes[2]!, this.amplitudes[3]!), factor);
-
-    this.amplitudes = newAmps;
+    if (Math.abs(normalisedPhase) < 0.3 || Math.abs(normalisedPhase - 2 * Math.PI) < 0.3) {
+      // If phase difference is close to 0 or 2 PI, it's in sync and is |+⟩
+      return '|+⟩';
+    }
+    if (Math.abs(normalisedPhase - Math.PI) < 0.3) {
+      // If phase difference is close to PI, it's out of sync and is |-⟩
+      return '|-⟩';
+    }
   }
-
-  applyXQ0() {
-    // X on Q0 flips |0x⟩ and |1x⟩
-    // Swap |00⟩, |10⟩ and |01⟩, |11⟩
-    const temp0 = this.amplitudes[0]!;
-    this.amplitudes[0] = this.amplitudes[2]!;
-    this.amplitudes[2] = temp0;
-
-    const temp1 = this.amplitudes[1]!;
-    this.amplitudes[1] = this.amplitudes[3]!;
-    this.amplitudes[3] = temp1;
-  }
-
-  applyXQ1() {
-    // X on Q1 flips |x0⟩ and |x1⟩
-    // Swap |00⟩, |01⟩ and |10⟩, |11⟩
-    const temp0 = this.amplitudes[0]!;
-    this.amplitudes[0] = this.amplitudes[1]!;
-    this.amplitudes[1] = temp0;
-
-    const temp2 = this.amplitudes[2]!;
-    this.amplitudes[2] = this.amplitudes[3]!;
-    this.amplitudes[3] = temp2;
-  }
-
-  applyCNOT_01() {
-    const temp = this.amplitudes[2]!;
-    // [0] and [1] stay the same as the control (left qubit) is |0⟩, but [2] and [3] swap
-    // use temp variable to avoid overwriting before swap
-    this.amplitudes[2] = this.amplitudes[3]!;
-    this.amplitudes[3] = temp;
-  }
-
-  applyCNOT_10() {
-    const temp = this.amplitudes[1]!;
-    // [0] and [2] stay the same as the control (right qubit) is |0⟩, but [1] and [3] swap
-    this.amplitudes[1] = this.amplitudes[3]!;
-    this.amplitudes[3] = temp;
-  }
-
-  measure(): [number, number] {
-    // Uses the Born rule to simulate measurement based on probabilities
-    // Returns a random outcome based on those probabilities
-    const r = Math.random();
-
-    // Calculate probabilities for each state
-    const p00 = this.amplitudes[0]!.real ** 2 + this.amplitudes[0]!.imaginary ** 2;
-    const p01 = this.amplitudes[1]!.real ** 2 + this.amplitudes[1]!.imaginary ** 2;
-    const p10 = this.amplitudes[2]!.real ** 2 + this.amplitudes[2]!.imaginary ** 2;
-
-    if (r < p00) return [0, 0];
-    if (r < p00 + p01) return [0, 1];
-    if (r < p00 + p01 + p10) return [1, 0];
-    else return [1, 1]
-  }
-
-  private add(a: Complex, b: Complex): Complex {
-    return { real: a.real + b.real, imaginary: a.imaginary + b.imaginary };
-  }
-
-  private sub(a: Complex, b: Complex): Complex {
-    return { real: a.real - b.real, imaginary: a.imaginary - b.imaginary };
-  }
-
-  private scale(a: Complex, s: number): Complex {
-    return { real: a.real * s, imaginary: a.imaginary * s };
-  }
-}
-
-function applyGate(state: QuantumState, gate: string): QuantumState {
-  if (gate === 'H') {
-    const hMap: Record<QuantumState, QuantumState> = {
-      '|0⟩': '|+⟩',
-      '|1⟩': '|-⟩',
-      '|+⟩': '|0⟩',
-      '|-⟩': '|1⟩'
-    };
-    return hMap[state];
-  }
-
-  if (gate === 'X') {
-    const xMap: Record<QuantumState, QuantumState> = {
-      '|0⟩': '|1⟩',
-      '|1⟩': '|0⟩',
-      '|+⟩': '|+⟩',
-      '|-⟩': '|-⟩'
-    };
-    return xMap[state];
-  }
-
-  return state;
+  // fallback to probability if phase doesn't give a clear answer
+  return prob0 > 0.5 ? '|0⟩' : '|1⟩';
 }
 
 function getStateProbabilities(state: QuantumState): [number, number] {
+  // Returns the probabilities of measuring 0 or 1 for a qubit in a given state
   const probs: Record<QuantumState, [number, number]> = {
     '|0⟩': [1, 0],
     '|1⟩': [0, 1],
@@ -144,11 +58,12 @@ function getStateProbabilities(state: QuantumState): [number, number] {
 }
 
 export function measure(state: QuantumState): number {
-  const [prob0] = getStateProbabilities(state);
-  return Math.random() < prob0 ? 0 : 1;
+  if (lastQuantumSystem) {
+    return lastQuantumSystem.measure()[0]?? 0;
+  }
+  // fallback
+  return Math.random() < 0.5 ? 0 : 1; 
 }
-
-export { TwoQubitSystem };
 
 export function getBlochAngle(state: string): number | null {
   const angleMap: Record<string, number> = {
@@ -198,23 +113,31 @@ export function calculateQuantumState(
     };
   }
 
-  let state: QuantumState = '|0⟩';
+  const qs = new QuantumSystem(1);
 
-  // Apply initial gates (set up starting superposition, etc)
+  // Apply gates in the order they were hit
+  // Start with initial gates
   for (const gate of level.initialGates) {
-    state = applyGate(state, gate);
+    if (gate === 'H') {
+      qs.applyH(0);
+    } else if (gate === 'X') {
+      qs.applyX(0);
+    }
   }
 
-  // Apply laser gates
   for (const gate of laserGates) {
-    state = applyGate(state, gate);
+    if (gate === 'H') {
+      qs.applyH(0);
+    } else if (gate === 'X') {
+      qs.applyX(0);
+    }
   }
 
-  if (hitH) {
-    state = applyGate(state, 'H');
-  }
+  // Cache the last quantum system for measurement 
+  lastQuantumSystem = qs;
 
-  const [prob0, prob1] = getStateProbabilities(state as QuantumState);
+  const state = getLabelFromMath(qs);
+  const [prob0, prob1] = qs.getQubitProbability(0);
   const p0 = Math.round(prob0 * 100) + '%';
   const p1 = Math.round(prob1 * 100) + '%';
 
@@ -236,8 +159,12 @@ interface LevelConfig {
   gatePlacementPositions?: Array<[number, number]>;
   showResetButton?: boolean;
   preInitialized?: boolean;
+  automateMeasurement?: boolean;
   initialGates?: string[];
   popups?: Array<{ title: string; text: string; trigger?: string }>;
+  requiredGateCount?: number;
+  lockedGateIndices?: number[];
+  gateInventory?: Record<string, number>;
 }
 
 interface TraceSegment {
@@ -264,10 +191,14 @@ export class Level {
   gatePlacementPositions: Array<[number, number]>;
   showResetButton: boolean;
   preInitialized: boolean;
+  automateMeasurement: boolean;
   initialGates: string[];
   popups: Array<{ title: string; text: string; trigger?: string }>;
+  requiredGateCount: number | null;
+  lockedGateIndices: number[];
+  gateInventory: Record<string, number>;
 
-  constructor({ name, cols, rows, src, ion, hgates, walls, hint, goal, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, initialGates, popups }: LevelConfig) {
+  constructor({ name, cols, rows, src, ion, hgates, walls, hint, goal, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, automateMeasurement, initialGates, popups, requiredGateCount, lockedGateIndices, gateInventory }: LevelConfig) {
     this.name = name;
     this.cols = cols;
     this.rows = rows;
@@ -283,8 +214,12 @@ export class Level {
     this.gatePlacementPositions = gatePlacementPositions || [];
     this.showResetButton = showResetButton || false;
     this.preInitialized = preInitialized || false;
+    this.automateMeasurement = automateMeasurement || false;
     this.initialGates = initialGates || [];
     this.popups = popups || [];
+    this.requiredGateCount = requiredGateCount || null;
+    this.lockedGateIndices = lockedGateIndices || [];
+    this.gateInventory = gateInventory || {};
   }
 
   isFixed(col: number, row: number) {
