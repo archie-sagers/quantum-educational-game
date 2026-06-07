@@ -6,6 +6,8 @@ export type QuantumState = '|0⟩' | '|1⟩' | '|+⟩' | '|-⟩';
 
 let lastQuantumSystem: QuantumSystem | null = null;
 
+export type WallType = 'all' | 'standard' | 'cyan' | 'red' | 'purple' | 'green' | 'X-Gate' | 'Hadamard Gate' | 'CNOT Gate';
+
 // Function for 1 qubit quantum state
 // Reads amplitudes and probabilities to determine the exact state,
 // Has tolerance for floating-point rounding
@@ -102,7 +104,7 @@ export function calculateQuantumState(
     };
   }
 
-  const { hitIon, hitH } = level.trace();
+  const { hitIon, hitH } = level.trace(laserGates);
 
   if (!hitIon) { // If the beam hasn't hit the ion, we can't determine the state
     return {
@@ -151,7 +153,7 @@ interface LevelConfig {
   src: { col: number; row: number };
   ion: { col: number; row: number };
   hgates?: Array<{ col: number; row: number }>;
-  walls?: Array<{ col: number; row: number }>;
+  walls?: Array<{ col: number; row: number; type?: WallType }>;
   hint?: string;
   goal?: string;
   winCondition?: string;
@@ -182,7 +184,7 @@ export class Level {
   src: { col: number; row: number };
   ion: { col: number; row: number };
   hgates: Array<{ col: number; row: number }>;
-  walls: Array<{ col: number; row: number }>;
+  walls: Array<{ col: number; row: number; type: WallType }>;
   winCondition: string;
   hint: string;
   goal: string;
@@ -205,7 +207,8 @@ export class Level {
     this.src = src;
     this.ion = ion;
     this.hgates = hgates || [];
-    this.walls = walls || [];
+    // Normalize walls to always include a type (default to 'standard')
+    this.walls = (walls || []).map(w => ({ col: w.col, row: w.row, type: (w as any).type ?? 'standard' }));
     this.winCondition = winCondition || 'any';
     this.hint = hint || 'Route the beam to the ion';
     this.goal = goal || '—';
@@ -223,14 +226,24 @@ export class Level {
   }
 
   isFixed(col: number, row: number) {
-    return [this.src, this.ion, ...this.hgates, ...this.walls].some(p => p.col === col && p.row === row);
+    return [this.src, this.ion, ...this.hgates, ...this.walls].some((p: any) => p.col === col && p.row === row);
   }
 
-  trace() {
+  trace(laserGates: string[]) {
     const moves = { right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1] };
     const segs: TraceSegment[] = [];
     let { col, row } = this.src;
     let dir: string = 'right', hitIon = false, hitH = false;
+
+    // Determine current laser colour based on applied laser gates
+    let currentLaserColor = 'cyan';
+    if (laserGates && laserGates.includes('X')) {
+      currentLaserColor = 'orange';
+    } else if (laserGates && laserGates.includes('H')) {
+      currentLaserColor = 'purple';
+    } else if (laserGates && laserGates.includes('CNOT')) {
+      currentLaserColor = 'green';
+    }
 
     while (true) {
       const [dc, dr] = moves[dir as keyof typeof moves] as [number, number];
@@ -247,7 +260,13 @@ export class Level {
       row = new_row;
 
       if (col === this.ion.col && row === this.ion.row) { hitIon = true; break; }
-      if (this.walls.some(w => w.col === col && w.row === row)) break;
+
+      // If we hit a wall, only stop if the wall is 'standard' or matches the current laser colour
+      const wall = this.walls.find(w => w.col === col && w.row === row);
+      if (wall) {
+        if (wall.type === 'standard' || wall.type === currentLaserColor || wall.type === 'all') break;
+        // otherwise the beam passes through this wall
+      }
       if (this.hgates.some(g => g.col === col && g.row === row)) hitH = !hitH;
 
       const m = this.grid[row]![col]!;

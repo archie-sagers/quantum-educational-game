@@ -13,13 +13,12 @@ defineOptions({ name: 'GameHome' })
 const TRAVEL_MS = 800
 const FPS = 60
 
-// Colors defined here match the CSS custom properties in Home.module.css
 const COLORS = {
   cyan: '#0ef',        // --color-primary
   purple: '#b47cff',   // --color-secondary
-  red: '#f84',         // --color-danger
+  green: '#0f8',
+  orange: '#f84',      // --color-warning
   lightPurple: '#d4aaff',  // --color-secondary-light
-  lightRed: '#ff6644'      // --color-danger-light
 }
 
 
@@ -51,8 +50,9 @@ const showManual = ref(false)
 const gateInventory = ref<Record<string, number>>({})
 const currentPopup = computed(() => {
   if (tempPopup.value) return tempPopup.value
-  const popups = level.popups
-  return popups[popupIndex.value]
+  const currentLevel = LEVELS[currentLevelIndex.value]
+  if (!currentLevel || !currentLevel.popups) return null
+  return currentLevel.popups[popupIndex.value]
 })
 
 let level: Level = LEVELS[currentLevelIndex.value]!
@@ -82,7 +82,7 @@ const blochAngle = computed(() => getBlochAngle(state.value))
 const blochLabel = computed(() => getBlochLabel(state.value))
 
 const laserColor = computed(() => {
-  if (laserGates.value.includes('X')) return COLORS.red
+  if (laserGates.value.includes('X')) return COLORS.orange
   return laserGates.value.length > 0 ? COLORS.purple : COLORS.cyan
 })
 
@@ -119,7 +119,7 @@ function updateStateForTracing() {
   }
 
   // Check if laser hits ion and show popup if triggered
-  const { hitIon } = level.trace()
+  const { hitIon } = level.trace(laserGates.value)
   if (hitIon) {
     showPopupByTrigger('onLaserToIon')
   }
@@ -308,14 +308,14 @@ function draw() {
   }
 
   // Beam
-  const { segs } = level.trace()
+  const { segs } = level.trace(laserGates.value)
   ctx.lineWidth = 2
   for (const s of segs) {
     let col = COLORS.cyan
     if (s.afterH) {
       col = COLORS.purple
-    } else if (laserColor.value === COLORS.red) {
-      col = COLORS.red
+    } else if (laserColor.value === COLORS.orange) {
+      col = COLORS.orange
     }
     ctx.strokeStyle = col
     ctx.shadowColor = col
@@ -339,8 +339,8 @@ function draw() {
     let col = '#fff'
     if (seg.afterH || laserColor.value === COLORS.purple) {
       col = COLORS.lightPurple
-    } else if (laserColor.value === COLORS.red) {
-      col = COLORS.lightRed
+    } else if (laserColor.value === COLORS.orange) {
+      col = COLORS.orange
     }
     ctx.fillStyle = col
     ctx.shadowColor = col
@@ -375,11 +375,17 @@ function draw() {
   }
 
   // Walls
-  ctx.strokeStyle = '#ff4444'
   ctx.lineWidth = 2
   for (const w of level.walls) {
     const wx = w.col * CELL
     const wy = w.row * CELL
+    let strokeCol = '#ff4444'
+    if (w.type === 'standard' || w.type === 'all') strokeCol = '#ff4444'
+    else if (w.type === 'cyan') strokeCol = COLORS.cyan
+    else if (w.type === 'orange') strokeCol = COLORS.orange
+    else if (w.type === 'purple') strokeCol = COLORS.purple
+    else if (w.type === 'green') strokeCol = COLORS.green
+    ctx.strokeStyle = strokeCol
     ctx.beginPath()
     ctx.moveTo(wx + 16, wy + 16)
     ctx.lineTo(wx + CELL - 16, wy + CELL - 16)
@@ -479,7 +485,7 @@ function closePopup() {
         updateStateForTracing()
 
         // photon travel
-        photon = { progress: 0, segCount: level.trace().segs.length }
+        photon = { progress: 0, segCount: level.trace(laserGates.value).segs.length }
         await new Promise((res) => setTimeout(res, TRAVEL_MS))
 
         // perform measurement
@@ -546,7 +552,7 @@ function handleMeasure() {
   if (!canMeasure.value) return
   canMeasure.value = false
 
-  photon = { progress: 0, segCount: level.trace().segs.length }
+  photon = { progress: 0, segCount: level.trace(laserGates.value).segs.length }
 
   setTimeout(() => {
     // If already measured, keep showing the same value but add to history

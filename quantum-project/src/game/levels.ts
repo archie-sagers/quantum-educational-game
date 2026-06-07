@@ -23,14 +23,13 @@ export const LEVELS = [
     cols: 12, rows: 8,
     src: { col: 0, row: 4 },
     ion: { col: 11, row: 4 },
-    walls: [{ col: 6, row: 3 }, { col: 6, row: 4 }, { col: 6, row: 5 }],
+    walls: [{ col: 6, row: 3, type: 'cyan' }, { col: 6, row: 4, type: 'cyan' }, { col: 6, row: 5, type: 'cyan' }],
     goal: '|0⟩',
     winCondition: 'normal',
     hint: 'Place mirrors to route the laser around the wall and hit the ion',
     showResetButton: true,
     preInitialized: false,
     popups: [
-      { title: 'Mirrors', text: 'The wall is blocking the direct path. Use mirrors to route the laser beam around it.', trigger: 'onLoad' },
       { title: 'How to Place Mirrors', text: 'Left-click on the grid to place or rotate mirrors. Right-click to remove them. Once you route the beam to the ion, press Reset.', trigger: 'onLoad' },
       { title: 'Measure', text: 'Measure the ion to complete the level.', trigger: 'onLaserToIon' }
     ]
@@ -57,7 +56,7 @@ export const LEVELS = [
     cols: 12, rows: 8,
     src: { col: 0, row: 4 },
     ion: { col: 11, row: 4 },
-    walls: [{ col: 6, row: 3 }, { col: 6, row: 4 }, { col: 6, row: 5 }],
+    walls: [{ col: 6, row: 3, type: 'orange' }, { col: 6, row: 4, type: 'orange' }, { col: 6, row: 5, type: 'orange' }],
     availableGates: ['X'],
     goal: '|1⟩',
     winCondition: '|1⟩',
@@ -106,7 +105,7 @@ export const LEVELS = [
       src: { col: 0, row: 4 },
       ion: { col: 11, row: 4 },
       availableGates: ['X', 'H'],
-      walls: [{ col: 6, row: 3 }, { col: 6, row: 4 }, { col: 6, row: 5 },{ col: 6, row: 6 },{ col: 3, row: 4 },{ col: 3, row: 3 },{ col: 3, row: 2 }],
+      walls: [{ col: 6, row: 3, type: 'cyan' }, { col: 6, row: 4, type: 'cyan' }, { col: 6, row: 5, type: 'cyan' },{ col: 6, row: 6, type: 'cyan' },{ col: 3, row: 4 },{ col: 3, row: 3 },{ col: 3, row: 2 }],
       goal: '|-⟩',
       winCondition: 'negative-superposition',
       hint: 'Flip the ion with an X-gate, then apply H to create |-⟩ and measure the distribution',
