@@ -6,7 +6,7 @@ export type QuantumState = '|0⟩' | '|1⟩' | '|+⟩' | '|-⟩';
 
 let lastQuantumSystem: QuantumSystem | null = null;
 
-export type WallType = 'all' | 'standard' | 'cyan' | 'red' | 'purple' | 'green' | 'X-Gate' | 'Hadamard Gate' | 'CNOT Gate';
+export type WallType = 'all' | 'standard' | 'cyan' | 'purple' | 'green' | 'orange';
 
 // Function for 1 qubit quantum state
 // Reads amplitudes and probabilities to determine the exact state,
@@ -48,6 +48,60 @@ function getLabelFromMath(qs: QuantumSystem): QuantumState {
   return prob0 > 0.5 ? '|0⟩' : '|1⟩';
 }
 
+function getLabelForQubit(qs: QuantumSystem, qubitIndex: number): QuantumState {
+  // Get state label for a specific qubit in a multi-qubit system
+  const [prob0, prob1] = qs.getQubitProbability(qubitIndex);
+  const stateVector = qs.getStateVector();
+  
+  // Accounts for floating point errors
+  const p0normalised = Math.abs(prob0 - 0.5) < 0.01;
+  const p1normalised = Math.abs(prob1 - 0.5) < 0.01;
+
+  if (Math.abs(prob0 - 1) < 0.01) {
+    return '|0⟩';
+  }
+  if (Math.abs(prob1 - 1) < 0.01) {
+    return '|1⟩';
+  }
+
+  if (p0normalised && p1normalised) {
+    // For superposition, compute phase from state vector amplitudes
+    // Get amplitudes for basis states where this qubit is 0 and 1
+    let amp0Phase = 0, amp1Phase = 0;
+    let amp0Count = 0, amp1Count = 0;
+    const numQubits = qs.getNumQubits();
+    // Calculate how many states are in the entire state vector
+    const stateSize = 1 << numQubits;
+    
+    for (let i = 0; i < stateSize; i++) {
+      const amp = stateVector[i]!;
+      const bit = (i >> qubitIndex) & 1;
+      
+      // Calculate the phase of the state and average it for states where the target qubit is 0 or 1
+      if (bit === 0) {
+        amp0Phase += Math.atan2(amp.imaginary, amp.real);
+        amp0Count++;
+      } else {
+        amp1Phase += Math.atan2(amp.imaginary, amp.real);
+        amp1Count++;
+      }
+    }
+    
+    const avgPhase0 = amp0Count > 0 ? amp0Phase / amp0Count : 0;
+    const avgPhase1 = amp1Count > 0 ? amp1Phase / amp1Count : 0;
+    const phase = avgPhase0 - avgPhase1;
+    const normalisedPhase = ((phase % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+
+    if (Math.abs(normalisedPhase) < 0.3 || Math.abs(normalisedPhase - 2 * Math.PI) < 0.3) {
+      return '|+⟩';
+    }
+    if (Math.abs(normalisedPhase - Math.PI) < 0.3) {
+      return '|-⟩';
+    }
+  }
+  return prob0 > 0.5 ? '|0⟩' : '|1⟩';
+}
+
 function getStateProbabilities(state: QuantumState): [number, number] {
   // Returns the probabilities of measuring 0 or 1 for a qubit in a given state
   const probs: Record<QuantumState, [number, number]> = {
@@ -61,10 +115,21 @@ function getStateProbabilities(state: QuantumState): [number, number] {
 
 export function measure(state: QuantumState): number {
   if (lastQuantumSystem) {
-    return lastQuantumSystem.measure()[0]?? 0;
+    const result = lastQuantumSystem.measure();
+    return result[0] ?? 0;
   }
   // fallback
   return Math.random() < 0.5 ? 0 : 1; 
+}
+
+export function measureAll(): number[] {
+  if (lastQuantumSystem) {
+    return lastQuantumSystem.measure();
+  }
+  // fallback: return array of random results
+  // To prevent crashes
+  const numQubits = lastQuantumSystem?.getNumQubits() || 1;
+  return Array.from({ length: numQubits }, () => Math.random() < 0.5 ? 0 : 1);
 }
 
 export function getBlochAngle(state: string): number | null {
@@ -89,61 +154,94 @@ export function getBlochLabel(state: string): string {
   return labelMap[state] ?? 'No state';
 }
 
+export interface IonQuantumState {
+  ionIndex: number;
+  state: QuantumState | '—';
+  p0: string | '—';
+  p1: string | '—';
+}
+
 export function calculateQuantumState(
   level: Level,
   laserGates: string[],
-  measuredValue: number | null
-): { state: QuantumState | '—'; p0: string | '—'; p1: string | '—'; canMeasure: boolean } {
-  // If already measured, keep showing the measured state
-  if (measuredValue !== null) {
-    return {
-      state: measuredValue === 0 ? '|0⟩' : '|1⟩',
-      p0: measuredValue === 0 ? '100%' : '0%',
-      p1: measuredValue === 1 ? '100%' : '0%',
-      canMeasure: false
-    };
-  }
+  measuredValues: number[] | null
+): { states: IonQuantumState[]; canMeasure: boolean } {
+  // Initialise quantum system with the number of ions (qubits)
+  const numQubits = level.ions.length || 1;
+  const qs = new QuantumSystem(numQubits);
 
-  const { hitIon, hitH } = level.trace(laserGates);
-
-  if (!hitIon) { // If the beam hasn't hit the ion, we can't determine the state
-    return {
-      state: '—',
-      p0: '—',
-      p1: '—',
-      canMeasure: false
-    };
-  }
-
-  const qs = new QuantumSystem(1);
-
-  // Apply gates in the order they were hit
-  // Start with initial gates
+  // Apply initial gates
   for (const gate of level.initialGates) {
     if (gate === 'H') {
-      qs.applyH(0);
+      for (let i = 0; i < numQubits; i++) qs.applyH(i);
     } else if (gate === 'X') {
-      qs.applyX(0);
+      for (let i = 0; i < numQubits; i++) qs.applyX(i);
     }
   }
 
+  // Trace the laser to determine which ions are hit
+  const { hitIons, hitH } = level.trace(laserGates);
+
+  // If no ions were hit, return unknown state for all
+  if (hitIons.length === 0) {
+    const states = level.ions.map((_, ionIndex) => ({
+      ionIndex,
+      state: '—' as const,
+      p0: '—' as const,
+      p1: '—' as const
+    }));
+    return { states, canMeasure: false };
+  }
+
+  // Apply gates based on which ions were hit
   for (const gate of laserGates) {
-    if (gate === 'H') {
-      qs.applyH(0);
-    } else if (gate === 'X') {
-      qs.applyX(0);
+    if (gate === 'X') {
+      // X gate applies to the first ion hit
+      if (hitIons.length > 0) {
+        qs.applyX(hitIons[0]);
+      }
+    } else if (gate === 'H') {
+      // H gate applies to the first ion hit
+      if (hitIons.length > 0) {
+        qs.applyH(hitIons[0]);
+      }
+    } else if (gate === 'CNOT') {
+      // CNOT gate: first ion is control, second is target
+      if (hitIons.length >= 2) {
+        qs.applyCNOT(hitIons[0], hitIons[1]);
+      }
     }
   }
 
-  // Cache the last quantum system for measurement 
+  // Cache the last quantum system for measurement
   lastQuantumSystem = qs;
 
-  const state = getLabelFromMath(qs);
-  const [prob0, prob1] = qs.getQubitProbability(0);
-  const p0 = Math.round(prob0 * 100) + '%';
-  const p1 = Math.round(prob1 * 100) + '%';
+  // Build state objects for each ion
+  const states: IonQuantumState[] = [];
+  for (let i = 0; i < numQubits; i++) {
+    let state: QuantumState | '—' = '—';
+    let p0: string | '—' = '—';
+    let p1: string | '—' = '—';
 
-  return { state, p0, p1, canMeasure: true };
+    if (measuredValues && measuredValues[i] !== undefined) {
+      // If already measured, show the measured state
+      state = measuredValues[i] === 0 ? '|0⟩' : '|1⟩';
+      p0 = measuredValues[i] === 0 ? '100%' : '0%';
+      p1 = measuredValues[i] === 1 ? '100%' : '0%';
+    } else if (hitIons.includes(i)) {
+      // If this ion was hit, show its calculated state
+      // Use old getLabelFromMath for single qubit systems
+      state = numQubits === 1 ? getLabelFromMath(qs) : getLabelForQubit(qs, i);
+      const [prob0, prob1] = qs.getQubitProbability(i);
+      // Format probabilities as percentages with 1 decimal place
+      p0 = Math.round(prob0 * 100) + '%';
+      p1 = Math.round(prob1 * 100) + '%';
+    }
+
+    states.push({ ionIndex: i, state, p0, p1 });
+  }
+
+  return { states, canMeasure: hitIons.length > 0 };
 }
 
 interface LevelConfig {
@@ -151,7 +249,7 @@ interface LevelConfig {
   cols: number;
   rows: number;
   src: { col: number; row: number };
-  ion: { col: number; row: number };
+  ions: Array<{ col: number; row: number }>;
   hgates?: Array<{ col: number; row: number }>;
   walls?: Array<{ col: number; row: number; type?: WallType }>;
   hint?: string;
@@ -182,7 +280,7 @@ export class Level {
   cols: number;
   rows: number;
   src: { col: number; row: number };
-  ion: { col: number; row: number };
+  ions: Array<{ col: number; row: number }>;
   hgates: Array<{ col: number; row: number }>;
   walls: Array<{ col: number; row: number; type: WallType }>;
   winCondition: string;
@@ -200,17 +298,16 @@ export class Level {
   lockedGateIndices: number[];
   gateInventory: Record<string, number>;
 
-  constructor({ name, cols, rows, src, ion, hgates, walls, hint, goal, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, automateMeasurement, initialGates, popups, requiredGateCount, lockedGateIndices, gateInventory }: LevelConfig) {
+  constructor({ name, cols, rows, src, ions, hgates, walls, hint, goal, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, automateMeasurement, initialGates, popups, requiredGateCount, lockedGateIndices, gateInventory }: LevelConfig) {
     this.name = name;
     this.cols = cols;
     this.rows = rows;
     this.src = src;
-    this.ion = ion;
+    this.ions = ions || [];
     this.hgates = hgates || [];
-    // Normalize walls to always include a type (default to 'standard')
     this.walls = (walls || []).map(w => ({ col: w.col, row: w.row, type: (w as any).type ?? 'standard' }));
     this.winCondition = winCondition || 'any';
-    this.hint = hint || 'Route the beam to the ion';
+    this.hint = hint || 'Route the beam to the ions';
     this.goal = goal || '—';
     this.grid = Array.from({ length: rows }, () => Array(cols).fill(null));
     this.availableGates = availableGates || [];
@@ -226,14 +323,15 @@ export class Level {
   }
 
   isFixed(col: number, row: number) {
-    return [this.src, this.ion, ...this.hgates, ...this.walls].some((p: any) => p.col === col && p.row === row);
+    return [this.src, ...this.ions, ...this.hgates, ...this.walls].some((p: any) => p.col === col && p.row === row);
   }
 
   trace(laserGates: string[]) {
     const moves = { right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1] };
     const segs: TraceSegment[] = [];
+    const hitIons: number[] = [];
     let { col, row } = this.src;
-    let dir: string = 'right', hitIon = false, hitH = false;
+    let dir: string = 'right', hitH = false;
 
     // Determine current laser colour based on applied laser gates
     let currentLaserColor = 'cyan';
@@ -259,7 +357,12 @@ export class Level {
       col = new_column;
       row = new_row;
 
-      if (col === this.ion.col && row === this.ion.row) { hitIon = true; break; }
+      // Check if we hit an ion (but don't stop - let the laser pass through)
+      for (let i = 0; i < this.ions.length; i++) {
+        if (col === this.ions[i].col && row === this.ions[i].row && !hitIons.includes(i)) {
+          hitIons.push(i);
+        }
+      }
 
       // If we hit a wall, only stop if the wall is 'standard' or matches the current laser colour
       const wall = this.walls.find(w => w.col === col && w.row === row);
@@ -274,7 +377,7 @@ export class Level {
       if (m === 'back') dir = { right: 'down', down: 'right', left: 'up', up: 'left' }[dir]!;
     }
 
-    return { segs, hitIon, hitH };
+    return { segs, hitIons, hitH };
   }
 }
 

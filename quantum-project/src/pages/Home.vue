@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { measure, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level, type QuantumState, CELL } from '@/game/quantumgame'
+import { measureAll, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level, type QuantumState, type IonQuantumState, CELL } from '@/game/quantumgame'
 import { LEVELS } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
 import styles from './Home.module.css'
@@ -27,18 +27,16 @@ const COLORS = {
 
 const canvas = ref<HTMLCanvasElement | null>(null)
 const currentLevelIndex = ref(0)
-const state = ref('|0⟩')
-const p0 = ref('100%')
-const p1 = ref('0%')
+const ionStates = ref<IonQuantumState[]>([])
 const result = ref('—')
-const history = ref<number[]>([])
+const history = ref<number[][]>([])
 const showWin = ref(false)
 const canMeasure = ref(false)
 const showLevelSelector = ref(false)
 const showLaserGates = ref(false)
 const laserGates = ref<string[]>([])
 const isMeasured = ref(false)
-const measuredValue = ref<number | null>(null)
+const measuredValues = ref<number[] | null>(null)
 const ionInitialized = ref(false)
 const automatedRunning = ref(false)
 const automatedDone = ref(false)
@@ -77,24 +75,40 @@ watch(currentLevelIndex, (newLevel) => {
 // Bloch Sphere
 // ------------------
 
-const blochAngle = computed(() => getBlochAngle(state.value))
+const blochAngle = computed(() => {
+  // For multi-ion support, return angle for first ion
+  if (ionStates.value.length > 0) {
+    return getBlochAngle(ionStates.value[0].state);
+  }
+  return getBlochAngle('|0⟩');
+})
 
-const blochLabel = computed(() => getBlochLabel(state.value))
+const blochLabel = computed(() => {
+  // For multi-ion support, return label for first ion
+  if (ionStates.value.length > 0) {
+    return getBlochLabel(ionStates.value[0].state);
+  }
+  return getBlochLabel('|0⟩');
+})
 
 const laserColor = computed(() => {
+  if (laserGates.value.includes('CNOT')) return COLORS.green
   if (laserGates.value.includes('X')) return COLORS.orange
-  return laserGates.value.length > 0 ? COLORS.purple : COLORS.cyan
+  if (laserGates.value.includes('H')) return COLORS.purple
+  return COLORS.cyan
 })
 
 const stateColorClass = computed(() => {
-  if (state.value === '|+⟩' || state.value === '|-⟩') return styles.infoValPurple
-  if (state.value === '|1⟩') return styles.infoValOrange
-  return styles.infoValCyan
+  if (ionStates.value.length === 0) return styles.infoValCyan;
+  const state = ionStates.value[0].state;
+  if (state === '|+⟩' || state === '|-⟩') return styles.infoValPurple;
+  if (state === '|1⟩') return styles.infoValOrange;
+  return styles.infoValCyan;
 })
 
 const resultColorClass = computed(() => {
-  if (result.value === '1') return styles.infoValOrange
-  return styles.infoValCyan
+  if (result.value === '1') return styles.infoValOrange;
+  return styles.infoValCyan;
 })
 
 // Canvas Functions
@@ -109,26 +123,27 @@ function setupCanvas() {
 }
 
 function updateStateForTracing() {
-  // If ion is not initialized on this level, show unknown state
+  // If no ions initialized on this level, show unknown state
   if (!ionInitialized.value && !level.preInitialized) {
-    state.value = '?'
-    p0.value = '?'
-    p1.value = '?'
-    canMeasure.value = false
-    return
+    ionStates.value = level.ions.map((_, idx) => ({
+      ionIndex: idx,
+      state: '?' as any,
+      p0: '?',
+      p1: '?'
+    }));
+    canMeasure.value = false;
+    return;
   }
 
-  // Check if laser hits ion and show popup if triggered
-  const { hitIon } = level.trace(laserGates.value)
-  if (hitIon) {
-    showPopupByTrigger('onLaserToIon')
+  // Check if laser hits ions and show popup if triggered
+  const { hitIons } = level.trace(laserGates.value);
+  if (hitIons.length > 0) {
+    showPopupByTrigger('onLaserToIon');
   }
 
-  const result = calculateQuantumState(level, laserGates.value, isMeasured.value ? measuredValue.value : null)
-  state.value = result.state
-  p0.value = result.p0
-  p1.value = result.p1
-  canMeasure.value = result.canMeasure
+  const result = calculateQuantumState(level, laserGates.value, isMeasured.value ? measuredValues.value : null);
+  ionStates.value = result.states;
+  canMeasure.value = result.canMeasure;
 }
 
 // Level Progression
@@ -151,7 +166,7 @@ function nextLevel() {
       }
     }
     isMeasured.value = false
-    measuredValue.value = null
+    measuredValues.value = null
     ionInitialized.value = level.preInitialized
     shownPopupIndices.value.clear()
     lastPopupTrigger = null
@@ -195,7 +210,7 @@ function selectLevel(index: number) {
     laserGates.value = ['H']
   }
   isMeasured.value = false
-  measuredValue.value = null
+  measuredValues.value = null
   ionInitialized.value = level.preInitialized
   shownPopupIndices.value.clear()
   lastPopupTrigger = null
@@ -262,7 +277,7 @@ function onLaserDrop(e: DragEvent) {
     }
     laserGates.value.push(gateType)
     isMeasured.value = false
-    measuredValue.value = null
+    measuredValues.value = null
     updateStateForTracing()
   }
 }
@@ -279,7 +294,7 @@ function removeLaserGate(index: number) {
     gateInventory.value[gate]!++
   }
   isMeasured.value = false
-  measuredValue.value = null
+  measuredValues.value = null
   updateStateForTracing()
 }
 
@@ -314,6 +329,8 @@ function draw() {
     let col = COLORS.cyan
     if (s.afterH) {
       col = COLORS.purple
+    } else if (laserColor.value === COLORS.green) {
+      col = COLORS.green
     } else if (laserColor.value === COLORS.orange) {
       col = COLORS.orange
     }
@@ -394,20 +411,26 @@ function draw() {
     ctx.stroke()
   }
 
-  // Ion
-  const ix = level.ion.col * CELL + CELL / 2
-  const iy = level.ion.row * CELL + CELL / 2
-  ctx.strokeStyle = '#f84'
-  ctx.lineWidth = 2
-  ctx.shadowColor = '#f84'
-  ctx.shadowBlur = 12
-  ctx.beginPath()
-  ctx.arc(ix, iy, 20, 0, Math.PI * 2)
-  ctx.stroke()
-  ctx.shadowBlur = 0
-  ctx.fillStyle = '#f84'
-  ctx.font = '9px monospace'
-  ctx.fillText('ION', ix, iy)
+  // Ions
+  const ionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+  for (let ionIdx = 0; ionIdx < level.ions.length; ionIdx++) {
+    const ion = level.ions[ionIdx];
+    const ix = ion.col * CELL + CELL / 2;
+    const iy = ion.row * CELL + CELL / 2;
+    ctx.strokeStyle = '#f84';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = '#f84';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(ix, iy, 20, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#f84';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('ION ' + ionLabels[ionIdx], ix, iy);
+  }
 
   // Mirrors
   ctx.strokeStyle = '#aaa'
@@ -474,13 +497,13 @@ function closePopup() {
     automatedRunning.value = true
     ;(async () => {
       const iterations = 10
-      const results: number[] = []
+      const results: number[][] = []
       for (let i = 0; i < iterations; i++) {
 
         // visual reset
         ionInitialized.value = true
         isMeasured.value = false
-        measuredValue.value = null
+        measuredValues.value = null
         result.value = '—'
         updateStateForTracing()
 
@@ -489,18 +512,15 @@ function closePopup() {
         await new Promise((res) => setTimeout(res, TRAVEL_MS))
 
         // perform measurement
-        const sInfo = calculateQuantumState(level, laserGates.value, null)
-        const mr = measure(sInfo.state as QuantumState)
-        results.push(mr)
+        const measResults = measureAll()
+        results.push(measResults)
 
         // update UI 
-        measuredValue.value = mr
+        measuredValues.value = measResults
         isMeasured.value = true
-        state.value = mr === 0 ? '|0⟩' : '|1⟩'
-        p0.value = mr === 0 ? '100%' : '0%'
-        p1.value = mr === 1 ? '100%' : '0%'
-        result.value = String(mr)
-        history.value.push(mr)
+        updateStateForTracing()
+        result.value = measResults.join(',')
+        history.value.push(measResults)
         if (history.value.length > 50) history.value.shift()
 
         // small pause 
@@ -513,7 +533,7 @@ function closePopup() {
       // Show popup with history
       tempPopup.value = {
         title: 'Measurement Demo Results',
-        text: `Measurements: ${results.join(' ')}
+        text: `Measurements: ${results.map(r => r.join('')).join(' ')}
         (A superposition state will randomly collapse to either |0⟩ or |1⟩ when measured.)`
       }
       showPopup.value = true
@@ -557,25 +577,22 @@ function handleMeasure() {
   setTimeout(() => {
     // If already measured, keep showing the same value but add to history
     if (isMeasured.value) {
-      result.value = String(measuredValue.value)
-      history.value.push(measuredValue.value!)
+      result.value = measuredValues.value ? measuredValues.value.join(',') : '—'
+      history.value.push(measuredValues.value!)
       if (history.value.length > 20) history.value.shift()
       canMeasure.value = true
       return
     }
 
-    const stateInfo = calculateQuantumState(level, laserGates.value, null)
-    const r = measure(stateInfo.state as QuantumState)
-    
-    measuredValue.value = r
+    // Measure all ions
+    const measResults = measureAll()
+    measuredValues.value = measResults
     isMeasured.value = true
     
     // Update display
-    state.value = r === 0 ? '|0⟩' : '|1⟩'
-    p0.value = r === 0 ? '100%' : '0%'
-    p1.value = r === 1 ? '100%' : '0%'
-    result.value = String(r)
-    history.value.push(r)
+    updateStateForTracing()
+    result.value = measResults.join(',')
+    history.value.push(measResults)
     if (history.value.length > 20) history.value.shift()
 
     canMeasure.value = true
@@ -587,16 +604,34 @@ function handleMeasure() {
     }
     
     // Evaluate win condition based on the pre-measure quantum state
-    const preState = stateInfo.state
+    const stateInfo = calculateQuantumState(level, laserGates.value, null)
     const wc = level.winCondition
     let win = false
     if (wc === 'any') win = true
-    else if (wc === 'superposition') win = preState === '|+⟩' || preState === '|-⟩'
-    else if (wc === 'positive-superposition') win = preState === '|+⟩'
-    else if (wc === 'negative-superposition') win = preState === '|-⟩'
-    else if (wc === 'normal') win = preState === '|0⟩' || preState === '|1⟩'
-    else if (wc === '|0⟩' || wc === '0') win = preState === '|0⟩'
-    else if (wc === '|1⟩' || wc === '1') win = preState === '|1⟩'
+    else if (wc === 'superposition') {
+      win = stateInfo.states.some(s => s.state === '|+⟩' || s.state === '|-⟩')
+    }
+    else if (wc === 'positive-superposition') {
+      win = stateInfo.states.some(s => s.state === '|+⟩')
+    }
+    else if (wc === 'negative-superposition') {
+      win = stateInfo.states.some(s => s.state === '|-⟩')
+    }
+    else if (wc === 'normal') {
+      win = stateInfo.states.every(s => s.state === '|0⟩' || s.state === '|1⟩')
+    }
+    else if (wc === '|0⟩' || wc === '0') {
+      win = stateInfo.states.length === 1 && stateInfo.states[0].state === '|0⟩'
+    }
+    else if (wc === '|1⟩' || wc === '1') {
+      win = stateInfo.states.length === 1 && stateInfo.states[0].state === '|1⟩'
+    }
+    else if (wc === 'cnot-success') {
+      // For CNOT level: both ions should be measured as |1⟩
+      win = stateInfo.states.length === 2 && 
+            stateInfo.states[0].state === '|1⟩' &&
+            stateInfo.states[1].state === '|1⟩'
+    }
 
     if (win) showWin.value = true
 
@@ -632,7 +667,7 @@ function handleCanvasMouseMove(e: MouseEvent) {
 function handleReset() {
   ionInitialized.value = true
   isMeasured.value = false
-  measuredValue.value = null
+  measuredValues.value = null
   result.value = '—'
   updateStateForTracing()
   showPopupByTrigger('onReset')
@@ -740,71 +775,77 @@ onUnmounted(() => {
         />
       </div>
  
-      <!-- Sidebar: Bloch sphere + measurement info -->
+      <!-- Sidebar: Bloch sphere + measurement info for each ion -->
       <aside :class="styles.sidebar">
  
-        <!-- Bloch sphere -->
-        <div :class="styles.blochPanel">
-          <div :class="styles.blochTitle">Bloch Sphere</div>
-          <svg :class="styles.blochSvg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
-            <!-- Axis labels -->
-            <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>
-            <text x="80" y="156" :class="styles.blochLabel" text-anchor="middle">|0⟩</text>
-            <text x="10" y="84" :class="styles.blochLabel" text-anchor="middle">−</text>
-            <text x="150" y="84" :class="styles.blochLabel" text-anchor="middle">+</text>
- 
-            <!-- Sphere outline -->
-            <circle cx="80" cy="80" r="52" :class="styles.blochCircle" />
- 
-            <!-- Dashed equator -->
-            <ellipse cx="80" cy="80" rx="52" ry="14" :class="styles.blochEquator" />
- 
-            <!-- State arrow — only drawn when ion is hit -->
-            <g v-if="blochAngle !== null">
-              <!-- Arrow line from centre in the direction of blochAngle -->
-              <line
-                x1="80" y1="80"
-                :x2="80 + 44 * Math.cos((blochAngle * Math.PI) / 180)"
-                :y2="80 + 44 * Math.sin((blochAngle * Math.PI) / 180)"
-                :class="styles.blochArrow"
-              />
-              <!-- Arrowhead circle at tip -->
-              <circle
-                :cx="80 + 46 * Math.cos((blochAngle * Math.PI) / 180)"
-                :cy="80 + 46 * Math.sin((blochAngle * Math.PI) / 180)"
-                r="3"
-                :class="styles.blochTip"
-              />
-            </g>
- 
-            <!-- Centre dot -->
-            <circle cx="80" cy="80" r="3" :class="styles.blochCenter" />
-          </svg>
- 
-          <!-- State label below sphere -->
-          <div :class="{
-            [styles.blochState as string]: true,
-            [styles.blochStateSuperposition as string]: state === '|+⟩' || state === '|-⟩'
-          }">
-            {{ blochLabel }}
+        <!-- Loop over all ions and display their Bloch spheres -->
+        <div v-for="(ionState, idx) in ionStates" :key="idx" :class="styles.ionSection">
+          <!-- Bloch sphere for this ion -->
+          <div :class="styles.blochPanel">
+            <div :class="styles.blochTitle">Ion {{ String.fromCharCode(65 + idx) }} - Bloch Sphere</div>
+            <svg :class="styles.blochSvg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+              <!-- Axis labels -->
+              <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>
+              <text x="80" y="156" :class="styles.blochLabel" text-anchor="middle">|0⟩</text>
+              <text x="10" y="84" :class="styles.blochLabel" text-anchor="middle">−</text>
+              <text x="150" y="84" :class="styles.blochLabel" text-anchor="middle">+</text>
+   
+              <!-- Sphere outline -->
+              <circle cx="80" cy="80" r="52" :class="styles.blochCircle" />
+   
+              <!-- Dashed equator -->
+              <ellipse cx="80" cy="80" rx="52" ry="14" :class="styles.blochEquator" />
+   
+              <!-- State arrow — only drawn when ion is hit -->
+              <g v-if="getBlochAngle(ionState.state) !== null">
+                <!-- Arrow line from centre in the direction of angle -->
+                <line
+                  x1="80" y1="80"
+                  :x2="80 + 44 * Math.cos((getBlochAngle(ionState.state) * Math.PI) / 180)"
+                  :y2="80 + 44 * Math.sin((getBlochAngle(ionState.state) * Math.PI) / 180)"
+                  :class="styles.blochArrow"
+                />
+                <!-- Arrowhead circle at tip -->
+                <circle
+                  :cx="80 + 46 * Math.cos((getBlochAngle(ionState.state) * Math.PI) / 180)"
+                  :cy="80 + 46 * Math.sin((getBlochAngle(ionState.state) * Math.PI) / 180)"
+                  r="3"
+                  :class="styles.blochTip"
+                />
+              </g>
+   
+              <!-- Centre dot -->
+              <circle cx="80" cy="80" r="3" :class="styles.blochCenter" />
+            </svg>
+   
+            <!-- State label below sphere -->
+            <div :class="{
+              [styles.blochState as string]: true,
+              [styles.blochStateSuperposition as string]: ionState.state === '|+⟩' || ionState.state === '|-⟩'
+            }">
+              {{ getBlochLabel(ionState.state) }}
+            </div>
+          </div>
+   
+          <!-- Measurement info panel for this ion -->
+          <div :class="styles.infoPanel">
+            <div :class="styles.infoRow">
+              <span :class="styles.infoKey">State</span>
+              <span :class="[styles.infoVal, ionState.state === '|+⟩' || ionState.state === '|-⟩' ? styles.infoValPurple : ionState.state === '|1⟩' ? styles.infoValOrange : styles.infoValCyan]">{{ ionState.state }}</span>
+            </div>
+            <div :class="styles.infoRow">
+              <span :class="styles.infoKey">P(|0⟩)</span>
+              <span :class="styles.infoVal">{{ ionState.p0 }}</span>
+            </div>
+            <div :class="styles.infoRow">
+              <span :class="styles.infoKey">P(|1⟩)</span>
+              <span :class="styles.infoVal">{{ ionState.p1 }}</span>
+            </div>
           </div>
         </div>
- 
-        <!-- Measurement info panel -->
-        <div :class="styles.infoPanel">
-          <div :class="styles.infoRow">
-            <span :class="styles.infoKey">State</span>
-            <span :class="[styles.infoVal, stateColorClass]">{{ state }}</span>
-          </div>
-          <div :class="styles.infoRow">
-            <span :class="styles.infoKey">P(|0⟩)</span>
-            <span :class="styles.infoVal">{{ p0 }}</span>
-          </div>
-          <div :class="styles.infoRow">
-            <span :class="styles.infoKey">P(|1⟩)</span>
-            <span :class="styles.infoVal">{{ p1 }}</span>
-          </div>
-          
+        
+        <!-- Shared measurement button and controls -->
+        <div :class="styles.sharedControls">
           <!-- Measure Button -->
           <button 
             @click="handleMeasure"
@@ -829,7 +870,7 @@ onUnmounted(() => {
           </div>
           <div v-if="history.length" :class="styles.history">
             <span :class="styles.infoKey">History</span>
-            <span :class="styles.historyBits">{{ history.join(' ') }}</span>
+            <span :class="styles.historyBits">{{ history.map((r: number[]) => r.join('')).join(' ') }}</span>
           </div>
         </div>
  
