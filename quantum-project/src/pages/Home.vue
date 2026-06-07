@@ -13,12 +13,12 @@ defineOptions({ name: 'GameHome' })
 const TRAVEL_MS = 800
 const FPS = 60
 
-const COLORS = {
-  cyan: '#0ef',        // --color-primary
-  purple: '#b47cff',   // --color-secondary
+const colourS = {
+  cyan: '#0ef',        // --colour-primary
+  purple: '#b47cff',   // --colour-secondary
   green: '#0f8',
-  orange: '#f84',      // --color-warning
-  lightPurple: '#d4aaff',  // --color-secondary-light
+  orange: '#f84',      // --colour-warning
+  lightPurple: '#d4aaff',  // --colour-secondary-light
 }
 
 
@@ -91,14 +91,14 @@ const blochLabel = computed(() => {
   return getBlochLabel('|0⟩');
 })
 
-const laserColor = computed(() => {
-  if (laserGates.value.includes('CNOT')) return COLORS.green
-  if (laserGates.value.includes('X')) return COLORS.orange
-  if (laserGates.value.includes('H')) return COLORS.purple
-  return COLORS.cyan
+const lasercolour = computed(() => {
+  if (laserGates.value.includes('CNOT')) return colourS.green
+  if (laserGates.value.includes('X')) return colourS.orange
+  if (laserGates.value.includes('H')) return colourS.purple
+  return colourS.cyan
 })
 
-const stateColorClass = computed(() => {
+const statecolourClass = computed(() => {
   if (ionStates.value.length === 0) return styles.infoValCyan;
   const state = ionStates.value[0].state;
   if (state === '|+⟩' || state === '|-⟩') return styles.infoValPurple;
@@ -106,7 +106,7 @@ const stateColorClass = computed(() => {
   return styles.infoValCyan;
 })
 
-const resultColorClass = computed(() => {
+const resultcolourClass = computed(() => {
   if (result.value === '1') return styles.infoValOrange;
   return styles.infoValCyan;
 })
@@ -123,7 +123,7 @@ function setupCanvas() {
 }
 
 function updateStateForTracing() {
-  // If no ions initialized on this level, show unknown state
+  // If no ions initialised on this level, show unknown state
   if (!ionInitialized.value && !level.preInitialized) {
     ionStates.value = level.ions.map((_, idx) => ({
       ionIndex: idx,
@@ -322,56 +322,97 @@ function draw() {
     ctx.stroke()
   }
 
-  // Beam
+  // Beam - render parallel split lines for each colour
   const { segs } = level.trace(laserGates.value)
   ctx.lineWidth = 2
   for (const s of segs) {
-    let col = COLORS.cyan
-    if (s.afterH) {
-      col = COLORS.purple
-    } else if (laserColor.value === COLORS.green) {
-      col = COLORS.green
-    } else if (laserColor.value === COLORS.orange) {
-      col = COLORS.orange
+    // Calculate offset for each colour
+    const dx = s.x2 - s.x1
+    const dy = s.y2 - s.y1
+    const len = Math.sqrt(dx * dx + dy * dy)
+    const perpX = len > 0 ? -dy / len : 0
+    const perpY = len > 0 ? dx / len : 0
+    
+    const numColours = s.colours.length
+    let offsets: number[] = []
+    if (numColours === 1) offsets = [0]
+    else if (numColours === 2) offsets = [-3, 3]
+    else if (numColours === 3) offsets = [-5, 0, 5]
+    else offsets = s.colours.map((_, i) => -3 + (i * 6 / (numColours - 1)))
+    
+    for (let i = 0; i < s.colours.length; i++) {
+      const offset = offsets[i] || 0
+      const x1 = s.x1 + perpX * offset
+      const y1 = s.y1 + perpY * offset
+      const x2 = s.x2 + perpX * offset
+      const y2 = s.y2 + perpY * offset
+      
+      const colourMap: Record<string, string> = {
+        cyan: colourS.cyan,
+        orange: colourS.orange,
+        purple: colourS.purple,
+        green: colourS.green
+      }
+      
+      ctx.strokeStyle = colourMap[s.colours[i]] || colourS.cyan
+      ctx.shadowcolor = ctx.strokeStyle
+      ctx.shadowBlur = 8
+      ctx.beginPath()
+      ctx.moveTo(x1, y1)
+      ctx.lineTo(x2, y2)
+      ctx.stroke()
     }
-    ctx.strokeStyle = col
-    ctx.shadowColor = col
-    ctx.shadowBlur = 8
-    ctx.beginPath()
-    ctx.moveTo(s.x1, s.y1)
-    ctx.lineTo(s.x2, s.y2)
-    ctx.stroke()
   }
   ctx.shadowBlur = 0
 
-  // Photon dot
+  // Photon dots - render parallel photons for each colour
   photon.progress += 1 / ((TRAVEL_MS / 1000) * FPS)
   if (photon.progress < 1 && segs.length > 0) {
     const t = photon.progress * photon.segCount
     const idx = Math.min(Math.floor(t), segs.length - 1)
     const seg = segs[idx]!
     const f = t - Math.floor(t)
-    const px = seg.x1 + (seg.x2 - seg.x1) * f
-    const py = seg.y1 + (seg.y2 - seg.y1) * f
-    let col = '#fff'
-    if (seg.afterH || laserColor.value === COLORS.purple) {
-      col = COLORS.lightPurple
-    } else if (laserColor.value === COLORS.orange) {
-      col = COLORS.orange
+    
+    // Calculate perpendicular offset for photon
+    const dx = seg.x2 - seg.x1
+    const dy = seg.y2 - seg.y1
+    const len = Math.sqrt(dx * dx + dy * dy)
+    const perpX = len > 0 ? -dy / len : 0
+    const perpY = len > 0 ? dx / len : 0
+    
+    const numColours = seg.colours.length
+    let offsets: number[] = []
+    if (numColours === 1) offsets = [0]
+    else if (numColours === 2) offsets = [-3, 3]
+    else if (numColours === 3) offsets = [-5, 0, 5]
+    else offsets = seg.colours.map((_, i) => -3 + (i * 6 / (numColours - 1)))
+    
+    const colourMap: Record<string, string> = {
+      cyan: colourS.cyan,
+      orange: colourS.orange,
+      purple: colourS.lightPurple,
+      green: colourS.green
     }
-    ctx.fillStyle = col
-    ctx.shadowColor = col
-    ctx.shadowBlur = 10
-    ctx.beginPath()
-    ctx.arc(px, py, 4, 0, Math.PI * 2)
-    ctx.fill()
+    
+    for (let i = 0; i < seg.colours.length; i++) {
+      const offset = offsets[i] || 0
+      const px = seg.x1 + (seg.x2 - seg.x1) * f + perpX * offset
+      const py = seg.y1 + (seg.y2 - seg.y1) * f + perpY * offset
+      
+      ctx.fillStyle = colourMap[seg.colours[i]] || colourS.cyan
+      ctx.shadowColor = ctx.fillStyle
+      ctx.shadowBlur = 10
+      ctx.beginPath()
+      ctx.arc(px, py, 4, 0, Math.PI * 2)
+      ctx.fill()
+    }
     ctx.shadowBlur = 0
   }
 
   // Laser source
   const sx = level.src.col * CELL
   const sy = level.src.row * CELL
-  ctx.fillStyle = laserColor.value
+  ctx.fillStyle = lasercolour.value
   ctx.fillRect(sx + 4, sy + 4, CELL - 8, CELL - 8)
   ctx.fillStyle = '#000'
   ctx.font = '9px monospace'
@@ -398,10 +439,10 @@ function draw() {
     const wy = w.row * CELL
     let strokeCol = '#ff4444'
     if (w.type === 'standard' || w.type === 'all') strokeCol = '#ff4444'
-    else if (w.type === 'cyan') strokeCol = COLORS.cyan
-    else if (w.type === 'orange') strokeCol = COLORS.orange
-    else if (w.type === 'purple') strokeCol = COLORS.purple
-    else if (w.type === 'green') strokeCol = COLORS.green
+    else if (w.type === 'cyan') strokeCol = colourS.cyan
+    else if (w.type === 'orange') strokeCol = colourS.orange
+    else if (w.type === 'purple') strokeCol = colourS.purple
+    else if (w.type === 'green') strokeCol = colourS.green
     ctx.strokeStyle = strokeCol
     ctx.beginPath()
     ctx.moveTo(wx + 16, wy + 16)
@@ -866,7 +907,7 @@ onUnmounted(() => {
           
           <div :class="styles.infoRow">
             <span :class="styles.infoKey">Last</span>
-            <span :class="[styles.infoVal, resultColorClass]">{{ result }}</span>
+            <span :class="[styles.infoVal, resultcolourClass]">{{ result }}</span>
           </div>
           <div v-if="history.length" :class="styles.history">
             <span :class="styles.infoKey">History</span>
@@ -914,7 +955,12 @@ onUnmounted(() => {
                 <div
                   v-for="(gate, index) in laserGates"
                   :key="`laser-gate-${index}`"
-                  :class="[styles.laserGate, { [styles.laserGateX as string]: gate === 'X' }]"
+                  :class="[
+                    styles.laserGate,
+                    { [styles.laserGateX as string]: gate === 'X' }, 
+                    { [styles.laserGateH as string]: gate === 'H' },
+                    { [styles.laserGateCNOT as string]: gate === 'CNOT' }
+                  ]"
                 >
                   <button v-if="!level.lockedGateIndices.includes(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
                   <div>{{ gate }}</div>
@@ -932,15 +978,17 @@ onUnmounted(() => {
             <div :class="styles.sectionLabel">Available Gates</div>
             <div :class="styles.gateGrid">
               <div
-                v-for="(gate, index) in level.availableGates"
-                :key="`gate-${index}`"
-                draggable="true"
-                @dragstart="onGateDragStart($event, gate)"
-                :class="[styles.gateItem, 
-                  { [styles.gateItemX as string]: gate === 'X' },
-                  { [styles.gateItemDisabled as string]: (gateInventory[gate] ?? -1) === 0 }
-                ]"
-              >
+                  v-for="(gate, index) in level.availableGates"
+                  :key="`gate-${index}`"
+                  draggable="true"
+                  @dragstart="onGateDragStart($event, gate)"
+                  :class="[styles.gateItem, 
+                    { [styles.gateItemX as string]: gate === 'X' },
+                    { [styles.gateItemH as string]: gate === 'H' },
+                    { [styles.gateItemCNOT as string]: gate === 'CNOT' },
+                    { [styles.gateItemDisabled as string]: (gateInventory[gate] ?? -1) === 0 }
+                  ]"
+                >
                 <div>{{ gate }}</div>
                 <div v-if="gateInventory[gate] !== undefined" :class="styles.gateItemCount">
                   {{ gateInventory[gate] }}

@@ -180,7 +180,7 @@ export function calculateQuantumState(
   }
 
   // Trace the laser to determine which ions are hit
-  const { hitIons, hitH } = level.trace(laserGates);
+  const { hitIons } = level.trace(laserGates);
 
   // If no ions were hit, return unknown state for all
   if (hitIons.length === 0) {
@@ -272,7 +272,7 @@ interface TraceSegment {
   y1: number;
   x2: number;
   y2: number;
-  afterH: boolean;
+  colours: string[];
 }
 
 export class Level {
@@ -331,17 +331,14 @@ export class Level {
     const segs: TraceSegment[] = [];
     const hitIons: number[] = [];
     let { col, row } = this.src;
-    let dir: string = 'right', hitH = false;
+    let dir: string = 'right';
 
-    // Determine current laser colour based on applied laser gates
-    let currentLaserColor = 'cyan';
-    if (laserGates && laserGates.includes('X')) {
-      currentLaserColor = 'orange';
-    } else if (laserGates && laserGates.includes('H')) {
-      currentLaserColor = 'purple';
-    } else if (laserGates && laserGates.includes('CNOT')) {
-      currentLaserColor = 'green';
-    }
+    // Build active colours array from laser gates
+    let activeColours: string[] = [];
+    if (laserGates.includes('X')) activeColours.push('orange');
+    if (laserGates.includes('H')) activeColours.push('purple');
+    if (laserGates.includes('CNOT')) activeColours.push('green');
+    if (activeColours.length === 0) activeColours = ['cyan'];
 
     while (true) {
       const [dc, dr] = moves[dir as keyof typeof moves] as [number, number];
@@ -350,7 +347,7 @@ export class Level {
       segs.push({
         x1: col * CELL + CELL / 2, y1: row * CELL + CELL / 2,
         x2: new_column * CELL + CELL / 2, y2: new_row * CELL + CELL / 2,
-        afterH: hitH
+        colours: [...activeColours]
       });
 
       if (new_column < 0 || new_column >= this.cols || new_row < 0 || new_row >= this.rows) break;
@@ -364,20 +361,26 @@ export class Level {
         }
       }
 
-      // If we hit a wall, only stop if the wall is 'standard' or matches the current laser colour
+
+      // Walls block specific colours or all colours
       const wall = this.walls.find(w => w.col === col && w.row === row);
       if (wall) {
-        if (wall.type === 'standard' || wall.type === currentLaserColor || wall.type === 'all') break;
-        // otherwise the beam passes through this wall
+        if (wall.type === 'standard' || wall.type === 'all') {
+          // Block everything
+          activeColours = [];
+        } else {
+          // Remove only the matching colour from activeColours
+          activeColours = activeColours.filter(c => c !== wall.type);
+        }
+        if (activeColours.length === 0) break;
       }
-      if (this.hgates.some(g => g.col === col && g.row === row)) hitH = !hitH;
 
       const m = this.grid[row]![col]!;
       if (m === 'fwd') dir = { right: 'up', up: 'right', left: 'down', down: 'left' }[dir]!;
       if (m === 'back') dir = { right: 'down', down: 'right', left: 'up', up: 'left' }[dir]!;
     }
 
-    return { segs, hitIons, hitH };
+    return { segs, hitIons };
   }
 }
 

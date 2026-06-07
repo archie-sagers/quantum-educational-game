@@ -659,6 +659,16 @@
   box-shadow: 0 0 8px var(--color-danger) !important;
 }
 
+.gateItemCNOT {
+  border-color: var(--color-success) !important;
+  color: var(--color-success); 
+}
+
+.laserGateCNOT {
+  background-color: #0f8;
+  color: #000;
+}
+
 .gateItemDisabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -921,7 +931,6 @@
   font-weight: bold;
 }
 
-/* Multi-ion support styles */
 .ionSection {
   display: flex;
   flex-direction: column;
