@@ -158,7 +158,7 @@ export const LEVELS = [
       ions: [{ col: 4, row: 4 }, { col: 8, row: 5 }],
       walls: [{ col: 5, row: 5, type: 'orange' }, { col: 5, row: 6, type: 'orange' },{ col: 5, row: 7, type: 'orange' },{ col: 5, row: 4, type: 'orange' },{ col: 5, row: 3, type: 'orange' },{ col: 5, row: 2, type: 'orange' },{ col: 5, row: 1, type: 'orange' },{ col: 5, row: 0, type: 'orange' }],
       availableGates: ['X', 'CNOT'],
-      goal: '|1⟩',
+      goal: '|1⟩ |1⟩',
       winCondition: 'cnot-success',
       hint: 'Apply X-gate to Ion A, then route CNOT through both ions to flip Ion B',
       showResetButton: true,
@@ -168,5 +168,90 @@ export const LEVELS = [
         { title: 'Objective', text: 'Read a state of |1⟩ from the 2nd ion using the new CNOT gate.', trigger: 'onLoad' },
         { title: 'Strategy', text: 'You can only reach Ion B with a CNOT laser gate (shown in green). An orange wall prevents direct access.', trigger: 'onLoad' },
         { title: 'CNOT Explained', text: 'When the 1st ion is |1⟩ and the laser hits both ions, the 2nd ion will turn to |1⟩.', trigger: 'onLaserGatesOpen' }
-      ]    })
+      ]    }),
+    new Level({
+      name: '11 - Entanglement (Spooky Action)',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 4 }],
+      ions: [{ col: 4, row: 4 }, { col: 8, row: 4 }],
+      walls: [],
+      availableGates: ['H', 'CNOT'],
+      goal: 'Entangle the Two Ions',
+      winCondition: 'any',
+      hint: 'Route the beam through both ions to entangle them.',
+      showResetButton: true,
+      preInitialized: true,
+      lockedGateIndices: [0],
+      gateInventory: { 'H': 1, 'CNOT': 1 },
+      requiredGateCount: 2,
+      automateMeasurement: true,
+      popups: [
+        { title: 'Spooky Action at a Distance', text: 'Here we will introduce you to the concept of entanglement, where one ion\'s state determines the other.', trigger: 'onLoad' },
+        { title: 'The Bell State', text: 'Ion A is in a superposition. Drag the CNOT gate onto the laser to entangle the ions so that measuring one guarantees the result of the other.', trigger: 'onLaserGatesOpen' },
+        { title: 'Measurement Demo', text: 'Measuring the control results in the same value measured in the other ion! They are perfectly linked.', trigger: 'onAutomatedStart' }
+      ]
+    }),
+    new Level({
+      name: '12 - Spooky Action',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 2 }],
+      ions: [{ col: 9, row: 2 }, { col: 9, row: 6 }],
+      walls: [{ col: 5, row: 2, type: 'standard' }, { col: 9, row: 4, type: 'standard' }],
+      availableGates: ['H', 'CNOT'],
+      goal: 'Entangle the Ions',
+      winCondition: 'any',
+      hint: 'Use mirrors to navigate around the walls and hit both ions in sequence.',
+      showResetButton: true,
+      preInitialized: true,
+      gateInventory: { 'H': 1, 'CNOT': 1 },
+      lockedGateIndices: [],
+      requiredGateCount: 2,
+      automateMeasurement: true,
+      popups: [
+        { title: 'Manual Entanglement', text: 'Now try it yourself! Apply the H-gate and CNOT-gate to entangle the ions manually', trigger: 'onLoad' }
+      ]
+    }),
+    new Level({
+      name: '13 - Anti-Correlation',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 2 }, { col: 0, row: 6 }],
+      ions: [{ col: 4, row: 2 }, { col: 4, row: 6 }],
+      walls: [],
+      availableGates: ['H', 'X', 'CNOT'],
+      goal: 'Entangle, then invert Ion B',
+      winCondition: 'any',
+      hint: 'Source 1 can hit both ions. Source 2 should only hit Ion B.',
+      showResetButton: true,
+      preInitialized: true,
+      gateInventory: { 'H': 1, 'X': 1, 'CNOT': 1 },
+      lockedGateIndices: [],
+      requiredGateCount: 3,
+      automateMeasurement: true,
+      popups: [
+        { title: 'Anti-Correlation', text: 'Entangled states can be modified locally. See what happens when you apply an X-gate to one half of an entangled pair.', trigger: 'onLoad' },
+        { title: 'Measurement Demo', text: 'The results are perfectly opposite (strictly 0,1 or 1,0). Applying the X-gate inverted their relationship while preserving the entanglement.', trigger: 'onAutomatedStart' }
+      ]
+    }),
+
+    new Level({
+      name: '14 - Uncomputing',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 4 }],
+      ions: [{ col: 4, row: 4 }, { col: 8, row: 4 }],
+      walls: [],
+      availableGates: ['H', 'CNOT'],
+      goal: '|0⟩ |0⟩',
+      winCondition: 'normal',
+      hint: 'Apply gates in the exact reverse order to uncompute the entanglement.',
+      showResetButton: true,
+      preInitialized: true,
+      gateInventory: { 'H': 2, 'CNOT': 2 },
+      lockedGateIndices: [], 
+      requiredGateCount: 4,
+      automateMeasurement: false,
+      popups: [
+        { title: 'Uncomputing', text: 'Quantum operations are reversible. If you perform an operation, you can undo it by applying the inverse operations in reverse order.', trigger: 'onLoad' },
+        { title: 'The Challenge', text: 'First, drag an H-gate and a CNOT-gate to entangle the ions. Then, use your remaining gates to un-entangle them and return the system to |0⟩ |0⟩.', trigger: 'onLaserGatesOpen' }
+      ]
+    })
 ]
