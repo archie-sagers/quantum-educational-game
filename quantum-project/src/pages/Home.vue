@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { measureAll, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level, type QuantumState, type IonQuantumState, CELL } from '@/game/quantumgame'
+import { measureAll, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level, type IonQuantumState, CELL } from '@/game/quantumgame'
 import { LEVELS } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
 import styles from './Home.module.css'
@@ -16,7 +16,7 @@ const FPS = 60
 const colourS = {
   cyan: '#0ef',        // --colour-primary
   purple: '#b47cff',   // --colour-secondary
-  green: '#0f8',
+  green: '#0f8',   // --colour-success
   orange: '#f84',      // --colour-warning
   lightPurple: '#d4aaff',  // --colour-secondary-light
 }
@@ -34,7 +34,8 @@ const showWin = ref(false)
 const canMeasure = ref(false)
 const showLevelSelector = ref(false)
 const showLaserGates = ref(false)
-const laserGates = ref<string[]>([])
+const sourceGates = ref<string[][]>([])
+const activeSourceIndex = ref<number>(0)
 const isMeasured = ref(false)
 const measuredValues = ref<number[] | null>(null)
 const ionInitialized = ref(false)
@@ -74,37 +75,16 @@ watch(currentLevelIndex, (newLevel) => {
 
 // Bloch Sphere
 // ------------------
-
-const blochAngle = computed(() => {
-  // For multi-ion support, return angle for first ion
-  if (ionStates.value.length > 0) {
-    return getBlochAngle(ionStates.value[0].state);
-  }
-  return getBlochAngle('|0⟩');
-})
-
-const blochLabel = computed(() => {
-  // For multi-ion support, return label for first ion
-  if (ionStates.value.length > 0) {
-    return getBlochLabel(ionStates.value[0].state);
-  }
-  return getBlochLabel('|0⟩');
-})
-
 const lasercolour = computed(() => {
-  if (laserGates.value.includes('CNOT')) return colourS.green
-  if (laserGates.value.includes('X')) return colourS.orange
-  if (laserGates.value.includes('H')) return colourS.purple
+  // flattens nested array of gates and checks for presence of certain gate types to determine laser colour
+  const flat = sourceGates.value.flat();
+  if (flat.includes('CNOT')) return colourS.green
+  if (flat.includes('X')) return colourS.orange
+  if (flat.includes('H')) return colourS.purple
   return colourS.cyan
 })
 
-const statecolourClass = computed(() => {
-  if (ionStates.value.length === 0) return styles.infoValCyan;
-  const state = ionStates.value[0].state;
-  if (state === '|+⟩' || state === '|-⟩') return styles.infoValPurple;
-  if (state === '|1⟩') return styles.infoValOrange;
-  return styles.infoValCyan;
-})
+const activeGates = computed(() => sourceGates.value[activeSourceIndex.value] ?? [])
 
 const resultcolourClass = computed(() => {
   if (result.value === '1') return styles.infoValOrange;
@@ -127,21 +107,21 @@ function updateStateForTracing() {
   if (!ionInitialized.value && !level.preInitialized) {
     ionStates.value = level.ions.map((_, idx) => ({
       ionIndex: idx,
-      state: '?' as any,
-      p0: '?',
-      p1: '?'
+      state: '—' as const,
+      p0: '—',
+      p1: '—'
     }));
     canMeasure.value = false;
     return;
   }
 
   // Check if laser hits ions and show popup if triggered
-  const { hitIons } = level.trace(laserGates.value);
+  const { hitIons } = level.trace(sourceGates.value);
   if (hitIons.length > 0) {
     showPopupByTrigger('onLaserToIon');
   }
 
-  const result = calculateQuantumState(level, laserGates.value, isMeasured.value ? measuredValues.value : null);
+  const result = calculateQuantumState(level, sourceGates.value, isMeasured.value ? measuredValues.value : null);
   ionStates.value = result.states;
   canMeasure.value = result.canMeasure;
 }
@@ -155,13 +135,14 @@ function nextLevel() {
   if (currentLevelIndex.value < LEVELS.length - 1) {
     currentLevelIndex.value++
     level = LEVELS[currentLevelIndex.value]!
-    // Pre-apply any locked gates (insert at locked indices)
-    laserGates.value = []
-    // Pre-apply locked gate for levels that require it
+    // Initialise per-source gates
+    sourceGates.value = level.sources.map(() => [])
+    // Pre-apply locked gate for levels that require it (put in first source)
     if (level.lockedGateIndices.length > 0) {
       for (const idx of level.lockedGateIndices) {
         if (idx === 0 && level.availableGates.length > 0) {
-          laserGates.value.push(level.availableGates[0]!)
+          if (!sourceGates.value[0]) sourceGates.value[0] = []
+          sourceGates.value[0].push(level.availableGates[0]!)
         }
       }
     }
@@ -174,9 +155,10 @@ function nextLevel() {
     // Initialise gate inventory
     gateInventory.value = { ...level.gateInventory }
     // Decrement inventory for locked gates
+    const flatLocked = sourceGates.value.flat()
     for (const idx of level.lockedGateIndices) {
-      if (idx < laserGates.value.length) {
-        const gate = laserGates.value[idx]!
+      if (idx < flatLocked.length) {
+        const gate = flatLocked[idx]!
         if (gateInventory.value[gate] !== undefined) {
           gateInventory.value[gate]--
         }
@@ -196,18 +178,19 @@ function selectLevel(index: number) {
   tempPopup.value = null
   currentLevelIndex.value = index
   level = LEVELS[currentLevelIndex.value]!
-  laserGates.value = []
-  // Pre-apply locked gate for levels that require it
-  if (level.lockedGateIndices.length > 0) {
-    for (const idx of level.lockedGateIndices) {
-      if (idx === 0 && level.availableGates.length > 0) {
-        laserGates.value.push(level.availableGates[0]!)
+  sourceGates.value = level.sources.map(() => [])
+    // Pre-apply locked gate for levels that require it
+    if (level.lockedGateIndices.length > 0) {
+      for (const idx of level.lockedGateIndices) {
+        if (idx === 0 && level.availableGates.length > 0) {
+          if (!sourceGates.value[0]) sourceGates.value[0] = []
+          sourceGates.value[0].push(level.availableGates[0]!)
+        }
       }
     }
-  }
   // Pre-apply H gate for level 5 (special case)
   if (index === 4) {
-    laserGates.value = ['H']
+    sourceGates.value[0] = ['H']
   }
   isMeasured.value = false
   measuredValues.value = null
@@ -218,9 +201,10 @@ function selectLevel(index: number) {
   // Initialise gate inventory
   gateInventory.value = { ...level.gateInventory }
   // Decrement inventory for locked gates
+  const flatLocked = sourceGates.value.flat()
   for (const idx of level.lockedGateIndices) {
-    if (idx < laserGates.value.length) {
-      const gate = laserGates.value[idx]!
+    if (idx < flatLocked.length) {
+      const gate = flatLocked[idx]!
       if (gateInventory.value[gate] !== undefined) {
         gateInventory.value[gate]--
       }
@@ -275,7 +259,9 @@ function onLaserDrop(e: DragEvent) {
         return // Can't add gate, no inventory left
       }
     }
-    laserGates.value.push(gateType)
+    const idx = activeSourceIndex.value
+    if (!sourceGates.value[idx]) sourceGates.value[idx] = []
+    sourceGates.value[idx].push(gateType)
     isMeasured.value = false
     measuredValues.value = null
     updateStateForTracing()
@@ -284,11 +270,14 @@ function onLaserDrop(e: DragEvent) {
 
 function removeLaserGate(index: number) {
   // Prevent removing locked gates
-  if (level.lockedGateIndices.includes(index)) {
+  const activeIdx = activeSourceIndex.value
+
+  const flatIndexBase = sourceGates.value.slice(0, activeIdx).flat().length
+  if (level.lockedGateIndices.includes(flatIndexBase + index)) {
     return
   }
-  const gate = laserGates.value[index]!
-  laserGates.value.splice(index, 1)
+  const gate = sourceGates.value[activeIdx]![index]!
+  sourceGates.value[activeIdx]!.splice(index, 1)
   // Restore inventory
   if (gateInventory.value[gate] !== undefined) {
     gateInventory.value[gate]!++
@@ -323,7 +312,7 @@ function draw() {
   }
 
   // Beam - render parallel split lines for each colour
-  const { segs } = level.trace(laserGates.value)
+  const { segs } = level.trace(sourceGates.value)
   ctx.lineWidth = 2
   for (const s of segs) {
     // Calculate offset for each colour
@@ -354,8 +343,9 @@ function draw() {
         green: colourS.green
       }
       
-      ctx.strokeStyle = colourMap[s.colours[i]] || colourS.cyan
-      ctx.shadowcolor = ctx.strokeStyle
+      const colourKey = s.colours[i] || 'cyan'
+      ctx.strokeStyle = colourMap[colourKey] || colourS.cyan
+      ctx.shadowColor = String(ctx.strokeStyle)
       ctx.shadowBlur = 8
       ctx.beginPath()
       ctx.moveTo(x1, y1)
@@ -399,8 +389,9 @@ function draw() {
       const px = seg.x1 + (seg.x2 - seg.x1) * f + perpX * offset
       const py = seg.y1 + (seg.y2 - seg.y1) * f + perpY * offset
       
-      ctx.fillStyle = colourMap[seg.colours[i]] || colourS.cyan
-      ctx.shadowColor = ctx.fillStyle
+      const colourKey = seg.colours[i] || 'cyan'
+      ctx.fillStyle = colourMap[colourKey] || colourS.cyan
+      ctx.shadowColor = String(ctx.fillStyle)
       ctx.shadowBlur = 10
       ctx.beginPath()
       ctx.arc(px, py, 4, 0, Math.PI * 2)
@@ -409,27 +400,19 @@ function draw() {
     ctx.shadowBlur = 0
   }
 
-  // Laser source
-  const sx = level.src.col * CELL
-  const sy = level.src.row * CELL
-  ctx.fillStyle = lasercolour.value
-  ctx.fillRect(sx + 4, sy + 4, CELL - 8, CELL - 8)
-  ctx.fillStyle = '#000'
-  ctx.font = '9px monospace'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('LASER', sx + CELL / 2, sy + CELL / 2)
-
-  // H gates
-  for (const hg of level.hgates) {
-    const hx = hg.col * CELL
-    const hy = hg.row * CELL
-    ctx.strokeStyle = '#b47cff'
-    ctx.lineWidth = 2
-    ctx.strokeRect(hx + 8, hy + 8, CELL - 16, CELL - 16)
-    ctx.fillStyle = '#b47cff'
-    ctx.font = 'bold 18px monospace'
-    ctx.fillText('H', hx + CELL / 2, hy + CELL / 2)
+  // Laser sources
+  for (let sIdx = 0; sIdx < level.sources.length; sIdx++) {
+    const src = level.sources[sIdx]
+    if (!src) continue
+    const sx = src.col * CELL
+    const sy = src.row * CELL
+    ctx.fillStyle = lasercolour.value
+    ctx.fillRect(sx + 4, sy + 4, CELL - 8, CELL - 8)
+    ctx.fillStyle = '#000'
+    ctx.font = '9px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('LASER', sx + CELL / 2, sy + CELL / 2)
   }
 
   // Walls
@@ -455,7 +438,7 @@ function draw() {
   // Ions
   const ionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
   for (let ionIdx = 0; ionIdx < level.ions.length; ionIdx++) {
-    const ion = level.ions[ionIdx];
+    const ion = level.ions[ionIdx]!
     const ix = ion.col * CELL + CELL / 2;
     const iy = ion.row * CELL + CELL / 2;
     ctx.strokeStyle = '#f84';
@@ -549,7 +532,7 @@ function closePopup() {
         updateStateForTracing()
 
         // photon travel
-        photon = { progress: 0, segCount: level.trace(laserGates.value).segs.length }
+        photon = { progress: 0, segCount: level.trace(sourceGates.value).segs.length }
         await new Promise((res) => setTimeout(res, TRAVEL_MS))
 
         // perform measurement
@@ -613,7 +596,7 @@ function handleMeasure() {
   if (!canMeasure.value) return
   canMeasure.value = false
 
-  photon = { progress: 0, segCount: level.trace(laserGates.value).segs.length }
+  photon = { progress: 0, segCount: level.trace(sourceGates.value).segs.length }
 
   setTimeout(() => {
     // If already measured, keep showing the same value but add to history
@@ -638,40 +621,42 @@ function handleMeasure() {
 
     canMeasure.value = true
     // Check if required gate count is met
-    if (level.requiredGateCount !== null && laserGates.value.length !== level.requiredGateCount) {
+    const flatGateCount = sourceGates.value.flat().length
+    if (level.requiredGateCount !== null && flatGateCount !== level.requiredGateCount) {
       // Don't allow winning without the correct number of gates
       showWin.value = false
       return
     }
     
     // Evaluate win condition based on the pre-measure quantum state
-    const stateInfo = calculateQuantumState(level, laserGates.value, null)
+    const stateInfo = calculateQuantumState(level, sourceGates.value, null)
+    const states = stateInfo.states ?? []
     const wc = level.winCondition
     let win = false
     if (wc === 'any') win = true
     else if (wc === 'superposition') {
-      win = stateInfo.states.some(s => s.state === '|+⟩' || s.state === '|-⟩')
+      win = states.some(s => s.state === '|+⟩' || s.state === '|-⟩')
     }
     else if (wc === 'positive-superposition') {
-      win = stateInfo.states.some(s => s.state === '|+⟩')
+      win = states.some(s => s.state === '|+⟩')
     }
     else if (wc === 'negative-superposition') {
-      win = stateInfo.states.some(s => s.state === '|-⟩')
+      win = states.some(s => s.state === '|-⟩')
     }
     else if (wc === 'normal') {
-      win = stateInfo.states.every(s => s.state === '|0⟩' || s.state === '|1⟩')
+      win = states.every(s => s.state === '|0⟩' || s.state === '|1⟩')
     }
     else if (wc === '|0⟩' || wc === '0') {
-      win = stateInfo.states.length === 1 && stateInfo.states[0].state === '|0⟩'
+      win = states.length === 1 && states[0]?.state === '|0⟩'
     }
     else if (wc === '|1⟩' || wc === '1') {
-      win = stateInfo.states.length === 1 && stateInfo.states[0].state === '|1⟩'
+      win = states.length === 1 && states[0]?.state === '|1⟩'
     }
     else if (wc === 'cnot-success') {
       // For CNOT level: both ions should be measured as |1⟩
-      win = stateInfo.states.length === 2 && 
-            stateInfo.states[0].state === '|1⟩' &&
-            stateInfo.states[1].state === '|1⟩'
+      win = states.length === 2 && 
+        states[0]?.state === '|1⟩' &&
+        states[1]?.state === '|1⟩'
     }
 
     if (win) showWin.value = true
@@ -679,11 +664,10 @@ function handleMeasure() {
     // If the level requests an automated measurement demo
     // show the automated-demo popup & fallback to starting immediately
     if (level.automateMeasurement && !automatedRunning.value) {
-      if (currentLevelIndex.value === 5 && stateInfo.state === '|+⟩' || stateInfo.state === '|-⟩') {
+      const anySuperposition = states.some(s => s.state === '|+⟩' || s.state === '|-⟩')
+      if (anySuperposition) {
         const shown = showPopupByTrigger('onAutomatedStart')
         if (!shown) startAutomatedDemo()
-      } else {
-        // If not in superposition, no automated demo
       }
     }
   }, TRAVEL_MS)
@@ -697,8 +681,9 @@ function handleCanvasMouseMove(e: MouseEvent) {
   const col = Math.floor(((e.clientX - rect.left - 2) * scaleX) / CELL)
   const row = Math.floor(((e.clientY - rect.top - 2) * scaleY) / CELL)
 
-  // Change cursor when hovering over laser if gates are available
-  if (col === level.src.col && row === level.src.row && level.availableGates.length > 0) {
+  // Change cursor when hovering over any laser source if gates are available
+  const srcIdx = level.sources.findIndex(s => s.col === col && s.row === row)
+  if (srcIdx !== -1 && level.availableGates.length > 0) {
     canvas.value.style.cursor = 'pointer'
   } else {
     canvas.value.style.cursor = 'crosshair'
@@ -722,8 +707,10 @@ function handleCanvasClick(e: MouseEvent) {
   const col = Math.floor(((e.clientX - rect.left - 2) * scaleX) / CELL)
   const row = Math.floor(((e.clientY - rect.top - 2) * scaleY) / CELL)
 
-  // Check if clicked on laser
-  if (col === level.src.col && row === level.src.row && level.availableGates.length > 0) {
+  // Check if clicked on any laser source
+  const clickedSourceIdx = level.sources.findIndex(s => s.col === col && s.row === row)
+  if (clickedSourceIdx !== -1 && level.availableGates.length > 0) {
+    activeSourceIndex.value = clickedSourceIdx
     openLaserGates()
     return
   }
@@ -753,6 +740,8 @@ onMounted(() => {
   level = LEVELS[currentLevelIndex.value]!
   ionInitialized.value = level.preInitialized
   setupCanvas()
+  // initialise per-source gates for the starting level
+  sourceGates.value = level.sources.map(() => [])
   updateStateForTracing()
   draw()
   popupIndex.value = 0
@@ -842,14 +831,14 @@ onUnmounted(() => {
                 <!-- Arrow line from centre in the direction of angle -->
                 <line
                   x1="80" y1="80"
-                  :x2="80 + 44 * Math.cos((getBlochAngle(ionState.state) * Math.PI) / 180)"
-                  :y2="80 + 44 * Math.sin((getBlochAngle(ionState.state) * Math.PI) / 180)"
+                  :x2="80 + 44 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                  :y2="80 + 44 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
                   :class="styles.blochArrow"
                 />
                 <!-- Arrowhead circle at tip -->
                 <circle
-                  :cx="80 + 46 * Math.cos((getBlochAngle(ionState.state) * Math.PI) / 180)"
-                  :cy="80 + 46 * Math.sin((getBlochAngle(ionState.state) * Math.PI) / 180)"
+                  :cx="80 + 46 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                  :cy="80 + 46 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
                   r="3"
                   :class="styles.blochTip"
                 />
@@ -942,8 +931,8 @@ onUnmounted(() => {
           <!-- Applied gates -->
           <div :class="styles.appliedSection">
             <div :class="styles.sectionLabel">Applied to Laser
-              <span v-if="level.requiredGateCount !== null" :class="styles.gateCount">
-                ({{ laserGates.length }}/{{ level.requiredGateCount }})
+                <span v-if="level.requiredGateCount !== null" :class="styles.gateCount">
+                ({{ activeGates.length }}/{{ level.requiredGateCount }})
               </span>
             </div>
             <div
@@ -951,9 +940,9 @@ onUnmounted(() => {
               @drop="onLaserDrop"
               :class="styles.laserDropZone"
             >
-              <div v-if="laserGates.length > 0" :class="styles.gateStack">
+              <div v-if="activeGates.length > 0" :class="styles.gateStack">
                 <div
-                  v-for="(gate, index) in laserGates"
+                  v-for="(gate, index) in activeGates"
                   :key="`laser-gate-${index}`"
                   :class="[
                     styles.laserGate,

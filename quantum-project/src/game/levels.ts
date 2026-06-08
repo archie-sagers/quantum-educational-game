@@ -4,7 +4,7 @@ export const LEVELS = [
   new Level({
     name: '1 - Initialisation and Measurement',
     cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
+    sources: [{ col: 0, row: 4, dir: 'right' }],
     ions: [{ col: 11, row: 4 }],
     goal: '|0⟩',
     winCondition: 'normal',
@@ -21,8 +21,8 @@ export const LEVELS = [
   new Level({
     name: '2 - Reflection',
     cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ions: { col: 11, row: 4 },
+    sources: [{ col: 0, row: 4, dir: 'right' }],
+    ions: [{ col: 11, row: 4 }],
     walls: [{ col: 6, row: 3, type: 'cyan' }, { col: 6, row: 4, type: 'cyan' }, { col: 6, row: 5, type: 'cyan' }],
     goal: '|0⟩',
     winCondition: 'normal',
@@ -37,8 +37,8 @@ export const LEVELS = [
   new Level({
     name: '3 - The X-Gate',
     cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ions: { col: 11, row: 4 },
+    sources: [{ col: 0, row: 4, dir: 'right' }],
+    ions: [{ col: 11, row: 4 }],
     availableGates: ['X'],
     goal: '|1⟩',
     winCondition: '|1⟩',
@@ -54,8 +54,8 @@ export const LEVELS = [
   new Level({
     name: '4 - Reflection With The X-Gate',
     cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ions: { col: 11, row: 4 },
+    sources: [{ col: 0, row: 4, dir: 'right' }],
+    ions: [{ col: 11, row: 4 }],
     walls: [{ col: 6, row: 3, type: 'orange' }, { col: 6, row: 4, type: 'orange' }, { col: 6, row: 5, type: 'orange' }],
     availableGates: ['X'],
     goal: '|1⟩',
@@ -68,8 +68,8 @@ export const LEVELS = [
   new Level({
     name: '5 - Superposition',
     cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ions: { col: 11, row: 4 },
+    sources: [{ col: 0, row: 4, dir: 'right' }],
+    ions: [{ col: 11, row: 4 }],
     availableGates: ['H'],
     goal: '|0⟩',
     winCondition: '|0⟩',
@@ -85,8 +85,8 @@ export const LEVELS = [
   new Level({
     name: '6 - Hadamard Gate',
     cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ions: { col: 11, row: 4 },
+    sources: [{ col: 0, row: 4, dir: 'right' }],
+    ions: [{ col: 11, row: 4 }],
     availableGates: ['H'],
     goal: '|+⟩',
     winCondition: 'positive-superposition',
@@ -102,8 +102,8 @@ export const LEVELS = [
     new Level({
       name: '7 - Negative Superposition',
       cols: 12, rows: 8,
-      src: { col: 0, row: 4 },
-      ions: { col: 11, row: 4 },
+      sources: [{ col: 0, row: 4, dir: 'right' }],
+      ions: [{ col: 11, row: 4 }],
       availableGates: ['X', 'H'],
       walls: [{ col: 6, row: 3, type: 'cyan' }, { col: 6, row: 4, type: 'cyan' }, { col: 6, row: 5, type: 'cyan' },{ col: 6, row: 6, type: 'cyan' },{ col: 3, row: 4 },{ col: 3, row: 3 },{ col: 3, row: 2 }],
       goal: '|-⟩',
@@ -120,7 +120,7 @@ export const LEVELS = [
     new Level({
       name: '8 - Sequencing Gates',
       cols: 12, rows: 8,
-      src: { col: 0, row: 4 },
+      sources: [{ col: 0, row: 4, dir: 'right' }],
       ions: [{ col: 11, row: 4 }],
       availableGates: ['X', 'H'],
       goal: '|0⟩',
@@ -137,7 +137,7 @@ export const LEVELS = [
     new Level({
       name: '9 - Sequencing Gates Pt 2',
       cols: 12, rows: 8,
-      src: { col: 0, row: 4 },
+      sources: [{ col: 0, row: 4, dir: 'right' }],
       ions: [{ col: 11, row: 4 }],
       availableGates: ['X', 'H'],
       goal: '|1⟩',
@@ -154,7 +154,7 @@ export const LEVELS = [
     new Level({
       name: '10 - CNOT Gate',
       cols: 12, rows: 8,
-      src: { col: 0, row: 4 },
+      sources: [{ col: 0, row: 4 }],
       ions: [{ col: 4, row: 4 }, { col: 8, row: 5 }],
       walls: [{ col: 5, row: 5, type: 'orange' }, { col: 5, row: 6, type: 'orange' },{ col: 5, row: 7, type: 'orange' },{ col: 5, row: 4, type: 'orange' },{ col: 5, row: 3, type: 'orange' },{ col: 5, row: 2, type: 'orange' },{ col: 5, row: 1, type: 'orange' },{ col: 5, row: 0, type: 'orange' }],
       availableGates: ['X', 'CNOT'],

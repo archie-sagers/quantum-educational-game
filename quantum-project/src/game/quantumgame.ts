@@ -128,8 +128,7 @@ export function measureAll(): number[] {
   }
   // fallback: return array of random results
   // To prevent crashes
-  const numQubits = lastQuantumSystem?.getNumQubits() || 1;
-  return Array.from({ length: numQubits }, () => Math.random() < 0.5 ? 0 : 1);
+  return [Math.random() < 0.5 ? 0 : 1];
 }
 
 export function getBlochAngle(state: string): number | null {
@@ -163,7 +162,7 @@ export interface IonQuantumState {
 
 export function calculateQuantumState(
   level: Level,
-  laserGates: string[],
+  laserGates: string[][],
   measuredValues: number[] | null
 ): { states: IonQuantumState[]; canMeasure: boolean } {
   // Initialise quantum system with the number of ions (qubits)
@@ -194,21 +193,26 @@ export function calculateQuantumState(
   }
 
   // Apply gates based on which ions were hit
-  for (const gate of laserGates) {
+  const flatGates = ([] as string[]).concat(...(laserGates || []));
+  for (const gate of flatGates) {
     if (gate === 'X') {
       // X gate applies to the first ion hit
       if (hitIons.length > 0) {
-        qs.applyX(hitIons[0]);
+        const idx = hitIons[0]!
+        qs.applyX(idx);
       }
     } else if (gate === 'H') {
       // H gate applies to the first ion hit
       if (hitIons.length > 0) {
-        qs.applyH(hitIons[0]);
+        const idx = hitIons[0]!
+        qs.applyH(idx);
       }
     } else if (gate === 'CNOT') {
       // CNOT gate: first ion is control, second is target
       if (hitIons.length >= 2) {
-        qs.applyCNOT(hitIons[0], hitIons[1]);
+        const c = hitIons[0]!
+        const t = hitIons[1]!
+        qs.applyCNOT(c, t);
       }
     }
   }
@@ -248,9 +252,8 @@ interface LevelConfig {
   name: string;
   cols: number;
   rows: number;
-  src: { col: number; row: number };
+  sources: Array<{ col: number; row: number; dir?: string }>;
   ions: Array<{ col: number; row: number }>;
-  hgates?: Array<{ col: number; row: number }>;
   walls?: Array<{ col: number; row: number; type?: WallType }>;
   hint?: string;
   goal?: string;
@@ -279,9 +282,8 @@ export class Level {
   name: string;
   cols: number;
   rows: number;
-  src: { col: number; row: number };
+  sources: Array<{ col: number; row: number; dir?: string }>;
   ions: Array<{ col: number; row: number }>;
-  hgates: Array<{ col: number; row: number }>;
   walls: Array<{ col: number; row: number; type: WallType }>;
   winCondition: string;
   hint: string;
@@ -298,14 +300,13 @@ export class Level {
   lockedGateIndices: number[];
   gateInventory: Record<string, number>;
 
-  constructor({ name, cols, rows, src, ions, hgates, walls, hint, goal, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, automateMeasurement, initialGates, popups, requiredGateCount, lockedGateIndices, gateInventory }: LevelConfig) {
+  constructor({ name, cols, rows, sources, ions, walls, hint, goal, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, automateMeasurement, initialGates, popups, requiredGateCount, lockedGateIndices, gateInventory }: LevelConfig) {
     this.name = name;
     this.cols = cols;
     this.rows = rows;
-    this.src = src;
+    this.sources = (sources || []).map(s => ({ col: s.col, row: s.row, dir: s.dir ?? 'right' }));
     this.ions = ions || [];
-    this.hgates = hgates || [];
-    this.walls = (walls || []).map(w => ({ col: w.col, row: w.row, type: (w as any).type ?? 'standard' }));
+    this.walls = (walls || []).map(w => ({ col: w.col, row: w.row, type: w.type ?? 'standard' }));
     this.winCondition = winCondition || 'any';
     this.hint = hint || 'Route the beam to the ions';
     this.goal = goal || '—';
@@ -323,64 +324,73 @@ export class Level {
   }
 
   isFixed(col: number, row: number) {
-    return [this.src, ...this.ions, ...this.hgates, ...this.walls].some((p: any) => p.col === col && p.row === row);
+    return [...this.sources, ...this.ions, ...this.walls].some((p: { col: number; row: number }) => p.col === col && p.row === row);
   }
 
-  trace(laserGates: string[]) {
+  trace(sourceGates: string[][]) {
     const moves = { right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1] };
-    const segs: TraceSegment[] = [];
-    const hitIons: number[] = [];
-    let { col, row } = this.src;
-    let dir: string = 'right';
+    const allSegs: TraceSegment[] = [];
+    const allHitIons: number[] = [];
 
-    // Build active colours array from laser gates
-    let activeColours: string[] = [];
-    if (laserGates.includes('X')) activeColours.push('orange');
-    if (laserGates.includes('H')) activeColours.push('purple');
-    if (laserGates.includes('CNOT')) activeColours.push('green');
-    if (activeColours.length === 0) activeColours = ['cyan'];
+    for (let sIdx = 0; sIdx < this.sources.length; sIdx++) {
+      const src = this.sources[sIdx];
+      if (!src) continue;
 
-    while (true) {
-      const [dc, dr] = moves[dir as keyof typeof moves] as [number, number];
-      const new_column = col + dc, new_row = row + dr;
+      const gates = sourceGates[sIdx] || [];
+      let activeColours: string[] = [];
+      if (gates.includes('X')) activeColours.push('orange');
+      if (gates.includes('H')) activeColours.push('purple');
+      if (gates.includes('CNOT')) activeColours.push('green');
+      if (activeColours.length === 0) activeColours = ['cyan'];
 
-      segs.push({
-        x1: col * CELL + CELL / 2, y1: row * CELL + CELL / 2,
-        x2: new_column * CELL + CELL / 2, y2: new_row * CELL + CELL / 2,
-        colours: [...activeColours]
-      });
+      const segs: TraceSegment[] = [];
+      const hitIons: number[] = [];
 
-      if (new_column < 0 || new_column >= this.cols || new_row < 0 || new_row >= this.rows) break;
-      col = new_column;
-      row = new_row;
+      let col = src.col;
+      let row = src.row;
+      let dir: string = src.dir ?? 'right';
 
-      // Check if we hit an ion (but don't stop - let the laser pass through)
-      for (let i = 0; i < this.ions.length; i++) {
-        if (col === this.ions[i].col && row === this.ions[i].row && !hitIons.includes(i)) {
-          hitIons.push(i);
+      while (true) {
+        const [dc, dr] = moves[dir as keyof typeof moves] as [number, number];
+        const new_column = col + dc, new_row = row + dr;
+
+        segs.push({
+          x1: col * CELL + CELL / 2, y1: row * CELL + CELL / 2,
+          x2: new_column * CELL + CELL / 2, y2: new_row * CELL + CELL / 2,
+          colours: [...activeColours]
+        });
+
+        if (new_column < 0 || new_column >= this.cols || new_row < 0 || new_row >= this.rows) break;
+        col = new_column;
+        row = new_row;
+
+          for (let i = 0; i < this.ions.length; i++) {
+            const ion = this.ions[i]!;
+            if (col === ion.col && row === ion.row && !hitIons.includes(i)) {
+              hitIons.push(i);
+              if (!allHitIons.includes(i)) allHitIons.push(i);
+            }
+          }
+
+        const wall = this.walls.find(w => w.col === col && w.row === row);
+        if (wall) {
+          if (wall.type === 'standard' || wall.type === 'all') {
+            activeColours = [];
+          } else {
+            activeColours = activeColours.filter(c => c !== wall.type);
+          }
+          if (activeColours.length === 0) break;
         }
+
+        const m = this.grid[row]![col]!;
+        if (m === 'fwd') dir = { right: 'up', up: 'right', left: 'down', down: 'left' }[dir]!;
+        if (m === 'back') dir = { right: 'down', down: 'right', left: 'up', up: 'left' }[dir]!;
       }
 
-
-      // Walls block specific colours or all colours
-      const wall = this.walls.find(w => w.col === col && w.row === row);
-      if (wall) {
-        if (wall.type === 'standard' || wall.type === 'all') {
-          // Block everything
-          activeColours = [];
-        } else {
-          // Remove only the matching colour from activeColours
-          activeColours = activeColours.filter(c => c !== wall.type);
-        }
-        if (activeColours.length === 0) break;
-      }
-
-      const m = this.grid[row]![col]!;
-      if (m === 'fwd') dir = { right: 'up', up: 'right', left: 'down', down: 'left' }[dir]!;
-      if (m === 'back') dir = { right: 'down', down: 'right', left: 'up', up: 'left' }[dir]!;
+      for (const s of segs) allSegs.push(s);
     }
 
-    return { segs, hitIons };
+    return { segs: allSegs, hitIons: allHitIons };
   }
 }
 
