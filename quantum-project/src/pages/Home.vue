@@ -809,6 +809,7 @@ onUnmounted(() => {
       <aside :class="styles.sidebar">
  
         <!-- Loop over all ions and display their Bloch spheres -->
+        <div :class="styles.ionWrapper">
         <div v-for="(ionState, idx) in ionStates" :key="idx" :class="styles.ionSection">
           <!-- Bloch sphere for this ion -->
           <div :class="styles.blochPanel">
@@ -872,6 +873,7 @@ onUnmounted(() => {
               <span :class="styles.infoVal">{{ ionState.p1 }}</span>
             </div>
           </div>
+        </div>
         </div>
         
         <!-- Shared measurement button and controls -->
