@@ -258,7 +258,8 @@ interface LevelConfig {
   automateMeasurement?: boolean;
   initialGates?: string[];
   popups?: Array<{ title: string; text: string; trigger?: string }>;
-  requiredGateCount?: number;
+  requiredGateCount?: number | number[] | null;
+  prePlacedGates?: string[][];
   lockedGateIndices?: number[];
   gateInventory?: Record<string, number>;
 }
@@ -289,11 +290,12 @@ export class Level {
   automateMeasurement: boolean;
   initialGates: string[];
   popups: Array<{ title: string; text: string; trigger?: string }>;
-  requiredGateCount: number | null;
+  requiredGateCount?: number | number[] | null;
+  prePlacedGates?: string[][];
   lockedGateIndices: number[];
   gateInventory: Record<string, number>;
 
-  constructor({ name, cols, rows, sources, ions, walls, hint, goal, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, automateMeasurement, initialGates, popups, requiredGateCount, lockedGateIndices, gateInventory }: LevelConfig) {
+  constructor({ name, cols, rows, sources, ions, walls, hint, goal, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, automateMeasurement, initialGates, popups, requiredGateCount, prePlacedGates, lockedGateIndices, gateInventory }: LevelConfig) {
     this.name = name;
     this.cols = cols;
     this.rows = rows;
@@ -311,7 +313,8 @@ export class Level {
     this.automateMeasurement = automateMeasurement || false;
     this.initialGates = initialGates || [];
     this.popups = popups || [];
-    this.requiredGateCount = requiredGateCount || null;
+    this.requiredGateCount = requiredGateCount !== undefined ? requiredGateCount : null;
+    this.prePlacedGates = prePlacedGates || [];
     this.lockedGateIndices = lockedGateIndices || [];
     this.gateInventory = gateInventory || {};
   }

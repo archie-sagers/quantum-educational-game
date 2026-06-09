@@ -73,15 +73,20 @@ watch(currentLevelIndex, (newLevel) => {
   localStorage.setItem('quantum_save_level', newLevel.toString())
 })
 
-// Bloch Sphere
-// ------------------
-const lasercolour = computed(() => {
-  // flattens nested array of gates and checks for presence of certain gate types to determine laser colour
-  const flat = sourceGates.value.flat();
-  if (flat.includes('CNOT')) return colourS.green
-  if (flat.includes('X')) return colourS.orange
-  if (flat.includes('H')) return colourS.purple
-  return colourS.cyan
+// Progress display for gate count
+// either show global total or per-source depending on level config
+const displayedGateProgress = computed(() => {
+  if (level.requiredGateCount === null) return null;
+  
+  if (Array.isArray(level.requiredGateCount)) {
+    // Show progress for the currently clicked laser
+    const requiredForThisSource = level.requiredGateCount[activeSourceIndex.value] ?? 0;
+    return `(${activeGates.value.length}/${requiredForThisSource})`;
+  } else {
+    // Show global total progress
+    const totalApplied = sourceGates.value.flat().length;
+    return `(${totalApplied}/${level.requiredGateCount})`;
+  }
 })
 
 const activeGates = computed(() => sourceGates.value[activeSourceIndex.value] ?? [])
@@ -124,6 +129,15 @@ function updateStateForTracing() {
   const result = calculateQuantumState(level, sourceGates.value, isMeasured.value ? measuredValues.value : null);
   ionStates.value = result.states;
   canMeasure.value = result.canMeasure;
+}
+
+// Initialise the locked gates
+// -------------------
+function initLevelGates() {
+  // Read exactly what gates should be placed on which sources
+  sourceGates.value = level.sources.map((_, i) => {
+    return level.prePlacedGates && level.prePlacedGates[i] ? [...level.prePlacedGates[i]!] : [];
+  });
 }
 
 // Level Progression
@@ -287,6 +301,12 @@ function removeLaserGate(index: number) {
   updateStateForTracing()
 }
 
+function isGateLocked(localIndex: number) {
+  const activeIdx = activeSourceIndex.value;
+  const flatIndexBase = sourceGates.value.slice(0, activeIdx).flat().length;
+  return level.lockedGateIndices.includes(flatIndexBase + localIndex);
+}
+
 // Canvas draw loop
 // ------------------
 
@@ -406,7 +426,15 @@ function draw() {
     if (!src) continue
     const sx = src.col * CELL
     const sy = src.row * CELL
-    ctx.fillStyle = lasercolour.value
+
+    // Calculate colour specifically for THIS source
+    const myGates = sourceGates.value[sIdx] || []
+    let myColour = colourS.cyan
+    if (myGates.includes('CNOT')) myColour = colourS.green
+    else if (myGates.includes('X')) myColour = colourS.orange
+    else if (myGates.includes('H')) myColour = colourS.purple
+
+    ctx.fillStyle = myColour
     ctx.fillRect(sx + 4, sy + 4, CELL - 8, CELL - 8)
     ctx.fillStyle = '#000'
     ctx.font = '9px monospace'
@@ -621,11 +649,29 @@ function handleMeasure() {
 
     canMeasure.value = true
     // Check if required gate count is met
-    const flatGateCount = sourceGates.value.flat().length
-    if (level.requiredGateCount !== null && flatGateCount !== level.requiredGateCount) {
-      // Don't allow winning without the correct number of gates
-      showWin.value = false
-      return
+    if (level.requiredGateCount !== null) {
+      if (Array.isArray(level.requiredGateCount)) {
+        // Enforce specific counts per laser source
+        let isValid = true;
+        for (let i = 0; i < level.requiredGateCount.length; i++) {
+          const count = sourceGates.value[i]?.length || 0;
+          if (count !== level.requiredGateCount[i]) {
+            isValid = false;
+            break;
+          }
+        }
+        if (!isValid) {
+          showWin.value = false;
+          return;
+        }
+      } else {
+        // Enforce global total count
+        const flatGateCount = sourceGates.value.flat().length;
+        if (flatGateCount !== level.requiredGateCount) {
+          showWin.value = false;
+          return;
+        }
+      }
     }
     
     // Evaluate win condition based on the pre-measure quantum state
@@ -741,7 +787,7 @@ onMounted(() => {
   ionInitialized.value = level.preInitialized
   setupCanvas()
   // initialise per-source gates for the starting level
-  sourceGates.value = level.sources.map(() => [])
+  initLevelGates()
   updateStateForTracing()
   draw()
   popupIndex.value = 0
@@ -933,8 +979,8 @@ onUnmounted(() => {
           <!-- Applied gates -->
           <div :class="styles.appliedSection">
             <div :class="styles.sectionLabel">Applied to Laser
-                <span v-if="level.requiredGateCount !== null" :class="styles.gateCount">
-                ({{ activeGates.length }}/{{ level.requiredGateCount }})
+                <span v-if="displayedGateProgress !== null" :class="styles.gateCount">
+                  {{ displayedGateProgress }}
               </span>
             </div>
             <div
@@ -953,7 +999,7 @@ onUnmounted(() => {
                     { [styles.laserGateCNOT as string]: gate === 'CNOT' }
                   ]"
                 >
-                  <button v-if="!level.lockedGateIndices.includes(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
+                <button v-if="!isGateLocked(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
                   <div>{{ gate }}</div>
                 </div>
               </div>

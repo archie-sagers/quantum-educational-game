@@ -214,8 +214,8 @@ export const LEVELS = [
     new Level({
       name: '13 - Anti-Correlation',
       cols: 12, rows: 8,
-      sources: [{ col: 0, row: 2 }, { col: 0, row: 6 }],
-      ions: [{ col: 4, row: 2 }, { col: 4, row: 6 }],
+      sources: [{ col: 0, row: 2 }, { col: 8, row: 6, dir: 'up' }],
+      ions: [{ col: 4, row: 2 }, { col: 8, row: 2 }],
       walls: [],
       availableGates: ['H', 'X', 'CNOT'],
       goal: 'Entangle, then invert Ion B',
