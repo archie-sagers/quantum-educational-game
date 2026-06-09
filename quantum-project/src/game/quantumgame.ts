@@ -179,7 +179,9 @@ export function calculateQuantumState(
   }
 
   // Trace the laser to determine which ions are hit
-  const { hitIons } = level.trace(laserGates);
+  const traceResult = level.trace(laserGates);
+  const hitIons = traceResult.hitIons;
+  const sourceHitIons = traceResult.sourceHitIons || [];
 
   // If no ions were hit, return unknown state for all
   if (hitIons.length === 0) {
@@ -193,26 +195,17 @@ export function calculateQuantumState(
   }
 
   // Apply gates based on which ions were hit
-  const flatGates = ([] as string[]).concat(...(laserGates || []));
-  for (const gate of flatGates) {
-    if (gate === 'X') {
-      // X gate applies to the first ion hit
-      if (hitIons.length > 0) {
-        const idx = hitIons[0]!
-        qs.applyX(idx);
-      }
-    } else if (gate === 'H') {
-      // H gate applies to the first ion hit
-      if (hitIons.length > 0) {
-        const idx = hitIons[0]!
-        qs.applyH(idx);
-      }
-    } else if (gate === 'CNOT') {
-      // CNOT gate: first ion is control, second is target
-      if (hitIons.length >= 2) {
-        const c = hitIons[0]!
-        const t = hitIons[1]!
-        qs.applyCNOT(c, t);
+  for (let sIdx = 0; sIdx < laserGates.length; sIdx++) {
+    const gates = laserGates[sIdx] || [];
+    const sHits = sourceHitIons[sIdx] || [];
+    
+    for (const gate of gates) {
+      if (gate === 'X') {
+        if (sHits.length > 0) qs.applyX(sHits[0]!);
+      } else if (gate === 'H') {
+        if (sHits.length > 0) qs.applyH(sHits[0]!);
+      } else if (gate === 'CNOT') {
+        if (sHits.length >= 2) qs.applyCNOT(sHits[0]!, sHits[1]!);
       }
     }
   }
@@ -331,6 +324,7 @@ export class Level {
     const moves = { right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1] };
     const allSegs: TraceSegment[] = [];
     const allHitIons: number[] = [];
+    const sourceHitIons: number[][] = [];
 
     for (let sIdx = 0; sIdx < this.sources.length; sIdx++) {
       const src = this.sources[sIdx];
@@ -386,11 +380,12 @@ export class Level {
         if (m === 'fwd') dir = { right: 'up', up: 'right', left: 'down', down: 'left' }[dir]!;
         if (m === 'back') dir = { right: 'down', down: 'right', left: 'up', up: 'left' }[dir]!;
       }
-
+      sourceHitIons.push(hitIons);
       for (const s of segs) allSegs.push(s);
+      
     }
 
-    return { segs: allSegs, hitIons: allHitIons };
+    return { segs: allSegs, hitIons: allHitIons, sourceHitIons };
   }
 }
 
