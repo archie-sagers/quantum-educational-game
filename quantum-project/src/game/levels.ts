@@ -245,8 +245,9 @@ export const LEVELS = [
       hint: 'Apply gates in the exact reverse order to uncompute the entanglement.',
       showResetButton: true,
       preInitialized: true,
+      prePlacedGates: [['H', 'CNOT']], 
+      lockedGateIndices: [0, 1],
       gateInventory: { 'H': 2, 'CNOT': 2 },
-      lockedGateIndices: [], 
       requiredGateCount: 4,
       automateMeasurement: false,
       popups: [

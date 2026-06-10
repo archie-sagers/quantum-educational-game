@@ -958,15 +958,38 @@ onUnmounted(() => {
 
     <!-- Level selector modal -->
     <div v-if="showLevelSelector" :class="styles.levelSelectorOverlay" @click="showLevelSelector = false">
-      <div :class="styles.levelSelectorGrid" @click.stop>
-        <div
-          v-for="(_, index) in LEVELS"
-          :key="index"
-          @click="selectLevel(index)"
-          :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: index === currentLevelIndex }]"
-        >
-          {{ index + 1 }}
+      <div :class="styles.levelSelectorModal" @click.stop>
+        
+        <div :class="styles.levelGroup">
+          
+          <div :class="styles.levelGroupTitle">1 Qubit Systems</div>
+          <div :class="styles.levelSelectorGrid">
+            <div
+              v-for="(_, index) in LEVELS.slice(0, 9)"
+              :key="'group1-' + index"
+              @click="selectLevel(index)"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: index === currentLevelIndex }]"
+            >
+              {{ index + 1 }}
+            </div>
+          </div>
         </div>
+
+        <div :class="styles.levelGroup">
+          
+          <div :class="styles.levelGroupTitle">2 Qubit Systems</div>
+          <div :class="styles.levelSelectorGrid">
+            <div
+              v-for="(_, index) in LEVELS.slice(9)"
+              :key="'group2-' + index"
+              @click="selectLevel(index + 9)"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: (index + 9) === currentLevelIndex }]"
+            >
+              {{ index + 10 }}
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
