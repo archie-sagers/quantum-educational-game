@@ -116,6 +116,7 @@ function goToLevel(index: number) {
           <li>It flips a target qubit only when a control qubit is in state |1⟩</li>
           <li>This is a fundamental gate for creating <a href="https://www.quera.com/glossary/entanglement" target="_blank" class="manualLink">entanglement</a></li>
         </ul>
+        <p><strong>Practice:</strong> <span @click="goToLevel(9)" class="manualLink">Level 10</span> <span @click="goToLevel(10)" class="manualLink">Level 11</span></p>
 
         <h2 class="manualH2">Quantum Mechanics</h2>
 
@@ -149,6 +150,7 @@ function goToLevel(index: number) {
         <ul>
           <li>Entanglement is created using multi-qubit gates like <a href="https://www.quera.com/glossary/controlled-not-gate" target="_blank" class="manualLink">Controlled-NOT (C-NOT)</a></li>
         </ul>
+        <p><strong>Practice:</strong> <span @click="goToLevel(10)" class="manualLink">Level 11</span> <span @click="goToLevel(11)" class="manualLink">Level 12</span></p>
 
         <h2 class="manualH2">The Bloch Sphere</h2>
         <p>The circular diagram on the right side of the game shows the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a>, a geometric representation of the state of a single <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a>.</p>
@@ -159,6 +161,7 @@ function goToLevel(index: number) {
           <li>Points on the equator represent <a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a> in the positive or negative state like |+⟩ and |-⟩</li>
           <li>The arrow shows the current qubit state</li>
         </ul>
+        
 
         <h2 class="manualH2">Tips for Success</h2>
         <ol>
