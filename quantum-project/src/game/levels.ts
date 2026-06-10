@@ -4,8 +4,8 @@ export const LEVELS = [
   new Level({
     name: '1 - Initialisation and Measurement',
     cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ion: { col: 11, row: 4 },
+    sources: [{ col: 0, row: 4, dir: 'right' }],
+    ions: [{ col: 11, row: 4 }],
     goal: '|0⟩',
     winCondition: 'normal',
     hint: 'Press reset to initialise the ion, then measure it',
@@ -21,16 +21,15 @@ export const LEVELS = [
   new Level({
     name: '2 - Reflection',
     cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ion: { col: 11, row: 4 },
-    walls: [{ col: 6, row: 3 }, { col: 6, row: 4 }, { col: 6, row: 5 }],
+    sources: [{ col: 0, row: 4, dir: 'right' }],
+    ions: [{ col: 11, row: 4 }],
+    walls: [{ col: 6, row: 3, type: 'cyan' }, { col: 6, row: 4, type: 'cyan' }, { col: 6, row: 5, type: 'cyan' }],
     goal: '|0⟩',
     winCondition: 'normal',
     hint: 'Place mirrors to route the laser around the wall and hit the ion',
     showResetButton: true,
     preInitialized: false,
     popups: [
-      { title: 'Mirrors', text: 'The wall is blocking the direct path. Use mirrors to route the laser beam around it.', trigger: 'onLoad' },
       { title: 'How to Place Mirrors', text: 'Left-click on the grid to place or rotate mirrors. Right-click to remove them. Once you route the beam to the ion, press Reset.', trigger: 'onLoad' },
       { title: 'Measure', text: 'Measure the ion to complete the level.', trigger: 'onLaserToIon' }
     ]
@@ -38,8 +37,8 @@ export const LEVELS = [
   new Level({
     name: '3 - The X-Gate',
     cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ion: { col: 11, row: 4 },
+    sources: [{ col: 0, row: 4, dir: 'right' }],
+    ions: [{ col: 11, row: 4 }],
     availableGates: ['X'],
     goal: '|1⟩',
     winCondition: '|1⟩',
@@ -55,9 +54,9 @@ export const LEVELS = [
   new Level({
     name: '4 - Reflection With The X-Gate',
     cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ion: { col: 11, row: 4 },
-    walls: [{ col: 6, row: 3 }, { col: 6, row: 4 }, { col: 6, row: 5 }],
+    sources: [{ col: 0, row: 4, dir: 'right' }],
+    ions: [{ col: 11, row: 4 }],
+    walls: [{ col: 6, row: 3, type: 'orange' }, { col: 6, row: 4, type: 'orange' }, { col: 6, row: 5, type: 'orange' }],
     availableGates: ['X'],
     goal: '|1⟩',
     winCondition: '|1⟩',
@@ -69,8 +68,8 @@ export const LEVELS = [
   new Level({
     name: '5 - Superposition',
     cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ion: { col: 11, row: 4 },
+    sources: [{ col: 0, row: 4, dir: 'right' }],
+    ions: [{ col: 11, row: 4 }],
     availableGates: ['H'],
     goal: '|0⟩',
     winCondition: '|0⟩',
@@ -86,8 +85,8 @@ export const LEVELS = [
   new Level({
     name: '6 - Hadamard Gate',
     cols: 12, rows: 8,
-    src: { col: 0, row: 4 },
-    ion: { col: 11, row: 4 },
+    sources: [{ col: 0, row: 4, dir: 'right' }],
+    ions: [{ col: 11, row: 4 }],
     availableGates: ['H'],
     goal: '|+⟩',
     winCondition: 'positive-superposition',
@@ -103,10 +102,10 @@ export const LEVELS = [
     new Level({
       name: '7 - Negative Superposition',
       cols: 12, rows: 8,
-      src: { col: 0, row: 4 },
-      ion: { col: 11, row: 4 },
+      sources: [{ col: 0, row: 4, dir: 'right' }],
+      ions: [{ col: 11, row: 4 }],
       availableGates: ['X', 'H'],
-      walls: [{ col: 6, row: 3 }, { col: 6, row: 4 }, { col: 6, row: 5 },{ col: 6, row: 6 },{ col: 3, row: 4 },{ col: 3, row: 3 },{ col: 3, row: 2 }],
+      walls: [{ col: 6, row: 3, type: 'cyan' }, { col: 6, row: 4, type: 'cyan' }, { col: 6, row: 5, type: 'cyan' },{ col: 6, row: 6, type: 'cyan' },{ col: 3, row: 4 },{ col: 3, row: 3 },{ col: 3, row: 2 }],
       goal: '|-⟩',
       winCondition: 'negative-superposition',
       hint: 'Flip the ion with an X-gate, then apply H to create |-⟩ and measure the distribution',
@@ -121,8 +120,8 @@ export const LEVELS = [
     new Level({
       name: '8 - Sequencing Gates',
       cols: 12, rows: 8,
-      src: { col: 0, row: 4 },
-      ion: { col: 11, row: 4 },
+      sources: [{ col: 0, row: 4, dir: 'right' }],
+      ions: [{ col: 11, row: 4 }],
       availableGates: ['X', 'H'],
       goal: '|0⟩',
       winCondition: 'normal',
@@ -138,8 +137,8 @@ export const LEVELS = [
     new Level({
       name: '9 - Sequencing Gates Pt 2',
       cols: 12, rows: 8,
-      src: { col: 0, row: 4 },
-      ion: { col: 11, row: 4 },
+      sources: [{ col: 0, row: 4, dir: 'right' }],
+      ions: [{ col: 11, row: 4 }],
       availableGates: ['X', 'H'],
       goal: '|1⟩',
       winCondition: 'normal',
@@ -151,6 +150,109 @@ export const LEVELS = [
       gateInventory: { 'X': 1, 'H': 2 },
       popups: [
         { title: 'Phase Matters', text: 'You must use exactly 3 laser gates total to achieve the |1⟩ state. The first X gate is locked in place.', trigger: 'onLoad' },
+      ]    }),
+    new Level({
+      name: '10 - CNOT Gate',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 4 }],
+      ions: [{ col: 4, row: 4 }, { col: 8, row: 5 }],
+      walls: [{ col: 5, row: 5, type: 'orange' }, { col: 5, row: 6, type: 'orange' },{ col: 5, row: 7, type: 'orange' },{ col: 5, row: 4, type: 'orange' },{ col: 5, row: 3, type: 'orange' },{ col: 5, row: 2, type: 'orange' },{ col: 5, row: 1, type: 'orange' },{ col: 5, row: 0, type: 'orange' }],
+      availableGates: ['X', 'CNOT'],
+      goal: '|1⟩ |1⟩',
+      winCondition: 'cnot-success',
+      hint: 'Apply X-gate to Ion A, then route CNOT through both ions to flip Ion B',
+      showResetButton: true,
+      preInitialized: true,
+      gateInventory: { 'X': 1, 'CNOT': 1 },
+      popups: [
+        { title: 'Objective', text: 'Read a state of |1⟩ from the 2nd ion using the new CNOT gate.', trigger: 'onLoad' },
+        { title: 'Strategy', text: 'You can only reach Ion B with a CNOT laser gate (shown in green). An orange wall prevents direct access.', trigger: 'onLoad' },
+        { title: 'CNOT Explained', text: 'When the 1st ion is |1⟩ and the laser hits both ions, the 2nd ion will turn to |1⟩.', trigger: 'onLaserGatesOpen' }
+      ]    }),
+    new Level({
+      name: '11 - Entanglement (Spooky Action)',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 4 }],
+      ions: [{ col: 4, row: 4 }, { col: 8, row: 4 }],
+      walls: [],
+      availableGates: ['H', 'CNOT'],
+      goal: 'Entangle the Two Ions',
+      winCondition: 'any',
+      hint: 'Route the beam through both ions to entangle them.',
+      showResetButton: true,
+      preInitialized: true,
+      lockedGateIndices: [0],
+      gateInventory: { 'H': 1, 'CNOT': 1 },
+      requiredGateCount: 2,
+      automateMeasurement: true,
+      popups: [
+        { title: 'Spooky Action at a Distance', text: 'Here we will introduce you to the concept of entanglement, where one ion\'s state determines the other.', trigger: 'onLoad' },
+        { title: 'The Bell State', text: 'Ion A is in a superposition. Drag the CNOT gate onto the laser to entangle the ions so that measuring one guarantees the result of the other.', trigger: 'onLaserGatesOpen' },
+        { title: 'Measurement Demo', text: 'Measuring the control results in the same value measured in the other ion! They are perfectly linked.', trigger: 'onAutomatedStart' }
+      ]
+    }),
+    new Level({
+      name: '12 - Spooky Action',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 2 }],
+      ions: [{ col: 9, row: 2 }, { col: 9, row: 6 }],
+      walls: [{ col: 5, row: 2, type: 'standard' }, { col: 9, row: 4, type: 'standard' }],
+      availableGates: ['H', 'CNOT'],
+      goal: 'Entangle the Ions',
+      winCondition: 'any',
+      hint: 'Use mirrors to navigate around the walls and hit both ions in sequence.',
+      showResetButton: true,
+      preInitialized: true,
+      gateInventory: { 'H': 1, 'CNOT': 1 },
+      lockedGateIndices: [],
+      requiredGateCount: 2,
+      automateMeasurement: true,
+      popups: [
+        { title: 'Manual Entanglement', text: 'Now try it yourself! Apply the H-gate and CNOT-gate to entangle the ions manually', trigger: 'onLoad' }
+      ]
+    }),
+    new Level({
+      name: '13 - Anti-Correlation',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 2 }, { col: 8, row: 6, dir: 'up' }],
+      ions: [{ col: 4, row: 2 }, { col: 8, row: 2 }],
+      walls: [],
+      availableGates: ['H', 'X', 'CNOT'],
+      goal: 'Entangle, then invert Ion B',
+      winCondition: 'any',
+      hint: 'Source 1 can hit both ions. Source 2 should only hit Ion B.',
+      showResetButton: true,
+      preInitialized: true,
+      gateInventory: { 'H': 1, 'X': 1, 'CNOT': 1 },
+      lockedGateIndices: [],
+      requiredGateCount: 3,
+      automateMeasurement: true,
+      popups: [
+        { title: 'Anti-Correlation', text: 'Entangled states can be modified locally. See what happens when you apply an X-gate to one half of an entangled pair.', trigger: 'onLoad' },
+        { title: 'Measurement Demo', text: 'The results are perfectly opposite (strictly 0,1 or 1,0). Applying the X-gate inverted their relationship while preserving the entanglement.', trigger: 'onAutomatedStart' }
+      ]
+    }),
+
+    new Level({
+      name: '14 - Uncomputing',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 4 }],
+      ions: [{ col: 4, row: 4 }, { col: 8, row: 4 }],
+      walls: [],
+      availableGates: ['H', 'CNOT'],
+      goal: '|0⟩ |0⟩',
+      winCondition: 'normal',
+      hint: 'Apply gates in the exact reverse order to uncompute the entanglement.',
+      showResetButton: true,
+      preInitialized: true,
+      prePlacedGates: [['H', 'CNOT']], 
+      lockedGateIndices: [0, 1],
+      gateInventory: { 'H': 2, 'CNOT': 2 },
+      requiredGateCount: 4,
+      automateMeasurement: false,
+      popups: [
+        { title: 'Uncomputing', text: 'Quantum operations are reversible. If you perform an operation, you can undo it by applying the inverse operations in reverse order.', trigger: 'onLoad' },
+        { title: 'The Challenge', text: 'First, drag an H-gate and a CNOT-gate to entangle the ions. Then, use your remaining gates to un-entangle them and return the system to |0⟩ |0⟩.', trigger: 'onLaserGatesOpen' }
       ]
     })
 ]

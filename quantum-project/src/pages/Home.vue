@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { measure, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level, type QuantumState, CELL } from '@/game/quantumgame'
+import { measureAll, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level, type IonQuantumState, CELL } from '@/game/quantumgame'
 import { LEVELS } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
 import styles from './Home.module.css'
@@ -13,13 +13,12 @@ defineOptions({ name: 'GameHome' })
 const TRAVEL_MS = 800
 const FPS = 60
 
-// Colors defined here match the CSS custom properties in Home.module.css
-const COLORS = {
-  cyan: '#0ef',        // --color-primary
-  purple: '#b47cff',   // --color-secondary
-  red: '#f84',         // --color-danger
-  lightPurple: '#d4aaff',  // --color-secondary-light
-  lightRed: '#ff6644'      // --color-danger-light
+const colourS = {
+  cyan: '#0ef',        // --colour-primary
+  purple: '#b47cff',   // --colour-secondary
+  green: '#0f8',   // --colour-success
+  orange: '#f84',      // --colour-warning
+  lightPurple: '#d4aaff',  // --colour-secondary-light
 }
 
 
@@ -28,18 +27,17 @@ const COLORS = {
 
 const canvas = ref<HTMLCanvasElement | null>(null)
 const currentLevelIndex = ref(0)
-const state = ref('|0⟩')
-const p0 = ref('100%')
-const p1 = ref('0%')
+const ionStates = ref<IonQuantumState[]>([])
 const result = ref('—')
-const history = ref<number[]>([])
+const history = ref<number[][]>([])
 const showWin = ref(false)
 const canMeasure = ref(false)
 const showLevelSelector = ref(false)
 const showLaserGates = ref(false)
-const laserGates = ref<string[]>([])
+const sourceGates = ref<string[][]>([])
+const activeSourceIndex = ref<number>(0)
 const isMeasured = ref(false)
-const measuredValue = ref<number | null>(null)
+const measuredValues = ref<number[] | null>(null)
 const ionInitialized = ref(false)
 const automatedRunning = ref(false)
 const automatedDone = ref(false)
@@ -51,8 +49,9 @@ const showManual = ref(false)
 const gateInventory = ref<Record<string, number>>({})
 const currentPopup = computed(() => {
   if (tempPopup.value) return tempPopup.value
-  const popups = level.popups
-  return popups[popupIndex.value]
+  const currentLevel = LEVELS[currentLevelIndex.value]
+  if (!currentLevel || !currentLevel.popups) return null
+  return currentLevel.popups[popupIndex.value]
 })
 
 let level: Level = LEVELS[currentLevelIndex.value]!
@@ -74,27 +73,27 @@ watch(currentLevelIndex, (newLevel) => {
   localStorage.setItem('quantum_save_level', newLevel.toString())
 })
 
-// Bloch Sphere
-// ------------------
-
-const blochAngle = computed(() => getBlochAngle(state.value))
-
-const blochLabel = computed(() => getBlochLabel(state.value))
-
-const laserColor = computed(() => {
-  if (laserGates.value.includes('X')) return COLORS.red
-  return laserGates.value.length > 0 ? COLORS.purple : COLORS.cyan
+// Progress display for gate count
+// either show global total or per-source depending on level config
+const displayedGateProgress = computed(() => {
+  if (level.requiredGateCount === null) return null;
+  
+  if (Array.isArray(level.requiredGateCount)) {
+    // Show progress for the currently clicked laser
+    const requiredForThisSource = level.requiredGateCount[activeSourceIndex.value] ?? 0;
+    return `(${activeGates.value.length}/${requiredForThisSource})`;
+  } else {
+    // Show global total progress
+    const totalApplied = sourceGates.value.flat().length;
+    return `(${totalApplied}/${level.requiredGateCount})`;
+  }
 })
 
-const stateColorClass = computed(() => {
-  if (state.value === '|+⟩' || state.value === '|-⟩') return styles.infoValPurple
-  if (state.value === '|1⟩') return styles.infoValOrange
-  return styles.infoValCyan
-})
+const activeGates = computed(() => sourceGates.value[activeSourceIndex.value] ?? [])
 
-const resultColorClass = computed(() => {
-  if (result.value === '1') return styles.infoValOrange
-  return styles.infoValCyan
+const resultcolourClass = computed(() => {
+  if (result.value === '1') return styles.infoValOrange;
+  return styles.infoValCyan;
 })
 
 // Canvas Functions
@@ -109,26 +108,36 @@ function setupCanvas() {
 }
 
 function updateStateForTracing() {
-  // If ion is not initialized on this level, show unknown state
+  // If no ions initialised on this level, show unknown state
   if (!ionInitialized.value && !level.preInitialized) {
-    state.value = '?'
-    p0.value = '?'
-    p1.value = '?'
-    canMeasure.value = false
-    return
+    ionStates.value = level.ions.map((_, idx) => ({
+      ionIndex: idx,
+      state: '—' as const,
+      p0: '—',
+      p1: '—'
+    }));
+    canMeasure.value = false;
+    return;
   }
 
-  // Check if laser hits ion and show popup if triggered
-  const { hitIon } = level.trace()
-  if (hitIon) {
-    showPopupByTrigger('onLaserToIon')
+  // Check if laser hits ions and show popup if triggered
+  const { hitIons } = level.trace(sourceGates.value);
+  if (hitIons.length > 0) {
+    showPopupByTrigger('onLaserToIon');
   }
 
-  const result = calculateQuantumState(level, laserGates.value, isMeasured.value ? measuredValue.value : null)
-  state.value = result.state
-  p0.value = result.p0
-  p1.value = result.p1
-  canMeasure.value = result.canMeasure
+  const result = calculateQuantumState(level, sourceGates.value, isMeasured.value ? measuredValues.value : null);
+  ionStates.value = result.states;
+  canMeasure.value = result.canMeasure;
+}
+
+// Initialise the locked gates
+// -------------------
+function initLevelGates() {
+  // Read exactly what gates should be placed on which sources
+  sourceGates.value = level.sources.map((_, i) => {
+    return level.prePlacedGates && level.prePlacedGates[i] ? [...level.prePlacedGates[i]!] : [];
+  });
 }
 
 // Level Progression
@@ -140,18 +149,19 @@ function nextLevel() {
   if (currentLevelIndex.value < LEVELS.length - 1) {
     currentLevelIndex.value++
     level = LEVELS[currentLevelIndex.value]!
-    // Pre-apply any locked gates (insert at locked indices)
-    laserGates.value = []
-    // Pre-apply locked gate for levels that require it
+    // Initialise per-source gates
+    sourceGates.value = level.sources.map(() => [])
+    // Pre-apply locked gate for levels that require it (put in first source)
     if (level.lockedGateIndices.length > 0) {
       for (const idx of level.lockedGateIndices) {
         if (idx === 0 && level.availableGates.length > 0) {
-          laserGates.value.push(level.availableGates[0]!)
+          if (!sourceGates.value[0]) sourceGates.value[0] = []
+          sourceGates.value[0].push(level.availableGates[0]!)
         }
       }
     }
     isMeasured.value = false
-    measuredValue.value = null
+    measuredValues.value = null
     ionInitialized.value = level.preInitialized
     shownPopupIndices.value.clear()
     lastPopupTrigger = null
@@ -159,9 +169,10 @@ function nextLevel() {
     // Initialise gate inventory
     gateInventory.value = { ...level.gateInventory }
     // Decrement inventory for locked gates
+    const flatLocked = sourceGates.value.flat()
     for (const idx of level.lockedGateIndices) {
-      if (idx < laserGates.value.length) {
-        const gate = laserGates.value[idx]!
+      if (idx < flatLocked.length) {
+        const gate = flatLocked[idx]!
         if (gateInventory.value[gate] !== undefined) {
           gateInventory.value[gate]--
         }
@@ -181,21 +192,22 @@ function selectLevel(index: number) {
   tempPopup.value = null
   currentLevelIndex.value = index
   level = LEVELS[currentLevelIndex.value]!
-  laserGates.value = []
-  // Pre-apply locked gate for levels that require it
-  if (level.lockedGateIndices.length > 0) {
-    for (const idx of level.lockedGateIndices) {
-      if (idx === 0 && level.availableGates.length > 0) {
-        laserGates.value.push(level.availableGates[0]!)
+  sourceGates.value = level.sources.map(() => [])
+    // Pre-apply locked gate for levels that require it
+    if (level.lockedGateIndices.length > 0) {
+      for (const idx of level.lockedGateIndices) {
+        if (idx === 0 && level.availableGates.length > 0) {
+          if (!sourceGates.value[0]) sourceGates.value[0] = []
+          sourceGates.value[0].push(level.availableGates[0]!)
+        }
       }
     }
-  }
   // Pre-apply H gate for level 5 (special case)
   if (index === 4) {
-    laserGates.value = ['H']
+    sourceGates.value[0] = ['H']
   }
   isMeasured.value = false
-  measuredValue.value = null
+  measuredValues.value = null
   ionInitialized.value = level.preInitialized
   shownPopupIndices.value.clear()
   lastPopupTrigger = null
@@ -203,9 +215,10 @@ function selectLevel(index: number) {
   // Initialise gate inventory
   gateInventory.value = { ...level.gateInventory }
   // Decrement inventory for locked gates
+  const flatLocked = sourceGates.value.flat()
   for (const idx of level.lockedGateIndices) {
-    if (idx < laserGates.value.length) {
-      const gate = laserGates.value[idx]!
+    if (idx < flatLocked.length) {
+      const gate = flatLocked[idx]!
       if (gateInventory.value[gate] !== undefined) {
         gateInventory.value[gate]--
       }
@@ -260,27 +273,38 @@ function onLaserDrop(e: DragEvent) {
         return // Can't add gate, no inventory left
       }
     }
-    laserGates.value.push(gateType)
+    const idx = activeSourceIndex.value
+    if (!sourceGates.value[idx]) sourceGates.value[idx] = []
+    sourceGates.value[idx].push(gateType)
     isMeasured.value = false
-    measuredValue.value = null
+    measuredValues.value = null
     updateStateForTracing()
   }
 }
 
 function removeLaserGate(index: number) {
   // Prevent removing locked gates
-  if (level.lockedGateIndices.includes(index)) {
+  const activeIdx = activeSourceIndex.value
+
+  const flatIndexBase = sourceGates.value.slice(0, activeIdx).flat().length
+  if (level.lockedGateIndices.includes(flatIndexBase + index)) {
     return
   }
-  const gate = laserGates.value[index]!
-  laserGates.value.splice(index, 1)
+  const gate = sourceGates.value[activeIdx]![index]!
+  sourceGates.value[activeIdx]!.splice(index, 1)
   // Restore inventory
   if (gateInventory.value[gate] !== undefined) {
     gateInventory.value[gate]!++
   }
   isMeasured.value = false
-  measuredValue.value = null
+  measuredValues.value = null
   updateStateForTracing()
+}
+
+function isGateLocked(localIndex: number) {
+  const activeIdx = activeSourceIndex.value;
+  const flatIndexBase = sourceGates.value.slice(0, activeIdx).flat().length;
+  return level.lockedGateIndices.includes(flatIndexBase + localIndex);
 }
 
 // Canvas draw loop
@@ -307,79 +331,130 @@ function draw() {
     ctx.stroke()
   }
 
-  // Beam
-  const { segs } = level.trace()
+  // Beam - render parallel split lines for each colour
+  const { segs } = level.trace(sourceGates.value)
   ctx.lineWidth = 2
   for (const s of segs) {
-    let col = COLORS.cyan
-    if (s.afterH) {
-      col = COLORS.purple
-    } else if (laserColor.value === COLORS.red) {
-      col = COLORS.red
+    // Calculate offset for each colour
+    const dx = s.x2 - s.x1
+    const dy = s.y2 - s.y1
+    const len = Math.sqrt(dx * dx + dy * dy)
+    const perpX = len > 0 ? -dy / len : 0
+    const perpY = len > 0 ? dx / len : 0
+    
+    const numColours = s.colours.length
+    let offsets: number[] = []
+    if (numColours === 1) offsets = [0]
+    else if (numColours === 2) offsets = [-3, 3]
+    else if (numColours === 3) offsets = [-5, 0, 5]
+    else offsets = s.colours.map((_, i) => -3 + (i * 6 / (numColours - 1)))
+    
+    for (let i = 0; i < s.colours.length; i++) {
+      const offset = offsets[i] || 0
+      const x1 = s.x1 + perpX * offset
+      const y1 = s.y1 + perpY * offset
+      const x2 = s.x2 + perpX * offset
+      const y2 = s.y2 + perpY * offset
+      
+      const colourMap: Record<string, string> = {
+        cyan: colourS.cyan,
+        orange: colourS.orange,
+        purple: colourS.purple,
+        green: colourS.green
+      }
+      
+      const colourKey = s.colours[i] || 'cyan'
+      ctx.strokeStyle = colourMap[colourKey] || colourS.cyan
+      ctx.shadowColor = String(ctx.strokeStyle)
+      ctx.shadowBlur = 8
+      ctx.beginPath()
+      ctx.moveTo(x1, y1)
+      ctx.lineTo(x2, y2)
+      ctx.stroke()
     }
-    ctx.strokeStyle = col
-    ctx.shadowColor = col
-    ctx.shadowBlur = 8
-    ctx.beginPath()
-    ctx.moveTo(s.x1, s.y1)
-    ctx.lineTo(s.x2, s.y2)
-    ctx.stroke()
   }
   ctx.shadowBlur = 0
 
-  // Photon dot
+  // Photon dots - render parallel photons for each colour
   photon.progress += 1 / ((TRAVEL_MS / 1000) * FPS)
   if (photon.progress < 1 && segs.length > 0) {
     const t = photon.progress * photon.segCount
     const idx = Math.min(Math.floor(t), segs.length - 1)
     const seg = segs[idx]!
     const f = t - Math.floor(t)
-    const px = seg.x1 + (seg.x2 - seg.x1) * f
-    const py = seg.y1 + (seg.y2 - seg.y1) * f
-    let col = '#fff'
-    if (seg.afterH || laserColor.value === COLORS.purple) {
-      col = COLORS.lightPurple
-    } else if (laserColor.value === COLORS.red) {
-      col = COLORS.lightRed
+    
+    // Calculate perpendicular offset for photon
+    const dx = seg.x2 - seg.x1
+    const dy = seg.y2 - seg.y1
+    const len = Math.sqrt(dx * dx + dy * dy)
+    const perpX = len > 0 ? -dy / len : 0
+    const perpY = len > 0 ? dx / len : 0
+    
+    const numColours = seg.colours.length
+    let offsets: number[] = []
+    if (numColours === 1) offsets = [0]
+    else if (numColours === 2) offsets = [-3, 3]
+    else if (numColours === 3) offsets = [-5, 0, 5]
+    else offsets = seg.colours.map((_, i) => -3 + (i * 6 / (numColours - 1)))
+    
+    const colourMap: Record<string, string> = {
+      cyan: colourS.cyan,
+      orange: colourS.orange,
+      purple: colourS.lightPurple,
+      green: colourS.green
     }
-    ctx.fillStyle = col
-    ctx.shadowColor = col
-    ctx.shadowBlur = 10
-    ctx.beginPath()
-    ctx.arc(px, py, 4, 0, Math.PI * 2)
-    ctx.fill()
+    
+    for (let i = 0; i < seg.colours.length; i++) {
+      const offset = offsets[i] || 0
+      const px = seg.x1 + (seg.x2 - seg.x1) * f + perpX * offset
+      const py = seg.y1 + (seg.y2 - seg.y1) * f + perpY * offset
+      
+      const colourKey = seg.colours[i] || 'cyan'
+      ctx.fillStyle = colourMap[colourKey] || colourS.cyan
+      ctx.shadowColor = String(ctx.fillStyle)
+      ctx.shadowBlur = 10
+      ctx.beginPath()
+      ctx.arc(px, py, 4, 0, Math.PI * 2)
+      ctx.fill()
+    }
     ctx.shadowBlur = 0
   }
 
-  // Laser source
-  const sx = level.src.col * CELL
-  const sy = level.src.row * CELL
-  ctx.fillStyle = laserColor.value
-  ctx.fillRect(sx + 4, sy + 4, CELL - 8, CELL - 8)
-  ctx.fillStyle = '#000'
-  ctx.font = '9px monospace'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('LASER', sx + CELL / 2, sy + CELL / 2)
+  // Laser sources
+  for (let sIdx = 0; sIdx < level.sources.length; sIdx++) {
+    const src = level.sources[sIdx]
+    if (!src) continue
+    const sx = src.col * CELL
+    const sy = src.row * CELL
 
-  // H gates
-  for (const hg of level.hgates) {
-    const hx = hg.col * CELL
-    const hy = hg.row * CELL
-    ctx.strokeStyle = '#b47cff'
-    ctx.lineWidth = 2
-    ctx.strokeRect(hx + 8, hy + 8, CELL - 16, CELL - 16)
-    ctx.fillStyle = '#b47cff'
-    ctx.font = 'bold 18px monospace'
-    ctx.fillText('H', hx + CELL / 2, hy + CELL / 2)
+    // Calculate colour specifically for THIS source
+    const myGates = sourceGates.value[sIdx] || []
+    let myColour = colourS.cyan
+    if (myGates.includes('CNOT')) myColour = colourS.green
+    else if (myGates.includes('X')) myColour = colourS.orange
+    else if (myGates.includes('H')) myColour = colourS.purple
+
+    ctx.fillStyle = myColour
+    ctx.fillRect(sx + 4, sy + 4, CELL - 8, CELL - 8)
+    ctx.fillStyle = '#000'
+    ctx.font = '9px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('LASER', sx + CELL / 2, sy + CELL / 2)
   }
 
   // Walls
-  ctx.strokeStyle = '#ff4444'
   ctx.lineWidth = 2
   for (const w of level.walls) {
     const wx = w.col * CELL
     const wy = w.row * CELL
+    let strokeCol = '#ff4444'
+    if (w.type === 'standard' || w.type === 'all') strokeCol = '#ff4444'
+    else if (w.type === 'cyan') strokeCol = colourS.cyan
+    else if (w.type === 'orange') strokeCol = colourS.orange
+    else if (w.type === 'purple') strokeCol = colourS.purple
+    else if (w.type === 'green') strokeCol = colourS.green
+    ctx.strokeStyle = strokeCol
     ctx.beginPath()
     ctx.moveTo(wx + 16, wy + 16)
     ctx.lineTo(wx + CELL - 16, wy + CELL - 16)
@@ -388,20 +463,26 @@ function draw() {
     ctx.stroke()
   }
 
-  // Ion
-  const ix = level.ion.col * CELL + CELL / 2
-  const iy = level.ion.row * CELL + CELL / 2
-  ctx.strokeStyle = '#f84'
-  ctx.lineWidth = 2
-  ctx.shadowColor = '#f84'
-  ctx.shadowBlur = 12
-  ctx.beginPath()
-  ctx.arc(ix, iy, 20, 0, Math.PI * 2)
-  ctx.stroke()
-  ctx.shadowBlur = 0
-  ctx.fillStyle = '#f84'
-  ctx.font = '9px monospace'
-  ctx.fillText('ION', ix, iy)
+  // Ions
+  const ionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+  for (let ionIdx = 0; ionIdx < level.ions.length; ionIdx++) {
+    const ion = level.ions[ionIdx]!
+    const ix = ion.col * CELL + CELL / 2;
+    const iy = ion.row * CELL + CELL / 2;
+    ctx.strokeStyle = '#f84';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = '#f84';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(ix, iy, 20, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#f84';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('ION ' + ionLabels[ionIdx], ix, iy);
+  }
 
   // Mirrors
   ctx.strokeStyle = '#aaa'
@@ -468,33 +549,30 @@ function closePopup() {
     automatedRunning.value = true
     ;(async () => {
       const iterations = 10
-      const results: number[] = []
+      const results: number[][] = []
       for (let i = 0; i < iterations; i++) {
 
         // visual reset
         ionInitialized.value = true
         isMeasured.value = false
-        measuredValue.value = null
+        measuredValues.value = null
         result.value = '—'
         updateStateForTracing()
 
         // photon travel
-        photon = { progress: 0, segCount: level.trace().segs.length }
+        photon = { progress: 0, segCount: level.trace(sourceGates.value).segs.length }
         await new Promise((res) => setTimeout(res, TRAVEL_MS))
 
         // perform measurement
-        const sInfo = calculateQuantumState(level, laserGates.value, null)
-        const mr = measure(sInfo.state as QuantumState)
-        results.push(mr)
+        const measResults = measureAll()
+        results.push(measResults)
 
         // update UI 
-        measuredValue.value = mr
+        measuredValues.value = measResults
         isMeasured.value = true
-        state.value = mr === 0 ? '|0⟩' : '|1⟩'
-        p0.value = mr === 0 ? '100%' : '0%'
-        p1.value = mr === 1 ? '100%' : '0%'
-        result.value = String(mr)
-        history.value.push(mr)
+        updateStateForTracing()
+        result.value = measResults.join(',')
+        history.value.push(measResults)
         if (history.value.length > 50) history.value.shift()
 
         // small pause 
@@ -507,7 +585,7 @@ function closePopup() {
       // Show popup with history
       tempPopup.value = {
         title: 'Measurement Demo Results',
-        text: `Measurements: ${results.join(' ')}
+        text: `Measurements: ${results.map(r => r.join('')).join(' ')}
         (A superposition state will randomly collapse to either |0⟩ or |1⟩ when measured.)`
       }
       showPopup.value = true
@@ -546,62 +624,96 @@ function handleMeasure() {
   if (!canMeasure.value) return
   canMeasure.value = false
 
-  photon = { progress: 0, segCount: level.trace().segs.length }
+  photon = { progress: 0, segCount: level.trace(sourceGates.value).segs.length }
 
   setTimeout(() => {
     // If already measured, keep showing the same value but add to history
     if (isMeasured.value) {
-      result.value = String(measuredValue.value)
-      history.value.push(measuredValue.value!)
+      result.value = measuredValues.value ? measuredValues.value.join(',') : '—'
+      history.value.push(measuredValues.value!)
       if (history.value.length > 20) history.value.shift()
       canMeasure.value = true
       return
     }
 
-    const stateInfo = calculateQuantumState(level, laserGates.value, null)
-    const r = measure(stateInfo.state as QuantumState)
-    
-    measuredValue.value = r
+    // Measure all ions
+    const measResults = measureAll()
+    measuredValues.value = measResults
     isMeasured.value = true
     
     // Update display
-    state.value = r === 0 ? '|0⟩' : '|1⟩'
-    p0.value = r === 0 ? '100%' : '0%'
-    p1.value = r === 1 ? '100%' : '0%'
-    result.value = String(r)
-    history.value.push(r)
+    updateStateForTracing()
+    result.value = measResults.join(',')
+    history.value.push(measResults)
     if (history.value.length > 20) history.value.shift()
 
     canMeasure.value = true
     // Check if required gate count is met
-    if (level.requiredGateCount !== null && laserGates.value.length !== level.requiredGateCount) {
-      // Don't allow winning without the correct number of gates
-      showWin.value = false
-      return
+    if (level.requiredGateCount !== null) {
+      if (Array.isArray(level.requiredGateCount)) {
+        // Enforce specific counts per laser source
+        let isValid = true;
+        for (let i = 0; i < level.requiredGateCount.length; i++) {
+          const count = sourceGates.value[i]?.length || 0;
+          if (count !== level.requiredGateCount[i]) {
+            isValid = false;
+            break;
+          }
+        }
+        if (!isValid) {
+          showWin.value = false;
+          return;
+        }
+      } else {
+        // Enforce global total count
+        const flatGateCount = sourceGates.value.flat().length;
+        if (flatGateCount !== level.requiredGateCount) {
+          showWin.value = false;
+          return;
+        }
+      }
     }
     
     // Evaluate win condition based on the pre-measure quantum state
-    const preState = stateInfo.state
+    const stateInfo = calculateQuantumState(level, sourceGates.value, null)
+    const states = stateInfo.states ?? []
     const wc = level.winCondition
     let win = false
     if (wc === 'any') win = true
-    else if (wc === 'superposition') win = preState === '|+⟩' || preState === '|-⟩'
-    else if (wc === 'positive-superposition') win = preState === '|+⟩'
-    else if (wc === 'negative-superposition') win = preState === '|-⟩'
-    else if (wc === 'normal') win = preState === '|0⟩' || preState === '|1⟩'
-    else if (wc === '|0⟩' || wc === '0') win = preState === '|0⟩'
-    else if (wc === '|1⟩' || wc === '1') win = preState === '|1⟩'
+    else if (wc === 'superposition') {
+      win = states.some(s => s.state === '|+⟩' || s.state === '|-⟩')
+    }
+    else if (wc === 'positive-superposition') {
+      win = states.some(s => s.state === '|+⟩')
+    }
+    else if (wc === 'negative-superposition') {
+      win = states.some(s => s.state === '|-⟩')
+    }
+    else if (wc === 'normal') {
+      win = states.every(s => s.state === '|0⟩' || s.state === '|1⟩')
+    }
+    else if (wc === '|0⟩' || wc === '0') {
+      win = states.length === 1 && states[0]?.state === '|0⟩'
+    }
+    else if (wc === '|1⟩' || wc === '1') {
+      win = states.length === 1 && states[0]?.state === '|1⟩'
+    }
+    else if (wc === 'cnot-success') {
+      // For CNOT level: both ions should be measured as |1⟩
+      win = states.length === 2 && 
+        states[0]?.state === '|1⟩' &&
+        states[1]?.state === '|1⟩'
+    }
 
     if (win) showWin.value = true
 
     // If the level requests an automated measurement demo
     // show the automated-demo popup & fallback to starting immediately
     if (level.automateMeasurement && !automatedRunning.value) {
-      if (currentLevelIndex.value === 5 && stateInfo.state === '|+⟩' || stateInfo.state === '|-⟩') {
+      const anySuperposition = states.some(s => s.state === '|+⟩' || s.state === '|-⟩')
+      if (anySuperposition) {
         const shown = showPopupByTrigger('onAutomatedStart')
         if (!shown) startAutomatedDemo()
-      } else {
-        // If not in superposition, no automated demo
       }
     }
   }, TRAVEL_MS)
@@ -615,8 +727,9 @@ function handleCanvasMouseMove(e: MouseEvent) {
   const col = Math.floor(((e.clientX - rect.left - 2) * scaleX) / CELL)
   const row = Math.floor(((e.clientY - rect.top - 2) * scaleY) / CELL)
 
-  // Change cursor when hovering over laser if gates are available
-  if (col === level.src.col && row === level.src.row && level.availableGates.length > 0) {
+  // Change cursor when hovering over any laser source if gates are available
+  const srcIdx = level.sources.findIndex(s => s.col === col && s.row === row)
+  if (srcIdx !== -1 && level.availableGates.length > 0) {
     canvas.value.style.cursor = 'pointer'
   } else {
     canvas.value.style.cursor = 'crosshair'
@@ -626,7 +739,7 @@ function handleCanvasMouseMove(e: MouseEvent) {
 function handleReset() {
   ionInitialized.value = true
   isMeasured.value = false
-  measuredValue.value = null
+  measuredValues.value = null
   result.value = '—'
   updateStateForTracing()
   showPopupByTrigger('onReset')
@@ -640,8 +753,10 @@ function handleCanvasClick(e: MouseEvent) {
   const col = Math.floor(((e.clientX - rect.left - 2) * scaleX) / CELL)
   const row = Math.floor(((e.clientY - rect.top - 2) * scaleY) / CELL)
 
-  // Check if clicked on laser
-  if (col === level.src.col && row === level.src.row && level.availableGates.length > 0) {
+  // Check if clicked on any laser source
+  const clickedSourceIdx = level.sources.findIndex(s => s.col === col && s.row === row)
+  if (clickedSourceIdx !== -1 && level.availableGates.length > 0) {
+    activeSourceIndex.value = clickedSourceIdx
     openLaserGates()
     return
   }
@@ -671,6 +786,8 @@ onMounted(() => {
   level = LEVELS[currentLevelIndex.value]!
   ionInitialized.value = level.preInitialized
   setupCanvas()
+  // initialise per-source gates for the starting level
+  initLevelGates()
   updateStateForTracing()
   draw()
   popupIndex.value = 0
@@ -734,71 +851,79 @@ onUnmounted(() => {
         />
       </div>
  
-      <!-- Sidebar: Bloch sphere + measurement info -->
+      <!-- Sidebar: Bloch sphere + measurement info for each ion -->
       <aside :class="styles.sidebar">
  
-        <!-- Bloch sphere -->
-        <div :class="styles.blochPanel">
-          <div :class="styles.blochTitle">Bloch Sphere</div>
-          <svg :class="styles.blochSvg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
-            <!-- Axis labels -->
-            <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>
-            <text x="80" y="156" :class="styles.blochLabel" text-anchor="middle">|0⟩</text>
-            <text x="10" y="84" :class="styles.blochLabel" text-anchor="middle">−</text>
-            <text x="150" y="84" :class="styles.blochLabel" text-anchor="middle">+</text>
- 
-            <!-- Sphere outline -->
-            <circle cx="80" cy="80" r="52" :class="styles.blochCircle" />
- 
-            <!-- Dashed equator -->
-            <ellipse cx="80" cy="80" rx="52" ry="14" :class="styles.blochEquator" />
- 
-            <!-- State arrow — only drawn when ion is hit -->
-            <g v-if="blochAngle !== null">
-              <!-- Arrow line from centre in the direction of blochAngle -->
-              <line
-                x1="80" y1="80"
-                :x2="80 + 44 * Math.cos((blochAngle * Math.PI) / 180)"
-                :y2="80 + 44 * Math.sin((blochAngle * Math.PI) / 180)"
-                :class="styles.blochArrow"
-              />
-              <!-- Arrowhead circle at tip -->
-              <circle
-                :cx="80 + 46 * Math.cos((blochAngle * Math.PI) / 180)"
-                :cy="80 + 46 * Math.sin((blochAngle * Math.PI) / 180)"
-                r="3"
-                :class="styles.blochTip"
-              />
-            </g>
- 
-            <!-- Centre dot -->
-            <circle cx="80" cy="80" r="3" :class="styles.blochCenter" />
-          </svg>
- 
-          <!-- State label below sphere -->
-          <div :class="{
-            [styles.blochState as string]: true,
-            [styles.blochStateSuperposition as string]: state === '|+⟩' || state === '|-⟩'
-          }">
-            {{ blochLabel }}
+        <!-- Loop over all ions and display their Bloch spheres -->
+        <div :class="styles.ionWrapper">
+        <div v-for="(ionState, idx) in ionStates" :key="idx" :class="styles.ionSection">
+          <!-- Bloch sphere for this ion -->
+          <div :class="styles.blochPanel">
+            <div :class="styles.blochTitle">Ion {{ String.fromCharCode(65 + idx) }} - Bloch Sphere</div>
+            <svg :class="styles.blochSvg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+              <!-- Axis labels -->
+              <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>
+              <text x="80" y="156" :class="styles.blochLabel" text-anchor="middle">|0⟩</text>
+              <text x="10" y="84" :class="styles.blochLabel" text-anchor="middle">−</text>
+              <text x="150" y="84" :class="styles.blochLabel" text-anchor="middle">+</text>
+   
+              <!-- Sphere outline -->
+              <circle cx="80" cy="80" r="52" :class="styles.blochCircle" />
+   
+              <!-- Dashed equator -->
+              <ellipse cx="80" cy="80" rx="52" ry="14" :class="styles.blochEquator" />
+   
+              <!-- State arrow — only drawn when ion is hit -->
+              <g v-if="getBlochAngle(ionState.state) !== null">
+                <!-- Arrow line from centre in the direction of angle -->
+                <line
+                  x1="80" y1="80"
+                  :x2="80 + 44 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                  :y2="80 + 44 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                  :class="styles.blochArrow"
+                />
+                <!-- Arrowhead circle at tip -->
+                <circle
+                  :cx="80 + 46 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                  :cy="80 + 46 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                  r="3"
+                  :class="styles.blochTip"
+                />
+              </g>
+   
+              <!-- Centre dot -->
+              <circle cx="80" cy="80" r="3" :class="styles.blochCenter" />
+            </svg>
+   
+            <!-- State label below sphere -->
+            <div :class="{
+              [styles.blochState as string]: true,
+              [styles.blochStateSuperposition as string]: ionState.state === '|+⟩' || ionState.state === '|-⟩'
+            }">
+              {{ getBlochLabel(ionState.state) }}
+            </div>
+          </div>
+   
+          <!-- Measurement info panel for this ion -->
+          <div :class="styles.infoPanel">
+            <div :class="styles.infoRow">
+              <span :class="styles.infoKey">State</span>
+              <span :class="[styles.infoVal, ionState.state === '|+⟩' || ionState.state === '|-⟩' ? styles.infoValPurple : ionState.state === '|1⟩' ? styles.infoValOrange : styles.infoValCyan]">{{ ionState.state }}</span>
+            </div>
+            <div :class="styles.infoRow">
+              <span :class="styles.infoKey">P(|0⟩)</span>
+              <span :class="styles.infoVal">{{ ionState.p0 }}</span>
+            </div>
+            <div :class="styles.infoRow">
+              <span :class="styles.infoKey">P(|1⟩)</span>
+              <span :class="styles.infoVal">{{ ionState.p1 }}</span>
+            </div>
           </div>
         </div>
- 
-        <!-- Measurement info panel -->
-        <div :class="styles.infoPanel">
-          <div :class="styles.infoRow">
-            <span :class="styles.infoKey">State</span>
-            <span :class="[styles.infoVal, stateColorClass]">{{ state }}</span>
-          </div>
-          <div :class="styles.infoRow">
-            <span :class="styles.infoKey">P(|0⟩)</span>
-            <span :class="styles.infoVal">{{ p0 }}</span>
-          </div>
-          <div :class="styles.infoRow">
-            <span :class="styles.infoKey">P(|1⟩)</span>
-            <span :class="styles.infoVal">{{ p1 }}</span>
-          </div>
-          
+        </div>
+        
+        <!-- Shared measurement button and controls -->
+        <div :class="styles.sharedControls">
           <!-- Measure Button -->
           <button 
             @click="handleMeasure"
@@ -819,11 +944,11 @@ onUnmounted(() => {
           
           <div :class="styles.infoRow">
             <span :class="styles.infoKey">Last</span>
-            <span :class="[styles.infoVal, resultColorClass]">{{ result }}</span>
+            <span :class="[styles.infoVal, resultcolourClass]">{{ result }}</span>
           </div>
           <div v-if="history.length" :class="styles.history">
             <span :class="styles.infoKey">History</span>
-            <span :class="styles.historyBits">{{ history.join(' ') }}</span>
+            <span :class="styles.historyBits">{{ history.map((r: number[]) => r.join('')).join(' ') }}</span>
           </div>
         </div>
  
@@ -833,15 +958,38 @@ onUnmounted(() => {
 
     <!-- Level selector modal -->
     <div v-if="showLevelSelector" :class="styles.levelSelectorOverlay" @click="showLevelSelector = false">
-      <div :class="styles.levelSelectorGrid" @click.stop>
-        <div
-          v-for="(_, index) in LEVELS"
-          :key="index"
-          @click="selectLevel(index)"
-          :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: index === currentLevelIndex }]"
-        >
-          {{ index + 1 }}
+      <div :class="styles.levelSelectorModal" @click.stop>
+        
+        <div :class="styles.levelGroup">
+          
+          <div :class="styles.levelGroupTitle">1 Qubit Systems</div>
+          <div :class="styles.levelSelectorGrid">
+            <div
+              v-for="(_, index) in LEVELS.slice(0, 9)"
+              :key="'group1-' + index"
+              @click="selectLevel(index)"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: index === currentLevelIndex }]"
+            >
+              {{ index + 1 }}
+            </div>
+          </div>
         </div>
+
+        <div :class="styles.levelGroup">
+          
+          <div :class="styles.levelGroupTitle">2 Qubit Systems</div>
+          <div :class="styles.levelSelectorGrid">
+            <div
+              v-for="(_, index) in LEVELS.slice(9)"
+              :key="'group2-' + index"
+              @click="selectLevel(index + 9)"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: (index + 9) === currentLevelIndex }]"
+            >
+              {{ index + 10 }}
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -854,8 +1002,8 @@ onUnmounted(() => {
           <!-- Applied gates -->
           <div :class="styles.appliedSection">
             <div :class="styles.sectionLabel">Applied to Laser
-              <span v-if="level.requiredGateCount !== null" :class="styles.gateCount">
-                ({{ laserGates.length }}/{{ level.requiredGateCount }})
+                <span v-if="displayedGateProgress !== null" :class="styles.gateCount">
+                  {{ displayedGateProgress }}
               </span>
             </div>
             <div
@@ -863,13 +1011,18 @@ onUnmounted(() => {
               @drop="onLaserDrop"
               :class="styles.laserDropZone"
             >
-              <div v-if="laserGates.length > 0" :class="styles.gateStack">
+              <div v-if="activeGates.length > 0" :class="styles.gateStack">
                 <div
-                  v-for="(gate, index) in laserGates"
+                  v-for="(gate, index) in activeGates"
                   :key="`laser-gate-${index}`"
-                  :class="[styles.laserGate, { [styles.laserGateX as string]: gate === 'X' }]"
+                  :class="[
+                    styles.laserGate,
+                    { [styles.laserGateX as string]: gate === 'X' }, 
+                    { [styles.laserGateH as string]: gate === 'H' },
+                    { [styles.laserGateCNOT as string]: gate === 'CNOT' }
+                  ]"
                 >
-                  <button v-if="!level.lockedGateIndices.includes(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
+                <button v-if="!isGateLocked(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
                   <div>{{ gate }}</div>
                 </div>
               </div>
@@ -885,15 +1038,17 @@ onUnmounted(() => {
             <div :class="styles.sectionLabel">Available Gates</div>
             <div :class="styles.gateGrid">
               <div
-                v-for="(gate, index) in level.availableGates"
-                :key="`gate-${index}`"
-                draggable="true"
-                @dragstart="onGateDragStart($event, gate)"
-                :class="[styles.gateItem, 
-                  { [styles.gateItemX as string]: gate === 'X' },
-                  { [styles.gateItemDisabled as string]: (gateInventory[gate] ?? -1) === 0 }
-                ]"
-              >
+                  v-for="(gate, index) in level.availableGates"
+                  :key="`gate-${index}`"
+                  draggable="true"
+                  @dragstart="onGateDragStart($event, gate)"
+                  :class="[styles.gateItem, 
+                    { [styles.gateItemX as string]: gate === 'X' },
+                    { [styles.gateItemH as string]: gate === 'H' },
+                    { [styles.gateItemCNOT as string]: gate === 'CNOT' },
+                    { [styles.gateItemDisabled as string]: (gateInventory[gate] ?? -1) === 0 }
+                  ]"
+                >
                 <div>{{ gate }}</div>
                 <div v-if="gateInventory[gate] !== undefined" :class="styles.gateItemCount">
                   {{ gateInventory[gate] }}

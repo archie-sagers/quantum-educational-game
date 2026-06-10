@@ -392,15 +392,31 @@
 
 .levelSelectorGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  grid-template-columns: repeat(auto-fill, 80px);
   gap: 12px;
-  padding: 40px;
-  background: var(--color-bg-light);
-  border: 2px solid var(--color-primary);
-  border-radius: 4px;
-  max-width: 90vw;
-  max-height: 90vh;
-  overflow: auto;
+}
+
+.levelSelectorModal {
+  background-color: #111;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 32px;
+  max-width: 600px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 32px; 
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+}
+
+.levelGroupTitle {
+  color: #888;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 8px;
 }
 
 .levelSelectorSquare {
@@ -657,6 +673,16 @@
 
 .gateItemX:hover {
   box-shadow: 0 0 8px var(--color-danger) !important;
+}
+
+.gateItemCNOT {
+  border-color: var(--color-success) !important;
+  color: var(--color-success); 
+}
+
+.laserGateCNOT {
+  background-color: #0f8;
+  color: #000;
 }
 
 .gateItemDisabled {
@@ -921,3 +947,30 @@
   font-weight: bold;
 }
 
+.ionSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ionSection:last-of-type {
+  border-bottom: none;
+}
+
+.ionWrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.sharedControls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
