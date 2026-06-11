@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { measureAll, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level, type IonQuantumState, CELL } from '@/game/quantumgame'
 import { LEVELS } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
@@ -144,96 +144,45 @@ function initLevelGates() {
 // ------------------
 
 function nextLevel() {
-  showWin.value = false
-  tempPopup.value = null
   if (currentLevelIndex.value < LEVELS.length - 1) {
-    currentLevelIndex.value++
-    level = LEVELS[currentLevelIndex.value]!
-    // Initialise per-source gates
-    sourceGates.value = level.sources.map(() => [])
-    // Pre-apply locked gate for levels that require it (put in first source)
-    if (level.lockedGateIndices.length > 0) {
-      for (const idx of level.lockedGateIndices) {
-        if (idx === 0 && level.availableGates.length > 0) {
-          if (!sourceGates.value[0]) sourceGates.value[0] = []
-          sourceGates.value[0].push(level.availableGates[0]!)
-        }
-      }
-    }
-    isMeasured.value = false
-    measuredValues.value = null
-    ionInitialized.value = level.preInitialized
-    shownPopupIndices.value.clear()
-    lastPopupTrigger = null
-    setupCanvas()
-    // Initialise gate inventory
-    gateInventory.value = { ...level.gateInventory }
-    // Decrement inventory for locked gates
-    const flatLocked = sourceGates.value.flat()
-    for (const idx of level.lockedGateIndices) {
-      if (idx < flatLocked.length) {
-        const gate = flatLocked[idx]!
-        if (gateInventory.value[gate] !== undefined) {
-          gateInventory.value[gate]--
-        }
-      }
-    }
-    
-    updateStateForTracing()
-    result.value = '—'
-    history.value = []
-    popupIndex.value = 0
-    showPopupByTrigger('onLoad')
+    selectLevel(currentLevelIndex.value + 1);
   }
 }
 
-function selectLevel(index: number) {
-  showLevelSelector.value = false
-  tempPopup.value = null
-  currentLevelIndex.value = index
-  level = LEVELS[currentLevelIndex.value]!
-  sourceGates.value = level.sources.map(() => [])
-    // Pre-apply locked gate for levels that require it
-    if (level.lockedGateIndices.length > 0) {
-      for (const idx of level.lockedGateIndices) {
-        if (idx === 0 && level.availableGates.length > 0) {
-          if (!sourceGates.value[0]) sourceGates.value[0] = []
-          sourceGates.value[0].push(level.availableGates[0]!)
-        }
-      }
-    }
-  // Pre-apply H gate for level 5 (special case)
-  if (index === 4) {
-    sourceGates.value[0] = ['H']
-  }
-  isMeasured.value = false
-  measuredValues.value = null
-  ionInitialized.value = level.preInitialized
-  shownPopupIndices.value.clear()
-  lastPopupTrigger = null
-  setupCanvas()
-  // Initialise gate inventory
-  gateInventory.value = { ...level.gateInventory }
-  // Decrement inventory for locked gates
-  const flatLocked = sourceGates.value.flat()
+async function selectLevel(index: number) {
+  showLevelSelector.value = false;
+  tempPopup.value = null;
+  currentLevelIndex.value = index;
+  level = LEVELS[currentLevelIndex.value]!;
+  isMeasured.value = false;
+  measuredValues.value = null;
+  ionInitialized.value = level.preInitialized;
+  shownPopupIndices.value.clear();
+  lastPopupTrigger = null;
+  setupCanvas();
+  
+  gateInventory.value = { ...level.gateInventory };
+  
+  await nextTick();
+  
+  initLevelGates();
+  
+  const flatLocked = sourceGates.value.flat();
   for (const idx of level.lockedGateIndices) {
     if (idx < flatLocked.length) {
-      const gate = flatLocked[idx]!
+      const gate = flatLocked[idx]!;
       if (gateInventory.value[gate] !== undefined) {
-        gateInventory.value[gate]--
+        gateInventory.value[gate]--;
       }
     }
   }
-  // Special case for level 5's pre-applied H gate
-  if (index === 4 && gateInventory.value['H'] !== undefined) {
-    gateInventory.value['H']--
-  }
-  updateStateForTracing()
-  result.value = '—'
-  history.value = []
-  showWin.value = false
-  popupIndex.value = 0
-  showPopupByTrigger('onLoad')
+
+  updateStateForTracing();
+  result.value = '—';
+  history.value = [];
+  showWin.value = false;
+  popupIndex.value = 0;
+  showPopupByTrigger('onLoad');
 }
 
 // Laser Gate Placement

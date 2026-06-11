@@ -76,6 +76,7 @@ export const LEVELS = [
     hint: 'Apply another Hadamard gate to take the ion out of superposition and measure |0⟩',
     showResetButton: true,
     preInitialized: true,
+    prePlacedGates: [['H']],
     lockedGateIndices: [0],
     gateInventory: { 'H': 12 },
     popups: [
