@@ -576,7 +576,7 @@ function closePopup() {
         if (history.value.length > 50) history.value.shift()
 
         // small pause 
-        await new Promise((res) => setTimeout(res, 100))
+        await new Promise((res) => setTimeout(res, 50))
       }
 
       automatedRunning.value = false
@@ -703,6 +703,19 @@ function handleMeasure() {
       win = states.length === 2 && 
         states[0]?.state === '|1⟩' &&
         states[1]?.state === '|1⟩'
+    }
+    else if (wc === 'cnot-01') {
+      // Level 15
+      win = states.length === 2 && 
+        states[0]?.state === '|0⟩' &&
+        states[1]?.state === '|1⟩'
+    }
+    else if (wc === '111') {
+      // Level 17
+      win = states.length === 3 && 
+        states[0]?.state === '|1⟩' &&
+        states[1]?.state === '|1⟩' &&
+        states[2]?.state === '|1⟩'
     }
 
     if (win) showWin.value = true
@@ -854,77 +867,70 @@ onUnmounted(() => {
       <!-- Sidebar: Bloch sphere + measurement info for each ion -->
       <aside :class="styles.sidebar">
  
-        <!-- Loop over all ions and display their Bloch spheres -->
         <div :class="styles.ionWrapper">
-        <div v-for="(ionState, idx) in ionStates" :key="idx" :class="styles.ionSection">
-          <!-- Bloch sphere for this ion -->
-          <div :class="styles.blochPanel">
-            <div :class="styles.blochTitle">Ion {{ String.fromCharCode(65 + idx) }} - Bloch Sphere</div>
-            <svg :class="styles.blochSvg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
-              <!-- Axis labels -->
-              <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>
-              <text x="80" y="156" :class="styles.blochLabel" text-anchor="middle">|0⟩</text>
-              <text x="10" y="84" :class="styles.blochLabel" text-anchor="middle">−</text>
-              <text x="150" y="84" :class="styles.blochLabel" text-anchor="middle">+</text>
-   
-              <!-- Sphere outline -->
-              <circle cx="80" cy="80" r="52" :class="styles.blochCircle" />
-   
-              <!-- Dashed equator -->
-              <ellipse cx="80" cy="80" rx="52" ry="14" :class="styles.blochEquator" />
-   
-              <!-- State arrow — only drawn when ion is hit -->
-              <g v-if="getBlochAngle(ionState.state) !== null">
-                <!-- Arrow line from centre in the direction of angle -->
-                <line
-                  x1="80" y1="80"
-                  :x2="80 + 44 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
-                  :y2="80 + 44 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
-                  :class="styles.blochArrow"
-                />
-                <!-- Arrowhead circle at tip -->
-                <circle
-                  :cx="80 + 46 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
-                  :cy="80 + 46 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
-                  r="3"
-                  :class="styles.blochTip"
-                />
-              </g>
-   
-              <!-- Centre dot -->
-              <circle cx="80" cy="80" r="3" :class="styles.blochCenter" />
-            </svg>
-   
-            <!-- State label below sphere -->
-            <div :class="{
-              [styles.blochState as string]: true,
-              [styles.blochStateSuperposition as string]: ionState.state === '|+⟩' || ionState.state === '|-⟩'
-            }">
-              {{ getBlochLabel(ionState.state) }}
+          <div 
+            v-for="(ionState, idx) in ionStates" 
+            :key="idx" 
+            :class="[styles.ionSection, { [styles.ionSectionCompact as string]: ionStates.length >= 3 }]"
+          >
+            <div :class="[styles.blochPanel, { [styles.blochPanelCompact as string]: ionStates.length >= 3 }]">
+              <div :class="styles.blochTitle">
+                Ion {{ String.fromCharCode(65 + idx) }}<span v-if="ionStates.length < 3"> - Bloch Sphere</span>
+              </div>
+              <svg :class="[styles.blochSvg, { [styles.blochSvgCompact as string]: ionStates.length >= 3 }]" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+                <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>
+                <text x="80" y="156" :class="styles.blochLabel" text-anchor="middle">|0⟩</text>
+                <text x="10" y="84" :class="styles.blochLabel" text-anchor="middle">−</text>
+                <text x="150" y="84" :class="styles.blochLabel" text-anchor="middle">+</text>
+    
+                <circle cx="80" cy="80" r="52" :class="styles.blochCircle" />
+    
+                <ellipse cx="80" cy="80" rx="52" ry="14" :class="styles.blochEquator" />
+    
+                <g v-if="getBlochAngle(ionState.state) !== null">
+                  <line
+                    x1="80" y1="80"
+                    :x2="80 + 44 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                    :y2="80 + 44 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                    :class="styles.blochArrow"
+                  />
+                  <circle
+                    :cx="80 + 46 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                    :cy="80 + 46 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                    r="3"
+                    :class="styles.blochTip"
+                  />
+                </g>
+    
+                <circle cx="80" cy="80" r="3" :class="styles.blochCenter" />
+              </svg>
+    
+              <div :class="{
+                [styles.blochState as string]: true,
+                [styles.blochStateSuperposition as string]: ionState.state === '|+⟩' || ionState.state === '|-⟩'
+              }">
+                {{ getBlochLabel(ionState.state) }}
+              </div>
+            </div>
+    
+            <div v-if="ionStates.length < 3" :class="styles.infoPanel">
+              <div :class="styles.infoRow">
+                <span :class="styles.infoKey">State</span>
+                <span :class="[styles.infoVal, ionState.state === '|+⟩' || ionState.state === '|-⟩' ? styles.infoValPurple : ionState.state === '|1⟩' ? styles.infoValOrange : styles.infoValCyan]">{{ ionState.state }}</span>
+              </div>
+              <div :class="styles.infoRow">
+                <span :class="styles.infoKey">P(|0⟩)</span>
+                <span :class="styles.infoVal">{{ ionState.p0 }}</span>
+              </div>
+              <div :class="styles.infoRow">
+                <span :class="styles.infoKey">P(|1⟩)</span>
+                <span :class="styles.infoVal">{{ ionState.p1 }}</span>
+              </div>
             </div>
           </div>
-   
-          <!-- Measurement info panel for this ion -->
-          <div :class="styles.infoPanel">
-            <div :class="styles.infoRow">
-              <span :class="styles.infoKey">State</span>
-              <span :class="[styles.infoVal, ionState.state === '|+⟩' || ionState.state === '|-⟩' ? styles.infoValPurple : ionState.state === '|1⟩' ? styles.infoValOrange : styles.infoValCyan]">{{ ionState.state }}</span>
-            </div>
-            <div :class="styles.infoRow">
-              <span :class="styles.infoKey">P(|0⟩)</span>
-              <span :class="styles.infoVal">{{ ionState.p0 }}</span>
-            </div>
-            <div :class="styles.infoRow">
-              <span :class="styles.infoKey">P(|1⟩)</span>
-              <span :class="styles.infoVal">{{ ionState.p1 }}</span>
-            </div>
-          </div>
-        </div>
         </div>
         
-        <!-- Shared measurement button and controls -->
         <div :class="styles.sharedControls">
-          <!-- Measure Button -->
           <button 
             @click="handleMeasure"
             :disabled="!canMeasure"
@@ -933,7 +939,6 @@ onUnmounted(() => {
             Measure
           </button>
 
-          <!-- Reset Button (only on certain levels) -->
           <button
             v-if="level.showResetButton"
             @click="handleReset"
@@ -980,12 +985,27 @@ onUnmounted(() => {
           <div :class="styles.levelGroupTitle">2 Qubit Systems</div>
           <div :class="styles.levelSelectorGrid">
             <div
-              v-for="(_, index) in LEVELS.slice(9)"
+              v-for="(_, index) in LEVELS.slice(9,15)"
               :key="'group2-' + index"
               @click="selectLevel(index + 9)"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: (index + 9) === currentLevelIndex }]"
             >
               {{ index + 10 }}
+            </div>
+          </div>
+        </div>
+
+        <div :class="styles.levelGroup">
+          
+          <div :class="styles.levelGroupTitle">3 & 4 Qubit Systems</div>
+          <div :class="styles.levelSelectorGrid">
+            <div
+              v-for="(_, index) in LEVELS.slice(15)"
+              :key="'group3-' + index"
+              @click="selectLevel(index + 15)"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: (index + 15) === currentLevelIndex }]"
+            >
+              {{ index + 16 }}
             </div>
           </div>
         </div>
