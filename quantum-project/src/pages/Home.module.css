@@ -128,9 +128,10 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex-shrink: 0;
   min-width: 180px;
+  max-width: 420px;
   max-height: 80vh;
-  overflow-y: auto;
 }
 
 .blochPanel {
@@ -965,6 +966,10 @@
   gap: 1rem;
   flex-wrap: wrap;
   justify-content: center;
+  flex: 1;
+  overflow-y: auto;
+  align-content: flex-start;
+  padding-right: 8px;
 }
 
 .sharedControls {
@@ -973,4 +978,32 @@
   gap: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--color-border);
+}
+
+/* --- Compact Mode for 3+ Qubits --- */
+
+.ionSectionCompact {
+  flex: 1 1 45%; 
+  min-width: 120px;
+  padding-bottom: 0;
+  border-bottom: none; 
+}
+
+.blochPanelCompact {
+  padding: 8px;
+}
+
+.blochSvgCompact {
+  width: 90px;
+  height: 90px;
+}
+
+.infoPanelCompact {
+  padding: 8px;
+  gap: 4px;
+}
+
+.infoPanelCompact .infoRow {
+  font-size: 10px;
+  gap: 8px;
 }

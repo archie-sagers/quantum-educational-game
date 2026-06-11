@@ -76,6 +76,7 @@ export const LEVELS = [
     hint: 'Apply another Hadamard gate to take the ion out of superposition and measure |0⟩',
     showResetButton: true,
     preInitialized: true,
+    prePlacedGates: [['H']],
     lockedGateIndices: [0],
     gateInventory: { 'H': 12 },
     popups: [
@@ -254,5 +255,151 @@ export const LEVELS = [
         { title: 'Uncomputing', text: 'Quantum operations are reversible. If you perform an operation, you can undo it by applying the inverse operations in reverse order.', trigger: 'onLoad' },
         { title: 'The Challenge', text: 'First, drag an H-gate and a CNOT-gate to entangle the ions. Then, use your remaining gates to un-entangle them and return the system to |0⟩ |0⟩.', trigger: 'onLaserGatesOpen' }
       ]
+    }),
+    new Level({
+      name: '15 - Swapping States',
+      cols: 12, rows: 8,
+      sources: [{ col: 1, row: 2 }, { col: 1, row: 6 }],
+      ions: [{ col: 3, row: 2 }, { col: 9, row: 6 }],
+      walls: [{ col: 2, row: 2, type: 'cyan' }],
+      availableGates: ['CNOT'],
+      goal: '|0⟩ |1⟩',
+      winCondition: 'cnot-01',
+      hint: 'Use 2 CNOT gates alternating control and target routing.',
+      showResetButton: true,
+      preInitialized: true,
+      prePlacedGates: [['X']], 
+      gateInventory: { 'CNOT': 3 },
+      lockedGateIndices: [0],
+      requiredGateCount: 3,
+      automateMeasurement: false,
+      popups: [
+        { title: 'Swapping States', text: 'Can you find a way to swap the quantum states of the ionsusing only multi-qubit CNOT operations?', trigger: 'onLoad' },
+      ]
+    }),
+
+    new Level({
+      name: '16 - Triple Entangled (GHZ State)',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 2 }, { col: 0, row: 5 }],
+      ions: [{ col: 3, row: 2 }, { col: 4, row: 5 }, { col: 8, row: 5 }],
+      walls: [{ col: 5, row: 0, type: 'purple' }, { col: 5, row: 1, type: 'purple' }, { col: 5, row: 2, type: 'purple' }, { col: 5, row: 3, type: 'purple' }, { col: 5, row: 4, type: 'purple' }, { col: 5, row: 5, type: 'purple' }, { col: 5, row: 6, type: 'purple' }, { col: 5, row: 7, type: 'purple' }],
+      availableGates: ['H', 'CNOT'],
+      goal: 'Create a 3-Qubit GHZ State',
+      winCondition: 'any',
+      hint: 'Source 1 handles the first entanglement link. Source 2 cascades the entanglement to Ion C.',
+      showResetButton: true,
+      preInitialized: true,
+      gateInventory: { 'H': 1, 'CNOT': 2 },
+      lockedGateIndices: [],
+      requiredGateCount: [2, 1],
+      automateMeasurement: true,
+      popups: [
+        { title: '3 Qubit Levels: The GHZ State', text: 'You now have three ions on the board. Can you entangle all of them to always collapse to the exact same correlated outcomes: either |000⟩ or |111⟩?', trigger: 'onLoad' },
+        { title: 'Measurement Demo', text: 'Look at the history log! Notice how all three ions perfectly collapse to match each other every single iteration. This is a Greenberger-Horne-Zeilinger (GHZ) state.', trigger: 'onAutomatedStart' }
+      ]
+    }),
+
+    new Level({
+      name: '17 - Using CNOTS',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 2 }, { col: 0, row: 4 }],
+      ions: [{ col: 3, row: 2 }, { col: 7, row: 4 }, { col: 11, row: 6 }],
+      walls: [{ col: 5, row: 2, type: 'standard' }],
+      availableGates: ['CNOT'],
+      goal: '|1⟩ |1⟩ |1⟩',
+      winCondition: '111',
+      hint: 'Route Source 2 through A and B. Route Source 3 through B and C.',
+      showResetButton: true,
+      preInitialized: true,
+      prePlacedGates: [['X'], [],],
+      lockedGateIndices: [0], 
+      gateInventory: { 'CNOT': 2, 'X': 1 },
+      requiredGateCount: [2, 1],
+      automateMeasurement: false,
+      popups: [
+        { title: 'Cascading CNOTs', text: 'Read state |1⟩, |1⟩, |1⟩ from this system.', trigger: 'onLoad' },
+      ]
+    }),
+
+    new Level({
+      name: '18 - Uncomputing Three Ions',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 2 }, { col: 5, row: 2 },
+      ],
+      ions: [{ col: 3, row: 2 }, { col: 7, row: 2 }, { col: 9, row: 2 }],
+      walls: [],
+      availableGates: ['H', 'CNOT'],
+      goal: '|0⟩ |0⟩ |0⟩',
+      winCondition: 'normal',
+      hint: 'Apply the exact inverse sequence to the exact same lasers to unravel the GHZ state.',
+      showResetButton: true,
+      preInitialized: true,
+      prePlacedGates: [['H', 'CNOT'], ['CNOT']],
+      lockedGateIndices: [0, 1, 2], 
+      gateInventory: { 'H': 1, 'CNOT': 2 },
+      requiredGateCount: [4, 2], 
+      automateMeasurement: false,
+      popups: [
+        { title: 'Uncomputing Three Ions', text: 'These three ions are entangled together in the GHZ state you created earlier. Can you use what you know about reversible operations to return the ions to the ground state |0⟩, |0⟩, |0⟩ ?', trigger: 'onLoad' },
+      ]
+    }),
+
+    new Level({
+      name: '19 - Quadruple Entangled (GHZ State)',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 2 }, { col: 0, row: 4 }, { col: 0, row: 6 }],
+      ions: [{ col: 3, row: 2 }, { col: 4, row: 4 }, { col: 7, row: 4 }, { col: 8, row: 6 }  ],
+      walls: [],
+      availableGates: ['H', 'CNOT'],
+      goal: 'Create a 4-Qubit GHZ State',
+      winCondition: 'any',
+      hint: 'Chain the entanglement from A->B, then B->C, then C->D.',
+      showResetButton: true,
+      preInitialized: true,
+      gateInventory: { 'H': 1, 'CNOT': 3 },
+      lockedGateIndices: [],
+      requiredGateCount: [2, 1, 1],
+      automateMeasurement: true,
+      popups: [
+        { title: 'Quadruple Entangled', text: 'You now have four ions, can you entangle all of them to always read the same state (|1⟩, |1⟩, |1⟩, |1⟩) or (|0⟩, |0⟩, |0⟩, |0⟩)?', trigger: 'onLoad' },
+        { title: 'Measurement Demo', text: 'All four ions collapse in perfect unison every single time. You have built a 4-qubit GHZ state.', trigger: 'onAutomatedStart' }
+      ]
+    }),
+
+    new Level({
+      name: '20 - Bell Pairs',
+      cols: 12, rows: 8,
+      sources: [{ col: 0, row: 2 }, { col: 0, row: 6 }],
+      ions: [{ col: 4, row: 2 }, { col: 8, row: 2 }, { col: 4, row: 6 }, { col: 8, row: 6 } ],
+      walls: [
+        { col: 0, row: 4, type: 'standard' },
+        { col: 1, row: 4, type: 'standard' },
+        { col: 2, row: 4, type: 'standard' },
+        { col: 3, row: 4, type: 'standard' },
+        { col: 4, row: 4, type: 'standard' },
+        { col: 5, row: 4, type: 'standard' },
+        { col: 6, row: 4, type: 'standard' },
+        { col: 7, row: 4, type: 'standard' },
+        { col: 8, row: 4, type: 'standard' },
+        { col: 9, row: 4, type: 'standard' },
+        { col: 10, row: 4, type: 'standard' },
+        { col: 11, row: 4, type: 'standard' },
+      ],
+      availableGates: ['H', 'CNOT'],
+      goal: 'Two Independent Entangled Pairs',
+      winCondition: 'any',
+      hint: 'Create one Bell pair on the top, and a separate Bell pair on the bottom.',
+      showResetButton: true,
+      preInitialized: true,
+      gateInventory: { 'H': 2, 'CNOT': 2 },
+      lockedGateIndices: [],
+      requiredGateCount: [2, 2],
+      automateMeasurement: true,
+      popups: [
+        { title: 'Bell Pairs', text: 'Entanglement only exists between the specific qubits you entangle. Can you create two separately entangled pairs?', trigger: 'onLoad' },
+        { title: 'Measurement Demo', text: 'Look at the results: A perfectly matches B, and C perfectly matches D. However, the two pairs operate completely independently of each other', trigger: 'onAutomatedStart' }
+      ]
     })
+
 ]
