@@ -60,8 +60,6 @@ const gateOptions = ['X', 'H', 'CNOT']
 
 // Play Mode
 // -----------------------------------------
-
-// *** Need to add in measure button and state display for play mode!!
 const gameBoardRef = ref<InstanceType<typeof GameBoard> | null>(null)
 const playLevel = ref<Level | null>(null)
 const playSourceGates = ref<string[][]>([])
@@ -240,14 +238,14 @@ function uploadLevel(e: Event) {
     
     <div style="display: flex; flex: 1; align-items: stretch; width: 100%; overflow: hidden; border-top: 1px solid #333; border-left: 6px solid #333;">
       
-      <div style="flex: 0 0 280px; background: #0a0a0a; border-right: 1px solid #333; padding: 15px; overflow: hidden; display: flex; flex-direction: column;">
+      <div style="flex: 0 0 320px; background: #0a0a0a; border-right: 1px solid #333; padding: 15px; overflow-y: auto; display: flex; flex-direction: column;">
         
         <h1 :class="styles.title" style="margin: 50px 0 4px 0; font-size: 22px;">Lab Mode</h1>
         <p :class="styles.hint" style="margin-bottom: 12px;">Design your own quantum puzzle levels</p>
 
         <div style="display: flex; gap: 8px; margin-bottom: 12px">
           <button
-            @click="mode = 'edit'"
+            @click="backToEdit"
             :disabled="mode === 'edit'"
             :class="{ active: mode === 'edit' }"
             style="flex: 1; padding: 6px; cursor: pointer"
@@ -262,27 +260,10 @@ function uploadLevel(e: Event) {
           >
             Test Level
           </button>
-          <button v-if="mode === 'play'" @click="backToEdit" style="flex: 1; padding: 6px; cursor: pointer; background: #533;">
-            Stop
-          </button>
         </div>
 
         <div v-if="mode === 'edit'" style="display: flex; flex-direction: column; gap: 10px;">
           
-          <section style="padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 3px">
-            <h3 style="margin: 0 0 6px 0; font-size: 11px; color: #888; text-transform: uppercase">Grid Size</h3>
-            <div style="display: flex; gap: 8px; align-items: center">
-              <label style="display: flex; align-items: center; gap: 4px">
-                Cols
-                <input type="number" v-model.number="levelConfig.cols" min="3" max="24" style="width: 50px; padding: 2px 4px" />
-              </label>
-              <label style="display: flex; align-items: center; gap: 4px">
-                Rows
-                <input type="number" v-model.number="levelConfig.rows" min="3" max="16" style="width: 50px; padding: 2px 4px" />
-              </label>
-            </div>
-          </section>
-
           <section style="padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 3px">
             <h3 style="margin: 0 0 6px 0; font-size: 11px; color: #888; text-transform: uppercase">Metadata</h3>
             <label style="display: block; margin-bottom: 6px">
@@ -310,6 +291,20 @@ function uploadLevel(e: Event) {
           </section>
 
           <section style="padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 3px">
+            <h3 style="margin: 0 0 6px 0; font-size: 11px; color: #888; text-transform: uppercase">Grid Size</h3>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <label style="display: flex; align-items: center; gap: 4px">
+                Cols
+                <input type="number" v-model.number="levelConfig.cols" min="3" max="24" style="width: 50px; padding: 2px 4px" />
+              </label>
+              <label style="display: flex; align-items: center; gap: 4px">
+                Rows
+                <input type="number" v-model.number="levelConfig.rows" min="3" max="16" style="width: 50px; padding: 2px 4px" />
+              </label>
+            </div>
+          </section>
+
+          <section style="padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 3px">
             <h3 style="margin: 0 0 6px 0; font-size: 11px; color: #888; text-transform: uppercase">Available Gates</h3>
             <div style="display: flex; gap: 10px; margin-bottom: 8px;">
               <div v-for="g in gateOptions" :key="g">
@@ -318,8 +313,6 @@ function uploadLevel(e: Event) {
                   <span>{{ g }}</span>
                 </label>
               </div>
-            </div>
-            <div>
             </div>
           </section>
 
@@ -337,8 +330,18 @@ function uploadLevel(e: Event) {
               </label>
             </div>
           </section>
-
         </div>
+
+        <div v-if="mode === 'play'" style="display: flex; flex-direction: column; gap: 10px;">
+          <section style="padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 3px">
+            <h3 style="margin: 0 0 8px 0; font-size: 11px; color: #888; text-transform: uppercase">Level Information</h3>
+            <div style="margin-bottom: 6px; font-size: 12px; color: #eee;"><strong style="color: #888; display: inline-block; width: 60px;">Name:</strong> {{ levelConfig.name }}</div>
+            <div style="margin-bottom: 6px; font-size: 12px; color: #eee;"><strong style="color: #888; display: inline-block; width: 60px;">Hint:</strong> {{ levelConfig.hint || 'None' }}</div>
+            <div style="margin-bottom: 6px; font-size: 12px; color: #eee;"><strong style="color: #888; display: inline-block; width: 60px;">Goal:</strong> {{ levelConfig.goal || 'None' }}</div>
+            <div style="font-size: 12px; color: #eee;"><strong style="color: #888; display: inline-block; width: 60px;">Win:</strong> {{ levelConfig.winCondition }}</div>
+          </section>
+        </div>
+
       </div>
 
       <div v-if="mode === 'edit'" style="flex: 0 0 180px; background: #111; border-right: 1px solid #333; padding: 20px; overflow-y: auto;">
@@ -391,8 +394,106 @@ function uploadLevel(e: Event) {
         />
       </div>
 
+<aside v-if="mode === 'play'" :class="styles.sidebar" style="flex: 0 0 400px; background: #0a0a0a; border-left: 1px solid #333; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+        
+        <div style="flex: 0 0 auto; padding: 30px 20px 10px;">
+          <h3 style="margin: 0; font-size: 12px; color: #888; text-transform: uppercase;">Test Results</h3>
+        </div>
+        
+          <div :class="styles.ionWrapper" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; padding: 10px; flex: 0 1 auto; min-height: min-content;">
+            <div 
+              v-for="(ionState, idx) in ionStates" 
+              :key="idx" 
+              :class="[styles.ionSection, { [styles.ionSectionCompact as string]: ionStates.length >= 3 }]"
+            >
+            <div :class="[styles.blochPanel, { [styles.blochPanelCompact as string]: ionStates.length >= 3 }]">
+              <div :class="styles.blochTitle">
+                Ion {{ String.fromCharCode(65 + idx) }}<span v-if="ionStates.length < 3"> - Bloch Sphere</span>
+              </div>
+              <svg :class="[styles.blochSvg, { [styles.blochSvgCompact as string]: ionStates.length >= 2 }]" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+                <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>
+                <text x="80" y="156" :class="styles.blochLabel" text-anchor="middle">|0⟩</text>
+                <text x="10" y="84" :class="styles.blochLabel" text-anchor="middle">−</text>
+                <text x="150" y="84" :class="styles.blochLabel" text-anchor="middle">+</text>
+    
+                <circle cx="80" cy="80" r="52" :class="styles.blochCircle" />
+                <ellipse cx="80" cy="80" rx="52" ry="14" :class="styles.blochEquator" />
+    
+                <g v-if="getBlochAngle(ionState.state) !== null">
+                  <line
+                    x1="80" y1="80"
+                    :x2="80 + 44 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                    :y2="80 + 44 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                    :class="styles.blochArrow"
+                  />
+                  <circle
+                    :cx="80 + 46 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                    :cy="80 + 46 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
+                    r="3"
+                    :class="styles.blochTip"
+                  />
+                </g>
+    
+                <circle cx="80" cy="80" r="3" :class="styles.blochCenter" />
+              </svg>
+    
+              <div :class="{
+                [styles.blochState as string]: true,
+                [styles.blochStateSuperposition as string]: ionState.state === '|+⟩' || ionState.state === '|-⟩'
+              }">
+                {{ getBlochLabel(ionState.state) }}
+              </div>
+            </div>
+    
+            <div v-if="ionStates.length < 3" :class="styles.infoPanel">
+              <div :class="styles.infoRow">
+                <span :class="styles.infoKey">State</span>
+                <span :class="[styles.infoVal, ionState.state === '|+⟩' || ionState.state === '|-⟩' ? styles.infoValPurple : ionState.state === '|1⟩' ? styles.infoValOrange : styles.infoValCyan]">{{ ionState.state }}</span>
+              </div>
+              <div :class="styles.infoRow">
+                <span :class="styles.infoKey">P(|0⟩)</span>
+                <span :class="styles.infoVal">{{ ionState.p0 }}</span>
+              </div>
+              <div :class="styles.infoRow">
+                <span :class="styles.infoKey">P(|1⟩)</span>
+                <span :class="styles.infoVal">{{ ionState.p1 }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div :class="styles.sharedControls" style="flex: 0 0 auto; padding: 20px; border-top: 1px solid #1a1a1a;">
+          <button 
+            @click="handleMeasure"
+            :disabled="!canMeasure"
+            :class="styles.measureBtn"
+            style="width: 100%; margin-bottom: 10px;"
+          >
+            Measure
+          </button>
+
+          <button
+            v-if="ionStates.length > 0"
+            @click="handleReset"
+            :class="styles.resetBtn"
+            style="width: 100%; margin-bottom: 20px;"
+          >
+            Reset Ion
+          </button>
+          
+          <div :class="styles.infoRow">
+            <span :class="styles.infoKey">Last</span>
+            <span :class="[styles.infoVal, resultcolourClass]">{{ result }}</span>
+          </div>
+          <div v-if="history.length" :class="styles.history" style="margin-top: 10px;">
+            <span :class="styles.infoKey">History</span>
+            <span :class="styles.historyBits">{{ history.map((r: number[]) => r.join('')).join(' ') }}</span>
+          </div>
+        </div>
+
+      </aside>
+      </div>
     </div>
-  </div>
 </template>
 
 <style scoped>
