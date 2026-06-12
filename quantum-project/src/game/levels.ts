@@ -339,7 +339,7 @@ export const LEVELS = [
       preInitialized: true,
       prePlacedGates: [['H', 'CNOT'], ['CNOT']],
       lockedGateIndices: [0, 1, 2], 
-      gateInventory: { 'H': 1, 'CNOT': 2 },
+      gateInventory: { 'H': 2, 'CNOT': 4 },
       requiredGateCount: [4, 2], 
       automateMeasurement: false,
       popups: [
