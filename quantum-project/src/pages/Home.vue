@@ -504,7 +504,12 @@ onMounted(() => {
                 Ion {{ String.fromCharCode(65 + idx) }}<span v-if="ionStates.length < 3"> - Bloch Sphere</span>
               </div>
               
-              <svg :class="[styles.blochSvg, { [styles.blochSvgCompact as string]: ionStates.length >= 3 }]" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" style="max-width: 90px; height: auto; margin: 0 auto;">
+              <svg 
+                :class="[styles.blochSvg, { [styles.blochSvgCompact as string]: ionStates.length >= 3 }]" 
+                viewBox="0 0 160 160" 
+                xmlns="http://www.w3.org/2000/svg" 
+                :style="ionStates.length >= 3 ? 'max-width: 90px; height: auto; margin: 0 auto;' : 'max-width: 100%; height: auto; margin: 0 auto;'"
+              >
                 <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>
                 <text x="80" y="156" :class="styles.blochLabel" text-anchor="middle">|0⟩</text>
                 <text x="10" y="84" :class="styles.blochLabel" text-anchor="middle">−</text>
@@ -532,10 +537,13 @@ onMounted(() => {
                 <circle cx="80" cy="80" r="3" :class="styles.blochCenter" />
               </svg>
     
-              <div :class="{
-                [styles.blochState as string]: true,
-                [styles.blochStateSuperposition as string]: ionState.state === '|+⟩' || ionState.state === '|-⟩'
-              }" style="max-width: 90px; white-space: normal !important; word-wrap: break-word; line-height: 1.2; margin: 0 auto;">
+              <div 
+                :class="{
+                  [styles.blochState as string]: true,
+                  [styles.blochStateSuperposition as string]: ionState.state === '|+⟩' || ionState.state === '|-⟩'
+                }" 
+                :style="ionStates.length >= 3 ? 'max-width: 90px; white-space: normal !important; word-wrap: break-word; line-height: 1.2; margin: 0 auto;' : 'max-width: 100%; white-space: normal !important; word-wrap: break-word; line-height: 1.2; margin: 0 auto;'"
+              >
                 {{ getBlochLabel(ionState.state) }}
               </div>
             </div>
