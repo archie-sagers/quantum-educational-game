@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { measureAll, getBlochAngle, getBlochLabel, calculateQuantumState, WELCOME_POPUP, Level, type IonQuantumState, CELL } from '@/game/quantumgame'
+import { measureAll, getBlochAngle, getBlochLabel, checkWinCondition, calculateQuantumState, WELCOME_POPUP, Level, type IonQuantumState, CELL } from '@/game/quantumgame'
 import { LEVELS } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
 import GameBoard from '@/components/GameBoard.vue'
@@ -364,26 +364,14 @@ function handleMeasure() {
     const wc = level.winCondition
     let win = false
     
-    if (wc === 'any') win = true
-    else if (wc === 'superposition') win = states.some(s => s.state === '|+⟩' || s.state === '|-⟩')
-    else if (wc === 'positive-superposition') win = states.some(s => s.state === '|+⟩')
-    else if (wc === 'negative-superposition') win = states.some(s => s.state === '|-⟩')
-    else if (wc === 'normal') win = states.every(s => s.state === '|0⟩' || s.state === '|1⟩')
-    else if (wc === '|0⟩' || wc === '0') win = states.length === 1 && states[0]?.state === '|0⟩'
-    else if (wc === '|1⟩' || wc === '1') win = states.length === 1 && states[0]?.state === '|1⟩'
-    else if (wc === 'cnot-success') win = states.length === 2 && states[0]?.state === '|1⟩' && states[1]?.state === '|1⟩'
-    else if (wc === 'cnot-01') win = states.length === 2 && states[0]?.state === '|0⟩' && states[1]?.state === '|1⟩'
-    else if (wc === 'cnot-00') win = states.length === 2 && states[0]?.state === '|0⟩' && states[1]?.state === '|0⟩'
-    else if (wc === 'multi-superposition') win = states.length >= 2 && states.every(s => s.state === '|+⟩')
-    else if (wc === '111') win = states.length === 3 && states[0]?.state === '|1⟩' && states[1]?.state === '|1⟩' && states[2]?.state === '|1⟩'
+    if (checkWinCondition(wc, states)) { 
+      showWin.value = true
 
-    if (win) { showWin.value = true
-
-    if (level.automateMeasurement && !automatedRunning.value) {
-      const anySuperposition = states.some(s => s.state === '|+⟩' || s.state === '|-⟩')
-      if (anySuperposition) {
-        const shown = showPopupByTrigger('onAutomatedStart')
-        if (!shown) startAutomatedDemo()
+      if (level.automateMeasurement && !automatedRunning.value) {
+        const anySuperposition = states.some(s => s.state === '|+⟩' || s.state === '|-⟩')
+        if (anySuperposition) {
+          const shown = showPopupByTrigger('onAutomatedStart')
+          if (!shown) startAutomatedDemo()
         }
       }
     }

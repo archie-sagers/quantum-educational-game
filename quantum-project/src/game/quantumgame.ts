@@ -241,6 +241,29 @@ export function calculateQuantumState(
   return { states, canMeasure: hitIons.length > 0 };
 }
 
+// Win conditions
+// --------------
+export function checkWinCondition(wc: string, states: IonQuantumState[]): boolean {
+  if (!states) return false;
+
+  // Any Qubit Count
+  if (wc === 'any') return true;
+  if (wc === 'normal') return states.every(s => s.state === '|0⟩' || s.state === '|1⟩');
+  if (wc === 'all-0') return states.every(s => s.state === '|0⟩');
+  if (wc === 'all-1') return states.every(s => s.state === '|1⟩');
+  
+  // Superposition
+  if (wc === 'superposition') return states.every(s => s.state === '|+⟩' || s.state === '|-⟩');
+  if (wc === 'positive-superposition') return states.every(s => s.state === '|+⟩');
+  if (wc === 'negative-superposition') return states.every(s => s.state === '|-⟩');
+
+  // 2 Qubit Specific
+  if (wc === '01' || wc === '01') return states.length === 2 && states[0]?.state === '|0⟩' && states[1]?.state === '|1⟩';
+  if (wc === '10') return states.length === 2 && states[0]?.state === '|1⟩' && states[1]?.state === '|0⟩';
+
+  return false;
+}
+
 interface LevelConfig {
   name: string;
   cols: number;

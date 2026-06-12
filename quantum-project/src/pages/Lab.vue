@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, watch } from 'vue'
 import styles from './Home.module.css'
 import GameBoard from '@/components/GameBoard.vue'
-import { Level, CELL, measureAll, getBlochAngle, getBlochLabel, calculateQuantumState, type IonQuantumState } from '@/game/quantumgame'
+import { Level, CELL, measureAll, getBlochAngle, checkWinCondition, getBlochLabel, calculateQuantumState, type IonQuantumState } from '@/game/quantumgame'
 
 // Level config interface
 interface LevelConfigLocal {
@@ -16,6 +16,7 @@ interface LevelConfigLocal {
   prePlacedGates?: string[][]
   lockedGateIndices?: number[]
   gateInventory?: Record<string, number>
+  lockedTo?: Record<string, string>
   hint?: string
   goal?: string
   winCondition?: string
@@ -31,7 +32,8 @@ const defaultConfig = (): LevelConfigLocal => ({
   availableGates: ['X', 'H', 'CNOT'],
   prePlacedGates: [],
   lockedGateIndices: [],
-  gateInventory: {},
+  gateInventory: { 'X': 10, 'H': 10, 'CNOT': 10 },
+  lockedTo: { 'X': '', 'H': '', 'CNOT': '' },
   hint: 'Design your custom level',
   goal: 'Test',
   winCondition: 'any',
@@ -45,7 +47,7 @@ const editorLevel = computed(() => {
     rows: levelConfig.rows,
     sources: levelConfig.sources.map(s => ({ col: s.col, row: s.row, dir: s.dir ?? 'right' })),
     ions: levelConfig.ions.map(i => ({ col: i.col, row: i.row })),
-    walls: (levelConfig.walls || []).map(w => ({ col: w.col, row: w.row, type: w.type ?? 'standard' })),
+    walls: (levelConfig.walls || []).map(w => ({ col: w.col, row: w.row, type: (w.type ?? 'standard') as any })),
     availableGates: levelConfig.availableGates || [],
     prePlacedGates: levelConfig.prePlacedGates || [],
     lockedGateIndices: levelConfig.lockedGateIndices || [],
@@ -70,6 +72,10 @@ const measuredValues = ref<number[] | null>(null)
 const result = ref('—')
 const history = ref<number[][]>([])
 const showWin = ref(false)
+const showLaserGates = ref(false)
+const activeSourceIndex = ref<number>(0)
+const playGateInventory = ref<Record<string, number>>({})
+const activeGates = computed(() => playSourceGates.value[activeSourceIndex.value] ?? [])
 
 const resultcolourClass = computed(() => {
   if (result.value === '1') return styles.infoValOrange;
@@ -108,7 +114,13 @@ function handleMeasure() {
     if (history.value.length > 20) history.value.shift()
 
     canMeasure.value = true
-    showWin.value = true 
+    const states = ionStates.value || []
+    const wc = playLevel.value?.winCondition || 'any'
+    let win = false
+    
+    if (checkWinCondition(wc, states)) {
+      showWin.value = true
+    }
   }, 800) // TRAVEL_MS
 }
 
@@ -118,6 +130,81 @@ function handleReset() {
   result.value = '—'
   showWin.value = false
   updatePlayState()
+}
+
+// Laser Gate Handlers
+function handleGameBoardClick(col: number, row: number) {
+  if (mode.value !== 'play' || !playLevel.value) return;
+  const clickedSourceIdx = playLevel.value.sources.findIndex(s => s.col === col && s.row === row);
+  
+  if (clickedSourceIdx !== -1 && playLevel.value.availableGates.length > 0) {
+    activeSourceIndex.value = clickedSourceIdx;
+    showLaserGates.value = true;
+  }
+}
+
+function onGateDragStart(e: DragEvent, gateType: string) {
+  const available = playGateInventory.value[gateType] ?? -1
+  if (available === 0) {
+    e.preventDefault()
+    return
+  }
+  e.dataTransfer!.effectAllowed = 'copy'
+  e.dataTransfer!.setData('gateType', gateType)
+}
+
+function onLaserDragOver(e: DragEvent) {
+  e.preventDefault()
+  e.dataTransfer!.dropEffect = 'copy'
+}
+
+function onLaserDrop(e: DragEvent) {
+  e.preventDefault()
+  const gateType = e.dataTransfer!.getData('gateType')
+  if (gateType) {
+    if (playGateInventory.value[gateType] !== undefined) {
+      if (playGateInventory.value[gateType]! > 0) {
+        playGateInventory.value[gateType]!--
+      } else {
+        return 
+      }
+    }
+    const idx = activeSourceIndex.value
+    if (!playSourceGates.value[idx]) playSourceGates.value[idx] = []
+    playSourceGates.value[idx].push(gateType)
+    
+    // Reset measurement state when a gate is added
+    isMeasured.value = false
+    measuredValues.value = null
+    updatePlayState()
+  }
+}
+
+function removeLaserGate(index: number) {
+  const activeIdx = activeSourceIndex.value
+  const flatIndexBase = playSourceGates.value.slice(0, activeIdx).flat().length
+  
+  if (playLevel.value?.lockedGateIndices.includes(flatIndexBase + index)) {
+    return
+  }
+  
+  const gate = playSourceGates.value[activeIdx]![index]!
+  playSourceGates.value[activeIdx]!.splice(index, 1)
+  
+  if (playGateInventory.value[gate] !== undefined) {
+    playGateInventory.value[gate]!++
+  }
+  
+  // Reset measurement state when a gate is removed
+  isMeasured.value = false
+  measuredValues.value = null
+  updatePlayState()
+}
+
+function isGateLocked(localIndex: number) {
+  const activeIdx = activeSourceIndex.value;
+  const flatIndexBase = playSourceGates.value.slice(0, activeIdx).flat().length;
+  return playLevel.value?.lockedGateIndices.includes(flatIndexBase + localIndex);
 }
 
 // Edit Mode
@@ -177,6 +264,17 @@ function testLevel() {
   }
   playLevel.value = new Level(cfg)
   playSourceGates.value = (cfg.prePlacedGates || []).map((g: string[]) => [...g])
+  playGateInventory.value = { ...(levelConfig.gateInventory || {}) }
+
+  const flatLocked = playSourceGates.value.flat();
+  for (const idx of cfg.lockedGateIndices) {
+    if (idx < flatLocked.length) {
+      const gate = flatLocked[idx];
+      if (gate && playGateInventory.value[gate] !== undefined && playGateInventory.value[gate] > 0) {
+        playGateInventory.value[gate]--;
+      }
+    }
+  }
   
   // Reset Play state
   isMeasured.value = false
@@ -195,12 +293,53 @@ function backToEdit() {
 
 function toggleGate(g: string) {
   levelConfig.availableGates = levelConfig.availableGates || []
+  levelConfig.gateInventory = levelConfig.gateInventory || {}
+  levelConfig.lockedTo = levelConfig.lockedTo || {}
+
   if (levelConfig.availableGates.includes(g)) {
     levelConfig.availableGates = levelConfig.availableGates.filter(x => x !== g)
   } else {
     levelConfig.availableGates.push(g)
+    if (levelConfig.gateInventory[g] === undefined) {
+      levelConfig.gateInventory[g] = 10
+    }
+    if (levelConfig.lockedTo[g] === undefined) {
+      levelConfig.lockedTo[g] = ''
+    }
   }
 }
+
+watch([() => levelConfig.lockedTo, () => levelConfig.sources, () => levelConfig.availableGates], () => {
+  if (!levelConfig.lockedTo) return;
+  
+  const newPrePlaced: string[][] = Array.from({ length: levelConfig.sources.length }, () => []);
+  const newLockedIndices: number[] = [];
+  
+  for (const g of levelConfig.availableGates || []) {
+    const lockedStr = levelConfig.lockedTo[g] || '';
+    // Extracts letters regardless of commas, spaces, or casing
+    const targets = lockedStr.toUpperCase().match(/[A-Z]/g) || [];
+    
+    for (const t of targets) {
+      // 'A' -> 0, 'B' -> 1, etc
+      const sourceIdx = t.charCodeAt(0) - 65; 
+      if (sourceIdx >= 0 && sourceIdx < levelConfig.sources.length) {
+        newPrePlaced[sourceIdx]!.push(g);
+      }
+    }
+  }
+  
+  let flatIndex = 0;
+  for (let i = 0; i < newPrePlaced.length; i++) {
+    for (let j = 0; j < newPrePlaced[i]!.length; j++) {
+      newLockedIndices.push(flatIndex);
+      flatIndex++;
+    }
+  }
+  
+  levelConfig.prePlacedGates = newPrePlaced;
+  levelConfig.lockedGateIndices = newLockedIndices;
+}, { deep: true })
 
 // Save/Load functions
 // -----------------------------------------
@@ -246,6 +385,7 @@ function uploadLevel(e: Event) {
         <div style="display: flex; gap: 8px; margin-bottom: 12px">
           <button
             @click="backToEdit"
+            class="lab-btn"
             :disabled="mode === 'edit'"
             :class="{ active: mode === 'edit' }"
             style="flex: 1; padding: 6px; cursor: pointer"
@@ -254,6 +394,7 @@ function uploadLevel(e: Event) {
           </button>
           <button
             @click="testLevel"
+            class="lab-btn"
             :disabled="levelConfig.sources.length === 0 || mode === 'play'"
             :class="{ active: mode === 'play' }"
             style="flex: 1; padding: 6px; cursor: pointer"
@@ -282,10 +423,24 @@ function uploadLevel(e: Event) {
               Win Condition
               <select v-model="levelConfig.winCondition" style="width: 100%; padding: 2px 4px; margin-top: 2px">
                 <option value="any">Any</option>
-                <option value="superposition">Superposition</option>
-                <option value="normal">Normal (|0⟩ or |1⟩)</option>
-                <option value="|0⟩">|0⟩ State</option>
-                <option value="|1⟩">|1⟩ State</option>
+                
+                <optgroup label="General States (Any Qubit Count)">
+                  <option value="normal">All Normal (|0⟩ or |1⟩)</option>
+                  <option value="all-0">All |0⟩</option>
+                  <option value="all-1">All |1⟩</option>
+                </optgroup>
+
+                <optgroup label="Superposition">
+                  <option value="superposition">All in Superposition (|+⟩ or |-⟩)</option>
+                  <option value="positive-superposition">All |+⟩</option>
+                  <option value="negative-superposition">All |-⟩</option>
+                  <option value="mixed">Mixed (Normal & Superposition)</option>
+                </optgroup>
+
+                <optgroup label="2 Qubit Specific">
+                  <option value="01">|01⟩ State</option>
+                  <option value="10">|10⟩ State</option>
+                </optgroup>
               </select>
             </label>
           </section>
@@ -306,14 +461,39 @@ function uploadLevel(e: Event) {
 
           <section style="padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 3px">
             <h3 style="margin: 0 0 6px 0; font-size: 11px; color: #888; text-transform: uppercase">Available Gates</h3>
-            <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-              <div v-for="g in gateOptions" :key="g">
-                <label style="display: flex; align-items: center; gap: 4px;">
+            
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px;">
+              <div v-for="g in gateOptions" :key="g" style="display: flex; flex-direction: column; gap: 4px;">
+                
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
                   <input type="checkbox" :checked="levelConfig.availableGates?.includes(g)" @change="() => toggleGate(g)" />
-                  <span>{{ g }}</span>
+                  <span :style="{ color: levelConfig.availableGates?.includes(g) ? '#eee' : '#666' }">
+                    {{ g }} Gate
+                  </span>
                 </label>
+
+                <div v-if="levelConfig.availableGates?.includes(g) && levelConfig.gateInventory && levelConfig.lockedTo" style="padding-left: 20px; display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 11px; color: #888;">Count:</span>
+                    <input 
+                      type="number" 
+                      v-model.number="levelConfig.gateInventory[g]" 
+                      min="1" 
+                      max="99" 
+                      style="width: 50px; padding: 2px 4px; font-size: 11px;" 
+                    />
+
+                  <span style="font-size: 11px; color: #888; margin-left: 10px;">Locked?</span>
+                    <input 
+                      type="text" 
+                      v-model="levelConfig.lockedTo[g]" 
+                      placeholder="e.g. A, B"
+                      style="width: 70px; padding: 2px 4px; font-size: 11px;" 
+                    />
+                </div>
+
               </div>
             </div>
+            
           </section>
 
           <section style="padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 3px">
@@ -391,10 +571,11 @@ function uploadLevel(e: Event) {
           :level="playLevel"
           :sourceGates="playSourceGates"
           @canvas-mirror-place="updatePlayState"
+          @canvas-click="handleGameBoardClick" 
         />
       </div>
 
-<aside v-if="mode === 'play'" :class="styles.sidebar" style="flex: 0 0 400px; background: #0a0a0a; border-left: 1px solid #333; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+  <aside v-if="mode === 'play'" :class="styles.sidebar" style="flex: 0 0 400px; background: #0a0a0a; border-left: 1px solid #333; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
         
         <div style="flex: 0 0 auto; padding: 30px 20px 10px;">
           <h3 style="margin: 0; font-size: 12px; color: #888; text-transform: uppercase;">Test Results</h3>
@@ -493,7 +674,85 @@ function uploadLevel(e: Event) {
 
       </aside>
       </div>
-    </div>
+
+      <div v-if="showLaserGates && playLevel" :class="styles.laserGatesOverlay" @click="showLaserGates = false">
+        <div :class="styles.laserGatesModal" @click.stop>
+          <div :class="styles.laserGatesTitle">Laser Gates</div>
+          
+          <div :class="styles.gateContainer">
+            <div :class="styles.appliedSection">
+              <div :class="styles.sectionLabel">Applied to Laser</div>
+              <div
+                @dragover="onLaserDragOver"
+                @drop="onLaserDrop"
+                :class="styles.laserDropZone"
+              >
+                <div v-if="activeGates.length > 0" :class="styles.gateStack">
+                  <div
+                    v-for="(gate, index) in activeGates"
+                    :key="`laser-gate-${index}`"
+                    :class="[
+                      styles.laserGate,
+                      { [styles.laserGateX as string]: gate === 'X' }, 
+                      { [styles.laserGateH as string]: gate === 'H' },
+                      { [styles.laserGateCNOT as string]: gate === 'CNOT' }
+                    ]"
+                  >
+                  <button v-if="!isGateLocked(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
+                    <div>{{ gate }}</div>
+                  </div>
+                </div>
+                <div v-else :class="styles.dropHint">Drag gates here</div>
+              </div>
+            </div>
+
+            <div :class="styles.divider"></div>
+
+            <div :class="styles.gatesSection">
+              <div :class="styles.sectionLabel">Available Gates</div>
+              <div :class="styles.gateGrid">
+                <div
+                    v-for="(gate, index) in playLevel.availableGates"
+                    :key="`gate-${index}`"
+                    draggable="true"
+                    @dragstart="onGateDragStart($event, gate)"
+                    :class="[styles.gateItem, 
+                      { [styles.gateItemX as string]: gate === 'X' },
+                      { [styles.gateItemH as string]: gate === 'H' },
+                      { [styles.gateItemCNOT as string]: gate === 'CNOT' },
+                      { [styles.gateItemDisabled as string]: (playGateInventory[gate] ?? -1) === 0 }
+                    ]"
+                  >
+                  <div>{{ gate }}</div>
+                  <div v-if="playGateInventory[gate] !== undefined" :class="styles.gateItemCount">
+                    {{ playGateInventory[gate] }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button @click="showLaserGates = false" :class="styles.doneBtn">Done</button>
+        </div>
+      </div>
+        <div v-if="showWin && mode === 'play'" :class="styles.popupOverlay" @click="showWin = false">
+        <div :class="styles.popupModal" style="text-align: center; border-color: #0f8; box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);" @click.stop>
+          <div :class="styles.popupTitle" style="color: #0f8; font-size: 20px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">
+            Level Passed!
+          </div>
+          <div :class="styles.popupText" style="margin-bottom: 24px; font-size: 14px;">
+            The win condition (<strong>{{ playLevel?.winCondition }}</strong>) was successfully met.
+          </div>
+          <div style="display: flex; gap: 12px; justify-content: center;">
+            <button @click="showWin = false" class="lab-btn" style="flex: 1;">
+              Continue Testing
+            </button>
+            <button @click="backToEdit(); showWin = false" class="lab-btn" style="flex: 1; border-color: #0ef; box-shadow: 0 0 8px rgba(0, 238, 255, 0.3);">
+              Back to Edit
+            </button>
+          </div>
+        </div>
+      </div>
+      </div>
 </template>
 
 <style scoped>
@@ -518,7 +777,7 @@ select:focus {
   border-color: #0ef;
 }
 
-button {
+.lab-button {
   background: #1a1a1a;
   color: #eee;
   border: 1px solid #333;
@@ -528,12 +787,12 @@ button {
   transition: 0.2s;
 }
 
-button:hover:not(:disabled) {
+.lab-button:hover:not(:disabled) {
   background: #2a2a2a;
   border-color: #555;
 }
 
-button:disabled {
+.lab-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
