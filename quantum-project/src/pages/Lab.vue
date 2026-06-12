@@ -245,6 +245,19 @@ function handleItemDrop(col: number, row: number, itemType: string) {
   }
 }
 
+// Directions for laser sources
+const DIRS = ['right', 'down', 'left', 'up']
+
+function handleEditCanvasClick(col: number, row: number) {
+  const source = levelConfig.sources.find(s => s.col === col && s.row === row)
+  
+  if (source) {
+    const currentDir = source.dir || 'right'
+    const nextIdx = (DIRS.indexOf(currentDir) + 1) % DIRS.length
+    source.dir = DIRS[nextIdx]
+  }
+}
+
 function testLevel() {
   if (levelConfig.sources.length === 0) {
     alert('Add at least one laser source to test')
@@ -562,6 +575,7 @@ function uploadLevel(e: Event) {
           :level="editorLevel" 
           :sourceGates="levelConfig.prePlacedGates || []"
           @item-drop="handleItemDrop"
+          @canvas-click="handleEditCanvasClick" 
         />
         <GameBoard
           v-if="mode === 'play' && playLevel"

@@ -63,7 +63,7 @@ export const LEVELS = [
     hint: 'Route the red laser to hit the ion and measure it',
     showResetButton: false,
     preInitialized: true,
-    popups: []
+    popups: [{ title: 'Measure |1⟩', text: 'Measure a state of |1⟩ from the ion', trigger: 'onLoad' }]
   }),
   new Level({
     name: '5 - Superposition',
@@ -254,8 +254,8 @@ export const LEVELS = [
       requiredGateCount: 4,
       automateMeasurement: false,
       popups: [
-        { title: 'Uncomputing', text: 'Quantum operations are reversible. If you perform an operation, you can undo it by applying the inverse operations in reverse order.', trigger: 'onLoad' },
-        { title: 'The Challenge', text: 'First, drag an H-gate and a CNOT-gate to entangle the ions. Then, use your remaining gates to un-entangle them and return the system to |0⟩ |0⟩.', trigger: 'onLaserGatesOpen' }
+        { title: 'Uncomputing', text: 'Quantum operations are reversible. If you perform an operation, you can undo it by applying the same operations in reverse order.', trigger: 'onLoad' },
+        { title: 'The Challenge', text: 'Can you reverse the operation to return the system to |0⟩ |0⟩?', trigger: 'onLaserGatesOpen' }
       ]
     }),
     new Level({
@@ -276,7 +276,7 @@ export const LEVELS = [
       requiredGateCount: 3,
       automateMeasurement: false,
       popups: [
-        { title: 'Swapping States', text: 'Can you find a way to swap the quantum states of the ionsusing only multi-qubit CNOT operations?', trigger: 'onLoad' },
+        { title: 'Swapping States', text: 'Can you find a way to swap the quantum states of the ions using only multi-qubit CNOT operations?', trigger: 'onLoad' },
       ]
     }),
 

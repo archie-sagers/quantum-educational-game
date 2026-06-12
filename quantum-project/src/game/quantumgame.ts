@@ -352,6 +352,9 @@ export class Level {
     const allHitIons: number[] = [];
     const sourceHitIons: number[][] = [];
 
+    // Infinite loop safety
+    const MAX_SEGMENTS = 500; 
+
     for (let sIdx = 0; sIdx < this.sources.length; sIdx++) {
       const src = this.sources[sIdx];
       if (!src) continue;
@@ -370,7 +373,16 @@ export class Level {
       let row = src.row;
       let dir: string = src.dir ?? 'right';
 
+      let safetyCounter = 0;
+
       while (true) {
+
+        safetyCounter++;
+        if (safetyCounter > MAX_SEGMENTS) {
+          console.warn(`Infinite loop detected on laser ${sIdx}! Terminating trace.`);
+          break;
+        }
+        
         const [dc, dr] = moves[dir as keyof typeof moves] as [number, number];
         const new_column = col + dc, new_row = row + dr;
 
