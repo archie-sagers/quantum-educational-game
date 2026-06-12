@@ -373,15 +373,18 @@ function handleMeasure() {
     else if (wc === '|1⟩' || wc === '1') win = states.length === 1 && states[0]?.state === '|1⟩'
     else if (wc === 'cnot-success') win = states.length === 2 && states[0]?.state === '|1⟩' && states[1]?.state === '|1⟩'
     else if (wc === 'cnot-01') win = states.length === 2 && states[0]?.state === '|0⟩' && states[1]?.state === '|1⟩'
+    else if (wc === 'cnot-00') win = states.length === 2 && states[0]?.state === '|0⟩' && states[1]?.state === '|0⟩'
+    else if (wc === 'multi-superposition') win = states.length >= 2 && states.every(s => s.state === '|+⟩')
     else if (wc === '111') win = states.length === 3 && states[0]?.state === '|1⟩' && states[1]?.state === '|1⟩' && states[2]?.state === '|1⟩'
 
-    if (win) showWin.value = true
+    if (win) { showWin.value = true
 
     if (level.automateMeasurement && !automatedRunning.value) {
       const anySuperposition = states.some(s => s.state === '|+⟩' || s.state === '|-⟩')
       if (anySuperposition) {
         const shown = showPopupByTrigger('onAutomatedStart')
         if (!shown) startAutomatedDemo()
+        }
       }
     }
   }, TRAVEL_MS)
@@ -438,20 +441,37 @@ onMounted(() => {
 
     <!-- Level select, goal and success message on same line -->
     <div :class="styles.controlsRow">
-      <button @click="showLevelSelector = true" :class="styles.levelIndicator">
+      <button 
+        @click="showLevelSelector = true" 
+        :disabled="automatedRunning"
+        :class="styles.levelIndicator"
+      >
         Level {{ currentLevelIndex + 1 }}
       </button>
-      <button @click="showManual = true" :class="styles.manualBtn">
+      
+      <button 
+        @click="showManual = true" 
+        :disabled="automatedRunning"
+        :class="styles.manualBtn"
+      >
         Manual
       </button>
+      
       <div :class="styles.goalBox">
         <div :class="styles.goalLabel">Goal</div>
         <div :class="styles.goalValue">{{ level.goal }}</div>
       </div>
+      
       <div :class="styles.successBoxContainer">
         <div v-if="showWin" :class="styles.successBox">
           <div :class="styles.successText">ION SUCCESSFULLY EXCITED</div>
-          <button @click="nextLevel" :class="styles.nextBtn">{{  LEVELS.length - 1 > currentLevelIndex ? 'Next Level' : 'Completed!' }}</button>
+          <button 
+            @click="nextLevel" 
+            :disabled="automatedRunning"
+            :class="styles.nextBtn"
+          >
+            {{ LEVELS.length - 1 > currentLevelIndex ? 'Next Level' : 'Completed!' }}
+          </button>
         </div>
       </div>
     </div>
@@ -539,7 +559,7 @@ onMounted(() => {
         <div :class="styles.sharedControls">
           <button 
             @click="handleMeasure"
-            :disabled="!canMeasure"
+            :disabled="!canMeasure || automatedRunning"
             :class="styles.measureBtn"
           >
             Measure
@@ -548,6 +568,7 @@ onMounted(() => {
           <button
             v-if="level.showResetButton"
             @click="handleReset"
+            :disabled="automatedRunning"
             :class="styles.resetBtn"
           >
             Reset Ion

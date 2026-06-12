@@ -132,7 +132,7 @@ export const LEVELS = [
       requiredGateCount: 3,
       gateInventory: { 'X': 1, 'H': 2 },
       popups: [
-        { title: 'Gate Sequencing', text: 'The ion starts in |0⟩. You must use exactly 3 laser gates.', trigger: 'onLoad' },
+        { title: 'Gate Sequencing', text: 'The ion starts in |0⟩. You must use exactly 3 laser gates to produce the definite state |0⟩', trigger: 'onLoad' },
       ]
     }),
     new Level({
@@ -148,6 +148,7 @@ export const LEVELS = [
       preInitialized: true,
       requiredGateCount: 3,
       lockedGateIndices: [0],
+      prePlacedGates: [['X']],
       gateInventory: { 'X': 1, 'H': 2 },
       popups: [
         { title: 'Phase Matters', text: 'You must use exactly 3 laser gates total to achieve the |1⟩ state. The first X gate is locked in place.', trigger: 'onLoad' },
@@ -184,6 +185,7 @@ export const LEVELS = [
       preInitialized: true,
       lockedGateIndices: [0],
       gateInventory: { 'H': 1, 'CNOT': 1 },
+      prePlacedGates: [['H']],
       requiredGateCount: 2,
       automateMeasurement: true,
       popups: [
@@ -200,7 +202,7 @@ export const LEVELS = [
       walls: [{ col: 5, row: 2, type: 'standard' }, { col: 9, row: 4, type: 'standard' }],
       availableGates: ['H', 'CNOT'],
       goal: 'Entangle the Ions',
-      winCondition: 'any',
+      winCondition: 'multi-superposition',
       hint: 'Use mirrors to navigate around the walls and hit both ions in sequence.',
       showResetButton: true,
       preInitialized: true,
@@ -242,7 +244,7 @@ export const LEVELS = [
       walls: [],
       availableGates: ['H', 'CNOT'],
       goal: '|0⟩ |0⟩',
-      winCondition: 'normal',
+      winCondition: 'cnot-00',
       hint: 'Apply gates in the exact reverse order to uncompute the entanglement.',
       showResetButton: true,
       preInitialized: true,
@@ -314,8 +316,8 @@ export const LEVELS = [
       preInitialized: true,
       prePlacedGates: [['X'], [],],
       lockedGateIndices: [0], 
-      gateInventory: { 'CNOT': 2, 'X': 1 },
-      requiredGateCount: [2, 1],
+      gateInventory: { 'CNOT': 3, 'X': 3 },
+      requiredGateCount: [2],
       automateMeasurement: false,
       popups: [
         { title: 'Cascading CNOTs', text: 'Read state |1⟩, |1⟩, |1⟩ from this system.', trigger: 'onLoad' },
