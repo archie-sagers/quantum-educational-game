@@ -41,7 +41,7 @@ export const LEVELS = [
     ions: [{ col: 11, row: 4 }],
     availableGates: ['X'],
     goal: '|1⟩',
-    winCondition: '|1⟩',
+    winCondition: 'all-1',
     hint: 'Select the X-gate from the laser menu and measure the ion',
     showResetButton: false,
     preInitialized: true,
@@ -59,11 +59,11 @@ export const LEVELS = [
     walls: [{ col: 6, row: 3, type: 'orange' }, { col: 6, row: 4, type: 'orange' }, { col: 6, row: 5, type: 'orange' }],
     availableGates: ['X'],
     goal: '|1⟩',
-    winCondition: '|1⟩',
+    winCondition: 'all-1',
     hint: 'Route the red laser to hit the ion and measure it',
     showResetButton: false,
     preInitialized: true,
-    popups: []
+    popups: [{ title: 'Measure |1⟩', text: 'Measure a state of |1⟩ from the ion', trigger: 'onLoad' }]
   }),
   new Level({
     name: '5 - Superposition',
@@ -72,7 +72,7 @@ export const LEVELS = [
     ions: [{ col: 11, row: 4 }],
     availableGates: ['H'],
     goal: '|0⟩',
-    winCondition: '|0⟩',
+    winCondition: 'all-0',
     hint: 'Apply another Hadamard gate to take the ion out of superposition and measure |0⟩',
     showResetButton: true,
     preInitialized: true,
@@ -125,14 +125,14 @@ export const LEVELS = [
       ions: [{ col: 11, row: 4 }],
       availableGates: ['X', 'H'],
       goal: '|0⟩',
-      winCondition: 'normal',
+      winCondition: 'all-0',
       hint: 'Apply 3 gates in sequence, then measure the result.',
       showResetButton: false,
       preInitialized: true,
       requiredGateCount: 3,
       gateInventory: { 'X': 1, 'H': 2 },
       popups: [
-        { title: 'Gate Sequencing', text: 'The ion starts in |0⟩. You must use exactly 3 laser gates.', trigger: 'onLoad' },
+        { title: 'Gate Sequencing', text: 'The ion starts in |0⟩. You must use exactly 3 laser gates to produce the definite state |0⟩', trigger: 'onLoad' },
       ]
     }),
     new Level({
@@ -142,12 +142,13 @@ export const LEVELS = [
       ions: [{ col: 11, row: 4 }],
       availableGates: ['X', 'H'],
       goal: '|1⟩',
-      winCondition: 'normal',
+      winCondition: 'all-1',
       hint: 'Use 3 gates to achieve a |1⟩ state, then measure the result.',
       showResetButton: false,
       preInitialized: true,
       requiredGateCount: 3,
       lockedGateIndices: [0],
+      prePlacedGates: [['X']],
       gateInventory: { 'X': 1, 'H': 2 },
       popups: [
         { title: 'Phase Matters', text: 'You must use exactly 3 laser gates total to achieve the |1⟩ state. The first X gate is locked in place.', trigger: 'onLoad' },
@@ -160,7 +161,7 @@ export const LEVELS = [
       walls: [{ col: 5, row: 5, type: 'orange' }, { col: 5, row: 6, type: 'orange' },{ col: 5, row: 7, type: 'orange' },{ col: 5, row: 4, type: 'orange' },{ col: 5, row: 3, type: 'orange' },{ col: 5, row: 2, type: 'orange' },{ col: 5, row: 1, type: 'orange' },{ col: 5, row: 0, type: 'orange' }],
       availableGates: ['X', 'CNOT'],
       goal: '|1⟩ |1⟩',
-      winCondition: 'cnot-success',
+      winCondition: 'all-1',
       hint: 'Apply X-gate to Ion A, then route CNOT through both ions to flip Ion B',
       showResetButton: true,
       preInitialized: true,
@@ -184,6 +185,7 @@ export const LEVELS = [
       preInitialized: true,
       lockedGateIndices: [0],
       gateInventory: { 'H': 1, 'CNOT': 1 },
+      prePlacedGates: [['H']],
       requiredGateCount: 2,
       automateMeasurement: true,
       popups: [
@@ -200,7 +202,7 @@ export const LEVELS = [
       walls: [{ col: 5, row: 2, type: 'standard' }, { col: 9, row: 4, type: 'standard' }],
       availableGates: ['H', 'CNOT'],
       goal: 'Entangle the Ions',
-      winCondition: 'any',
+      winCondition: 'positive-superposition',
       hint: 'Use mirrors to navigate around the walls and hit both ions in sequence.',
       showResetButton: true,
       preInitialized: true,
@@ -242,7 +244,7 @@ export const LEVELS = [
       walls: [],
       availableGates: ['H', 'CNOT'],
       goal: '|0⟩ |0⟩',
-      winCondition: 'normal',
+      winCondition: 'all-0',
       hint: 'Apply gates in the exact reverse order to uncompute the entanglement.',
       showResetButton: true,
       preInitialized: true,
@@ -252,8 +254,8 @@ export const LEVELS = [
       requiredGateCount: 4,
       automateMeasurement: false,
       popups: [
-        { title: 'Uncomputing', text: 'Quantum operations are reversible. If you perform an operation, you can undo it by applying the inverse operations in reverse order.', trigger: 'onLoad' },
-        { title: 'The Challenge', text: 'First, drag an H-gate and a CNOT-gate to entangle the ions. Then, use your remaining gates to un-entangle them and return the system to |0⟩ |0⟩.', trigger: 'onLaserGatesOpen' }
+        { title: 'Uncomputing', text: 'Quantum operations are reversible. If you perform an operation, you can undo it by applying the same operations in reverse order.', trigger: 'onLoad' },
+        { title: 'The Challenge', text: 'Can you reverse the operation to return the system to |0⟩ |0⟩?', trigger: 'onLaserGatesOpen' }
       ]
     }),
     new Level({
@@ -264,7 +266,7 @@ export const LEVELS = [
       walls: [{ col: 2, row: 2, type: 'cyan' }],
       availableGates: ['CNOT'],
       goal: '|0⟩ |1⟩',
-      winCondition: 'cnot-01',
+      winCondition: '01',
       hint: 'Use 2 CNOT gates alternating control and target routing.',
       showResetButton: true,
       preInitialized: true,
@@ -274,7 +276,7 @@ export const LEVELS = [
       requiredGateCount: 3,
       automateMeasurement: false,
       popups: [
-        { title: 'Swapping States', text: 'Can you find a way to swap the quantum states of the ionsusing only multi-qubit CNOT operations?', trigger: 'onLoad' },
+        { title: 'Swapping States', text: 'Can you find a way to swap the quantum states of the ions using only multi-qubit CNOT operations?', trigger: 'onLoad' },
       ]
     }),
 
@@ -308,14 +310,14 @@ export const LEVELS = [
       walls: [{ col: 5, row: 2, type: 'standard' }],
       availableGates: ['CNOT'],
       goal: '|1⟩ |1⟩ |1⟩',
-      winCondition: '111',
+      winCondition: 'all-1',
       hint: 'Route Source 2 through A and B. Route Source 3 through B and C.',
       showResetButton: true,
       preInitialized: true,
       prePlacedGates: [['X'], [],],
       lockedGateIndices: [0], 
-      gateInventory: { 'CNOT': 2, 'X': 1 },
-      requiredGateCount: [2, 1],
+      gateInventory: { 'CNOT': 3, 'X': 3 },
+      requiredGateCount: [2],
       automateMeasurement: false,
       popups: [
         { title: 'Cascading CNOTs', text: 'Read state |1⟩, |1⟩, |1⟩ from this system.', trigger: 'onLoad' },
@@ -337,7 +339,7 @@ export const LEVELS = [
       preInitialized: true,
       prePlacedGates: [['H', 'CNOT'], ['CNOT']],
       lockedGateIndices: [0, 1, 2], 
-      gateInventory: { 'H': 1, 'CNOT': 2 },
+      gateInventory: { 'H': 2, 'CNOT': 4 },
       requiredGateCount: [4, 2], 
       automateMeasurement: false,
       popups: [

@@ -75,6 +75,9 @@ function getLabelForQubit(qs: QuantumSystem, qubitIndex: number): QuantumState {
     
     for (let i = 0; i < stateSize; i++) {
       const amp = stateVector[i]!;
+
+      if (Math.abs(amp.real) < 0.0001 && Math.abs(amp.imaginary) < 0.0001) continue;
+
       const bit = (i >> qubitIndex) & 1;
       
       // Calculate the phase of the state and average it for states where the target qubit is 0 or 1
@@ -241,6 +244,29 @@ export function calculateQuantumState(
   return { states, canMeasure: hitIons.length > 0 };
 }
 
+// Win conditions
+// --------------
+export function checkWinCondition(wc: string, states: IonQuantumState[]): boolean {
+  if (!states) return false;
+
+  // Any Qubit Count
+  if (wc === 'any') return true;
+  if (wc === 'normal') return states.every(s => s.state === '|0⟩' || s.state === '|1⟩');
+  if (wc === 'all-0') return states.every(s => s.state === '|0⟩');
+  if (wc === 'all-1') return states.every(s => s.state === '|1⟩');
+  
+  // Superposition
+  if (wc === 'superposition') return states.every(s => s.state === '|+⟩' || s.state === '|-⟩');
+  if (wc === 'positive-superposition') return states.every(s => s.state === '|+⟩');
+  if (wc === 'negative-superposition') return states.every(s => s.state === '|-⟩');
+
+  // 2 Qubit Specific
+  if (wc === '01' || wc === '01') return states.length === 2 && states[0]?.state === '|0⟩' && states[1]?.state === '|1⟩';
+  if (wc === '10') return states.length === 2 && states[0]?.state === '|1⟩' && states[1]?.state === '|0⟩';
+
+  return false;
+}
+
 interface LevelConfig {
   name: string;
   cols: number;
@@ -329,6 +355,9 @@ export class Level {
     const allHitIons: number[] = [];
     const sourceHitIons: number[][] = [];
 
+    // Infinite loop safety
+    const MAX_SEGMENTS = 500; 
+
     for (let sIdx = 0; sIdx < this.sources.length; sIdx++) {
       const src = this.sources[sIdx];
       if (!src) continue;
@@ -347,7 +376,16 @@ export class Level {
       let row = src.row;
       let dir: string = src.dir ?? 'right';
 
+      let safetyCounter = 0;
+
       while (true) {
+
+        safetyCounter++;
+        if (safetyCounter > MAX_SEGMENTS) {
+          console.warn(`Infinite loop detected on laser ${sIdx}! Terminating trace.`);
+          break;
+        }
+        
         const [dc, dr] = moves[dir as keyof typeof moves] as [number, number];
         const new_column = col + dc, new_row = row + dr;
 

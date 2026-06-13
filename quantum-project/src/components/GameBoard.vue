@@ -1,0 +1,457 @@
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { Level, CELL } from '@/game/quantumgame'
+
+// Constants
+const TRAVEL_MS = 800
+const FPS = 60
+
+const colours = {
+  cyan: '#0ef',
+  purple: '#b47cff',
+  green: '#0f8',
+  orange: '#f84',
+  lightPurple: '#d4aaff',
+  gray: '#333',
+}
+
+// Props
+const props = defineProps<{
+  mode: 'edit' | 'play'
+  level: Level
+  sourceGates: string[][]
+  fillParent?: boolean
+}>()
+
+const emits = defineEmits<{
+  (e: 'canvas-click', col: number, row: number): void
+  (e: 'canvas-right-click', col: number, row: number): void
+  (e: 'canvas-mirror-place', col: number, row: number): void
+  (e: 'item-drop', col: number, row: number, itemType: string): void
+  (e: 'mouse-move', col: number, row: number): void
+}>()
+
+const canvas = ref<HTMLCanvasElement | null>(null)
+let ctx: CanvasRenderingContext2D | null = null
+let animationFrameId: number | null = null
+
+let photon = { progress: 1, segCount: 0 }
+
+// Setup canvas and context
+function setupCanvas() {
+  if (!canvas.value) return
+  
+  const baseWidth = props.level.cols * CELL
+  const baseHeight = props.level.rows * CELL
+  
+  // Scale up canvas resolution
+  const dpr = window.devicePixelRatio || 1
+  const scale = dpr * 3
+  canvas.value.width = baseWidth * scale
+  canvas.value.height = baseHeight * scale
+
+  ctx = canvas.value.getContext('2d')
+  ctx?.scale(scale, scale)
+}
+
+
+// Draw Functions
+// -----------------------------
+
+function draw() {
+  if (animationFrameId !== null) {
+    cancelAnimationFrame(animationFrameId)
+  }
+
+  if (!ctx) return
+
+  ctx.clearRect(0, 0, canvas.value!.width, canvas.value!.height)
+
+  // Grid lines
+  ctx.strokeStyle = colours.gray
+  ctx.lineWidth = 1
+  for (let r = 0; r <= props.level.rows; r++) {
+    ctx.beginPath()
+    ctx.moveTo(0, r * CELL)
+    ctx.lineTo(canvas.value!.width, r * CELL)
+    ctx.stroke()
+  }
+  for (let c = 0; c <= props.level.cols; c++) {
+    ctx.beginPath()
+    ctx.moveTo(c * CELL, 0)
+    ctx.lineTo(c * CELL, canvas.value!.height)
+    ctx.stroke()
+  }
+
+  // Beam - render parallel split lines for each colour
+  const { segs } = props.level.trace(props.sourceGates)
+  ctx.lineWidth = 2
+  for (const s of segs) {
+    // Calculate offset for each colour
+    const dx = s.x2 - s.x1
+    const dy = s.y2 - s.y1
+    const len = Math.sqrt(dx * dx + dy * dy)
+    const perpX = len > 0 ? -dy / len : 0
+    const perpY = len > 0 ? dx / len : 0
+
+    const numColours = s.colours.length
+    let offsets: number[] = []
+    if (numColours === 1) offsets = [0]
+    else if (numColours === 2) offsets = [-3, 3]
+    else if (numColours === 3) offsets = [-5, 0, 5]
+    else offsets = s.colours.map((_, i) => -3 + ((i * 6) / (numColours - 1)))
+
+    for (let i = 0; i < s.colours.length; i++) {
+      const offset = offsets[i] || 0
+      const x1 = s.x1 + perpX * offset
+      const y1 = s.y1 + perpY * offset
+      const x2 = s.x2 + perpX * offset
+      const y2 = s.y2 + perpY * offset
+
+      const colourMap: Record<string, string> = {
+        cyan: colours.cyan,
+        orange: colours.orange,
+        purple: colours.purple,
+        green: colours.green,
+      }
+
+      const colourKey = s.colours[i] || 'cyan'
+      ctx.strokeStyle = colourMap[colourKey] || colours.cyan
+      ctx.shadowColor = String(ctx.strokeStyle)
+      ctx.shadowBlur = 8
+      ctx.beginPath()
+      ctx.moveTo(x1, y1)
+      ctx.lineTo(x2, y2)
+      ctx.stroke()
+    }
+  }
+  ctx.shadowBlur = 0
+
+  // Photon dots - render parallel photons for each colour
+  photon.progress += 1 / ((TRAVEL_MS / 1000) * FPS)
+  if (photon.progress < 1 && segs.length > 0) {
+    const t = photon.progress * photon.segCount
+    const idx = Math.min(Math.floor(t), segs.length - 1)
+    const seg = segs[idx]!
+    const f = t - Math.floor(t)
+
+    // Calculate perpendicular offset for photon
+    const dx = seg.x2 - seg.x1
+    const dy = seg.y2 - seg.y1
+    const len = Math.sqrt(dx * dx + dy * dy)
+    const perpX = len > 0 ? -dy / len : 0
+    const perpY = len > 0 ? dx / len : 0
+
+    const numColours = seg.colours.length
+    let offsets: number[] = []
+    if (numColours === 1) offsets = [0]
+    else if (numColours === 2) offsets = [-3, 3]
+    else if (numColours === 3) offsets = [-5, 0, 5]
+    else offsets = seg.colours.map((_, i) => -3 + ((i * 6) / (numColours - 1)))
+
+    const colourMap: Record<string, string> = {
+      cyan: colours.cyan,
+      orange: colours.orange,
+      purple: colours.purple,
+      green: colours.green,
+    }
+
+    for (let i = 0; i < seg.colours.length; i++) {
+      const offset = offsets[i] || 0
+      const px = seg.x1 + (seg.x2 - seg.x1) * f + perpX * offset
+      const py = seg.y1 + (seg.y2 - seg.y1) * f + perpY * offset
+
+      const colourKey = seg.colours[i] || 'cyan'
+      ctx.fillStyle = colourMap[colourKey] || colours.cyan
+      ctx.shadowColor = String(ctx.fillStyle)
+      ctx.shadowBlur = 10
+      ctx.beginPath()
+      ctx.arc(px, py, 4, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.shadowBlur = 0
+  }
+
+  // Laser sources
+  for (let sIdx = 0; sIdx < props.level.sources.length; sIdx++) {
+    const src = props.level.sources[sIdx]
+    if (!src) continue
+    const sx = src.col * CELL
+    const sy = src.row * CELL
+
+    // Calculate colour specifically for this source
+    const myGates = props.sourceGates[sIdx] || []
+    let myColour = colours.cyan
+    if (myGates.includes('CNOT')) myColour = colours.green
+    else if (myGates.includes('X')) myColour = colours.orange
+    else if (myGates.includes('H')) myColour = colours.purple
+
+    ctx.fillStyle = myColour
+    ctx.fillRect(sx + 4, sy + 4, CELL - 8, CELL - 8)
+    ctx.fillStyle = '#000'
+    ctx.font = '9px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('LASER', sx + CELL / 2, sy + CELL / 2)
+  }
+
+  // Walls
+  ctx.lineWidth = 2
+  for (const w of props.level.walls) {
+    const wx = w.col * CELL
+    const wy = w.row * CELL
+    let strokeCol = '#ff4444'
+    if (w.type === 'standard' || w.type === 'all') strokeCol = '#ff4444'
+    else if (w.type === 'cyan') strokeCol = colours.cyan
+    else if (w.type === 'orange') strokeCol = colours.orange
+    else if (w.type === 'purple') strokeCol = colours.purple
+    else if (w.type === 'green') strokeCol = colours.green
+    ctx.strokeStyle = strokeCol
+    ctx.beginPath()
+    ctx.moveTo(wx + 16, wy + 16)
+    ctx.lineTo(wx + CELL - 16, wy + CELL - 16)
+    ctx.moveTo(wx + CELL - 16, wy + 16)
+    ctx.lineTo(wx + 16, wy + CELL - 16)
+    ctx.stroke()
+  }
+
+  // Ions
+  const ionLabels = ['A', 'B', 'C', 'D', 'E', 'F']
+  for (let ionIdx = 0; ionIdx < props.level.ions.length; ionIdx++) {
+    const ion = props.level.ions[ionIdx]!
+    const ix = ion.col * CELL + CELL / 2
+    const iy = ion.row * CELL + CELL / 2
+    ctx.strokeStyle = '#f84'
+    ctx.lineWidth = 2
+    ctx.shadowColor = '#f84'
+    ctx.shadowBlur = 12
+    ctx.beginPath()
+    ctx.arc(ix, iy, 20, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.shadowBlur = 0
+    ctx.fillStyle = '#f84'
+    ctx.font = 'bold 9px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('ION ' + ionLabels[ionIdx], ix, iy)
+  }
+
+  // Mirrors
+  ctx.strokeStyle = '#aaa'
+  ctx.lineWidth = 3
+  for (let r = 0; r < props.level.rows; r++) {
+    for (let c = 0; c < props.level.cols; c++) {
+      const m = props.level.grid[r]![c]!
+      if (!m) continue
+      ctx.beginPath()
+      if (m === 'fwd') {
+        ctx.moveTo(c * CELL + 8, (r + 1) * CELL - 8)
+        ctx.lineTo((c + 1) * CELL - 8, r * CELL + 8)
+      } else {
+        ctx.moveTo(c * CELL + 8, r * CELL + 8)
+        ctx.lineTo((c + 1) * CELL - 8, (r + 1) * CELL - 8)
+      }
+      ctx.stroke()
+    }
+  }
+
+  animationFrameId = requestAnimationFrame(draw)
+}
+
+// EVENT HANDLERS
+// -------------------------------------------------------------
+
+function getCellFromEvent(e: MouseEvent | DragEvent): { col: number; row: number } {
+  if (!canvas.value) return { col: -1, row: -1 }
+  const rect = canvas.value.getBoundingClientRect()
+  const clientX = e instanceof DragEvent ? e.clientX : (e as MouseEvent).clientX
+  const clientY = e instanceof DragEvent ? e.clientY : (e as MouseEvent).clientY
+  const internalAspect = props.level.cols / props.level.rows
+  const cssAspect = rect.width / rect.height
+  let drawWidth = rect.width
+  let drawHeight = rect.height
+  let offsetX = 0
+  let offsetY = 0
+
+  if (cssAspect > internalAspect) {
+    // Canvas is wider than level aspect ratio
+    drawWidth = rect.height * internalAspect
+    offsetX = (rect.width - drawWidth) / 2
+  } else {
+    // Canvas is taller than level aspect ratio
+    drawHeight = rect.width / internalAspect
+    offsetY = (rect.height - drawHeight) / 2
+  }
+
+  // Get mouse position relative to the drawn grid area
+  const mouseX = clientX - rect.left - offsetX
+  const mouseY = clientY - rect.top - offsetY
+  const col = Math.floor((mouseX / drawWidth) * props.level.cols)
+  const row = Math.floor((mouseY / drawHeight) * props.level.rows)
+  const safeCol = Math.max(0, Math.min(col, props.level.cols - 1))
+  const safeRow = Math.max(0, Math.min(row, props.level.rows - 1))
+  return { col: safeCol, row: safeRow }
+}
+
+function handleCanvasClick(e: MouseEvent) {
+  const { col, row } = getCellFromEvent(e)
+  if (col < 0 || row < 0) return
+
+  if (props.mode === 'play') {
+    // In play mode, handle mirror placement
+    if (!props.level.isFixed(col, row)) {
+      props.level.grid[row]![col]! = props.level.grid[row]![col]! === 'fwd' ? 'back' : 'fwd'
+      emits('canvas-mirror-place', col, row)
+    }
+  }
+
+  emits('canvas-click', col, row)
+}
+
+function handleCanvasRightClick(e: MouseEvent) {
+  e.preventDefault()
+  const { col, row } = getCellFromEvent(e)
+  if (col < 0 || row < 0) return
+
+  if (props.mode === 'edit') {
+    // In edit mode, right-click removes items at this coordinate
+    emits('item-drop', col, row, 'DELETE')
+  } else if (props.mode === 'play') {
+    // In play mode, right-click clears mirrors
+    if (!props.level.isFixed(col, row)) {
+      props.level.grid[row]![col] = null
+      
+      emits('canvas-mirror-place', col, row) 
+      emits('canvas-right-click', col, row)
+    }
+  }
+}
+
+function handleCanvasMouseMove(e: MouseEvent) {
+  const { col, row } = getCellFromEvent(e)
+  
+  if (col >= 0 && row >= 0) {
+    emits('mouse-move', col, row)
+
+    // Dynamically change cursor to pointer
+    if (canvas.value) {
+      const isSource = props.level.sources.some(s => s.col === col && s.row === row)
+      
+      // Only if in play mode
+      if (props.mode === 'play' && isSource && props.level.availableGates.length > 0) {
+        canvas.value.style.cursor = 'pointer'
+      } else {
+        canvas.value.style.cursor = 'crosshair'
+      }
+    }
+  }
+}
+
+function handleCanvasDragOver(e: DragEvent) {
+  e.preventDefault()
+  if (props.mode === 'edit') {
+    e.dataTransfer!.dropEffect = 'copy'
+  }
+}
+
+function handleCanvasDrop(e: DragEvent) {
+  e.preventDefault()
+  if (props.mode !== 'edit') return
+
+  const itemType = e.dataTransfer!.getData('itemType')
+  if (!itemType) return
+
+  const { col, row } = getCellFromEvent(e)
+
+  if (col >= 0 && col < props.level.cols && row >= 0 && row < props.level.rows) {
+    emits('item-drop', col, row, itemType)
+  }
+}
+
+// Mounting and cleanup
+//--------------------------------------------------------------
+
+onMounted(async () => {
+  await nextTick()
+  setupCanvas()
+  draw()
+})
+
+onUnmounted(() => {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+    animationFrameId = null
+  }
+})
+
+// Watch for level changes and reset animation frame
+watch(
+  () => props.level,
+  () => {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId)
+      animationFrameId = null
+    }
+    photon = { progress: 1, segCount: 0 }
+    setupCanvas()
+    draw()
+  }
+)
+
+// Watch for source gates changes to update photon animation
+watch(
+  () => props.sourceGates,
+  () => {
+    photon.segCount = props.level.trace(props.sourceGates).segs.length
+  },
+  { deep: true }
+)
+
+function resetPhoton() {
+  photon = { progress: 0, segCount: props.level.trace(props.sourceGates).segs.length }
+}
+
+defineExpose({ resetPhoton })
+</script>
+
+<template>
+  <div class="gameboard-wrapper">
+    <canvas
+      ref="canvas"
+      :class="['gameCanvas', { 'gameCanvas-fill': fillParent }]"
+      @click="handleCanvasClick"
+      @contextmenu="handleCanvasRightClick"
+      @mousemove="handleCanvasMouseMove"
+      @dragover="handleCanvasDragOver"
+      @drop="handleCanvasDrop"
+    />
+  </div>
+</template>
+
+<style scoped>
+.gameboard-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Game Style (Home.vue) */
+.gameCanvas {
+  border: 2px solid #333;
+  cursor: crosshair;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  max-height: 60vh;
+  object-fit: contain;
+}
+
+/* Lab Style (Lab.vue) */
+.gameCanvas-fill {
+  width: 100%;
+  height: 90%;
+  max-height: 90%;
+}
+</style>
