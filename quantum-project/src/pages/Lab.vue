@@ -52,6 +52,9 @@ const editorLevel = computed(() => {
     prePlacedGates: levelConfig.prePlacedGates || [],
     lockedGateIndices: levelConfig.lockedGateIndices || [],
     gateInventory: levelConfig.gateInventory || {},
+    winCondition: levelConfig.winCondition,
+    hint: levelConfig.hint,
+    goal: levelConfig.goal,
   });
 });
 
@@ -104,21 +107,23 @@ function handleMeasure() {
       return
     }
 
+    // Check win condition before collapsing the states
+    const uncollapsedStates = ionStates.value || [];
+    const wc = playLevel.value?.winCondition || 'any';
+    const hasWon = checkWinCondition(wc, uncollapsedStates);
+
     const measResults = measureAll()
     measuredValues.value = measResults
     isMeasured.value = true
+    updatePlayState() 
     
-    updatePlayState()
     result.value = measResults.join(',')
     history.value.push(measResults)
     if (history.value.length > 20) history.value.shift()
 
     canMeasure.value = true
-    const states = ionStates.value || []
-    const wc = playLevel.value?.winCondition || 'any'
-    let win = false
-    
-    if (checkWinCondition(wc, states)) {
+
+    if (hasWon) {
       showWin.value = true
     }
   }, 800) // TRAVEL_MS
@@ -276,6 +281,9 @@ function testLevel() {
     prePlacedGates: levelConfig.prePlacedGates || [],
     lockedGateIndices: levelConfig.lockedGateIndices || [],
     gateInventory: levelConfig.gateInventory || {},
+    winCondition: levelConfig.winCondition,
+    hint: levelConfig.hint,
+    goal: levelConfig.goal,
   }
   playLevel.value = new Level(cfg)
   playSourceGates.value = (cfg.prePlacedGates || []).map((g: string[]) => [...g])

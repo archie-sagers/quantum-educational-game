@@ -75,6 +75,9 @@ function getLabelForQubit(qs: QuantumSystem, qubitIndex: number): QuantumState {
     
     for (let i = 0; i < stateSize; i++) {
       const amp = stateVector[i]!;
+
+      if (Math.abs(amp.real) < 0.0001 && Math.abs(amp.imaginary) < 0.0001) continue;
+
       const bit = (i >> qubitIndex) & 1;
       
       // Calculate the phase of the state and average it for states where the target qubit is 0 or 1
