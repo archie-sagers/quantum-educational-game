@@ -182,14 +182,16 @@ function onLaserDrop(e: DragEvent) {
 
 function removeLaserGate(index: number) {
   const activeIdx = activeSourceIndex.value
-  const flatIndexBase = playSourceGates.value.slice(0, activeIdx).flat().length
   
-  if (playLevel.value?.lockedGateIndices.includes(flatIndexBase + index)) {
-    return
+  
+  if (isGateLocked(index)) {
+    return;
   }
   
-  const gate = playSourceGates.value[activeIdx]![index]!
-  playSourceGates.value[activeIdx]!.splice(index, 1)
+  const gate = playSourceGates.value[activeIdx]?.[index];
+  if (!gate) return; 
+
+  playSourceGates.value[activeIdx]!.splice(index, 1);
   
   if (playGateInventory.value[gate] !== undefined) {
     playGateInventory.value[gate]!++
@@ -203,8 +205,8 @@ function removeLaserGate(index: number) {
 
 function isGateLocked(localIndex: number) {
   const activeIdx = activeSourceIndex.value;
-  const flatIndexBase = playSourceGates.value.slice(0, activeIdx).flat().length;
-  return playLevel.value?.lockedGateIndices.includes(flatIndexBase + localIndex);
+  const prePlacedCount = playLevel.value?.prePlacedGates?.[activeIdx]?.length || 0;
+  return localIndex < prePlacedCount;
 }
 
 // Edit Mode

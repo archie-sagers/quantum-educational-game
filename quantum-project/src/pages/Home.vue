@@ -194,25 +194,28 @@ function onLaserDrop(e: DragEvent) {
 }
 
 function removeLaserGate(index: number) {
-  const activeIdx = activeSourceIndex.value
-  const flatIndexBase = sourceGates.value.slice(0, activeIdx).flat().length
-  if (level.lockedGateIndices.includes(flatIndexBase + index)) {
-    return
+  const activeIdx = activeSourceIndex.value;
+  
+  if (isGateLocked(index)) {
+    return;
   }
-  const gate = sourceGates.value[activeIdx]![index]!
-  sourceGates.value[activeIdx]!.splice(index, 1)
+  
+  const gate = sourceGates.value[activeIdx]![index]!;
+  sourceGates.value[activeIdx]!.splice(index, 1);
+  
   if (gateInventory.value[gate] !== undefined) {
-    gateInventory.value[gate]!++
+    gateInventory.value[gate]!++;
   }
-  isMeasured.value = false
-  measuredValues.value = null
-  updateStateForTracing()
+  
+  isMeasured.value = false;
+  measuredValues.value = null;
+  updateStateForTracing();
 }
 
 function isGateLocked(localIndex: number) {
   const activeIdx = activeSourceIndex.value;
-  const flatIndexBase = sourceGates.value.slice(0, activeIdx).flat().length;
-  return level.lockedGateIndices.includes(flatIndexBase + localIndex);
+  const prePlacedCount = level.prePlacedGates?.[activeIdx]?.length || 0;
+  return localIndex < prePlacedCount;
 }
 
 
