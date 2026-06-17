@@ -68,7 +68,7 @@ const STAGE_CONFIG: Record<string, { name: string; goal: string; component?: any
   },
   'ionization': { 
     name: 'Intro 2: Ionization', 
-    goal: 'Ionize 10 Yb Atoms', 
+    goal: 'Ionize 15 Yb Atoms', 
     component: IonizationMinigame 
   },
   'paul-trap': { 
@@ -754,6 +754,18 @@ onMounted(() => {
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'ionization' }]"
             >
               2
+            </div>
+            <div
+              @click="selectMinigame('paul-trap')"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'paul-trap' }]"
+            >
+              3
+            </div>
+            <div
+              @click="selectMinigame('cooling')"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'cooling' }]"
+            >
+              4
             </div>
           </div>
         </div>
