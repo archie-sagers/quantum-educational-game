@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import './intro-levels.css'
 
 const emits = defineEmits<{
   (e: 'complete'): void
@@ -112,6 +113,9 @@ onUnmounted(() => {
 
     <div class="sidebar">
       <h3>Heating Element</h3>
+      <p class="description">
+    Adjust the temperature to vaporise the ytterbium atoms. Keep it within the yellow zone to fill the progress bar.
+  </p>
 
       <div class="progress-bar-track">
         <div class="progress-bar-fill" :style="{ width: progress + '%' }" />
@@ -136,22 +140,12 @@ onUnmounted(() => {
     </div>
 
   </div>
+  
 </template>
 
 <style scoped>
-.container {
-  display: flex;
-  width: 100%;
-  height: 80vh;
-  background: #0a0a0a;
-  border: 1px solid #333;
-  overflow: hidden;
-  color: #eee;
-}
 
 .viewport {
-  flex: 1;
-  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -165,7 +159,7 @@ onUnmounted(() => {
 .warning {
   position: absolute;
   top: 10%;
-  color: #ff4444;
+  color: var(--color-danger);
   font-weight: bold;
   font-size: 24px;
   animation: flash 0.5s infinite alternate;
@@ -179,7 +173,7 @@ onUnmounted(() => {
 .ytterbium {
   width: 180px;
   height: 120px;
-  background: radial-gradient(circle at 30% 30%, #ffaa00, #d35400);
+  background: radial-gradient(circle at 30% 30%, var(--color-danger), var(--color-danger-light));
   border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
   display: flex;
   justify-content: center;
@@ -210,21 +204,11 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.sidebar {
-  flex: 0 0 300px;
-  background: #111;
-  border-left: 1px solid #333;
-  padding: 30px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
 .progress-bar-track {
   width: 100%;
   height: 20px;
-  background: #222;
-  border: 1px solid #444;
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   overflow: hidden;
   margin-top: 20px;
@@ -232,14 +216,14 @@ onUnmounted(() => {
 
 .progress-bar-fill {
   height: 100%;
-  background: #0ef;
+  background: var(--color-primary);
   transition: width 0.1s linear;
 }
 
 .progress-label {
   margin-top: 8px;
   font-size: 14px;
-  color: #888;
+  color: var(--color-text-dim);
 }
 
 .dial {
@@ -247,8 +231,8 @@ onUnmounted(() => {
   height: 300px;
   width: 60px;
   margin-top: 50px;
-  background: #1a1a1a;
-  border: 2px solid #333;
+  background: var(--color-bg-light);
+  border: 2px solid var(--color-border);
   border-radius: 30px;
 }
 
@@ -279,9 +263,9 @@ onUnmounted(() => {
   position: absolute;
   left: 0;
   width: 100%;
-  background: rgba(255, 255, 0, 0.3);
-  border-top: 2px solid #ff0;
-  border-bottom: 2px solid #ff0;
+  background: var(--color-secondary-light);
+  border-top: 2px solid var(--color-secondary);
+  border-bottom: 2px solid var(--color-secondary);
   transform: translateY(50%);
   transition: bottom 0.1s linear;
 }
@@ -290,8 +274,8 @@ onUnmounted(() => {
   appearance: none;
   width: 40px;
   height: 40px;
-  background: #eee;
-  border: 4px solid #333;
+  background: var(--color-text);
+  border: 4px solid var(--color-border);
   border-radius: 50%;
   cursor: grab;
   box-shadow: 0 2px 5px rgba(0,0,0,0.5);

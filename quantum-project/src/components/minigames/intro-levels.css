@@ -1,0 +1,47 @@
+/*
+  intro-levels.css
+  Shared layout and theme for all intro level components.
+*/
+
+:root {
+  --color-primary: #0ef;
+  --color-primary-light: #1af;
+  --color-secondary: #b47cff;
+  --color-secondary-light: #d4aaff;
+  --color-danger: #f84;
+  --color-danger-light: #ff6644;
+  --color-text: #eee;
+  --color-text-dim: #999;
+  --color-text-darker: #666;
+  --color-bg: #000;
+  --color-bg-light: #0a0a0a;
+  --color-border: #333;
+  --border-radius: 3px;
+  --transition: 0.2s;
+  --font-mono: monospace;
+}
+
+.container {
+  display: flex;
+  width: 100%;
+  height: 80vh;
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  color: var(--color-text);
+}
+
+.viewport {
+  flex: 1;
+  position: relative;
+}
+
+.sidebar {
+  flex: 0 0 300px;
+  background: var(--color-bg);
+  border-left: 1px solid var(--color-border);
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
