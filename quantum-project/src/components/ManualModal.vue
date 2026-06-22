@@ -1,5 +1,7 @@
 <script setup lang="ts">
-defineProps<{
+import { ref, watch, nextTick } from 'vue'
+
+const props = defineProps<{
   isOpen: boolean
 }>()
 
@@ -8,20 +10,70 @@ const emit = defineEmits<{
   selectLevel: [index: number]
 }>()
 
+const modalRef = ref<HTMLElement | null>(null)
+
 function goToLevel(index: number) {
   emit('selectLevel', index)
   emit('close')
 }
+
+function scrollToSection(id: string) {
+  const el = document.getElementById(id)
+  if (el && modalRef.value) {
+    modalRef.value.scrollTo({
+      top: el.offsetTop - 32, 
+      behavior: 'smooth'
+    })
+  }
+}
+
+function saveScrollPosition(e: Event) {
+  const target = e.target as HTMLElement
+  localStorage.setItem('quantum_manual_scroll', target.scrollTop.toString())
+}
+
+// rstore scroll position when the modal opens
+watch(() => props.isOpen, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      if (modalRef.value) {
+        const savedScroll = localStorage.getItem('quantum_manual_scroll')
+        if (savedScroll) {
+          modalRef.value.scrollTop = parseInt(savedScroll, 10)
+        }
+      }
+    })
+  }
+})
 </script>
 
 <template>
   <div v-if="isOpen" class="manualOverlay" @click="$emit('close')">
-    <div class="manualModal" @click.stop>
+    <div class="manualModal" ref="modalRef" @scroll="saveScrollPosition" @click.stop>
       <button @click="$emit('close')" class="manualCloseBtn">✕</button>
+      
+      <nav class="manualSidebar">
+        <div class="indexTitle">Index</div>
+        <a class="indexLink" @click="scrollToSection('prep')">Ion Preparation</a>
+        <a class="indexLink" @click="scrollToSection('mechanics')">Basic Mechanics</a>
+        <a class="indexLink" @click="scrollToSection('logic-gates')">Quantum Logic Gates</a>
+        <a class="indexLink indexLinkSub" @click="scrollToSection('gate-x')">X-Gate</a>
+        <a class="indexLink indexLinkSub" @click="scrollToSection('gate-h')">Hadamard Gate</a>
+        <a class="indexLink indexLinkSub" @click="scrollToSection('gate-cnot')">C-NOT Gate</a>
+        <a class="indexLink" @click="scrollToSection('quantum-mechanics')">Quantum Mechanics</a>
+        <a class="indexLink indexLinkSub" @click="scrollToSection('qm-superposition')">Superposition</a>
+        <a class="indexLink indexLinkSub" @click="scrollToSection('qm-entanglement')">Entanglement</a>
+        <a class="indexLink indexLinkSub" @click="scrollToSection('qm-bell')">Bell States</a>
+        <a class="indexLink indexLinkSub" @click="scrollToSection('qm-ghz')">GHZ States</a>
+        <a class="indexLink" @click="scrollToSection('bloch-sphere')">The Bloch Sphere</a>
+        <a class="indexLink" @click="scrollToSection('tips')">Tips for Success</a>
+        <a class="indexLink" @click="scrollToSection('legend')">State Legend</a>
+      </nav>
+
       <div class="manualContent">
         <h1 class="manualH1">Quantum Laser Puzzle - Player Manual</h1>
 
-        <h2 class="manualH2">The Science of Ion Preparation</h2>
+        <h2 id="prep" class="manualH2">The Science of Ion Preparation</h2>
         <p>Before manipulating quantum information, individual atoms must be isolated and prepared. The intro levels simulate the laboratory process used by research groups like the <a href="https://www.sussex.ac.uk/physics/iqt/" target="_blank" class="manualLink">University of Sussex Ion Quantum Technology Group</a> to create trapped-ion qubits.</p>
 
         <h3 class="manualH3">1. Heating</h3>
@@ -50,7 +102,7 @@ function goToLevel(index: number) {
 
         <hr style="border-color: #0ef; opacity: 0.3; margin: 30px 0;">
 
-        <h2 class="manualH2">Basic Mechanics</h2>
+        <h2 id="mechanics" class="manualH2">Basic Mechanics</h2>
 
         <h3 class="manualH3">Placing and Removing Mirrors</h3>
         <p><strong>How to Place Mirrors:</strong></p>
@@ -102,9 +154,9 @@ function goToLevel(index: number) {
 
         <p><strong>Practice:</strong> <span @click="goToLevel(2)" class="manualLink">Level 3 - X-Gate</span></p>
 
-        <h2 class="manualH2">Quantum Logic Gates</h2>
+        <h2 id="logic-gates" class="manualH2">Quantum Logic Gates</h2>
 
-        <h3 class="manualH3">X-Gate</h3>
+        <h3 id="gate-x" class="manualH3">X-Gate</h3>
         <p><strong>What It Does:</strong></p>
         <ul>
           <li>The <a href="https://www.quera.com/glossary/pauli-x-gate" target="_blank" class="manualLink">X-gate</a> (NOT gate) flips the state of a <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a></li>
@@ -121,7 +173,7 @@ function goToLevel(index: number) {
 
         <p><strong>Practice:</strong> <span @click="goToLevel(2)" class="manualLink">Level 3 - X-Gate</span></p>
 
-        <h3 class="manualH3">Hadamard Gate</h3>
+        <h3 id="gate-h" class="manualH3">Hadamard Gate</h3>
         <p><strong>What It Does:</strong></p>
         <ul>
           <li>The <a href="https://www.quera.com/glossary/hadamard-gate" target="_blank" class="manualLink">Hadamard (H) gate</a> creates and removes <a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a></li>
@@ -138,7 +190,7 @@ function goToLevel(index: number) {
 
         <p><strong>Practice:</strong> <span @click="goToLevel(4)" class="manualLink">Level 5</span> <span @click="goToLevel(5)" class="manualLink">Level 6</span></p>
 
-        <h3 class="manualH3">C-NOT Gate</h3>
+        <h3 id="gate-cnot" class="manualH3">C-NOT Gate</h3>
         <p><strong>What It Does:</strong></p>
         <ul>
           <li>The <a href="https://www.quera.com/glossary/controlled-not-gate" target="_blank" class="manualLink">Controlled-NOT (C-NOT) gate</a> is a two-<a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a> gate</li>
@@ -147,9 +199,9 @@ function goToLevel(index: number) {
         </ul>
         <p><strong>Practice:</strong> <span @click="goToLevel(9)" class="manualLink">Level 10</span> <span @click="goToLevel(10)" class="manualLink">Level 11</span></p>
 
-        <h2 class="manualH2">Quantum Mechanics</h2>
+        <h2 id="quantum-mechanics" class="manualH2">Quantum Mechanics</h2>
 
-        <h3 class="manualH3">Superposition</h3>
+        <h3 id="qm-superposition" class="manualH3">Superposition</h3>
         <p><strong>What Is It?</strong></p>
         <ul>
           <li><a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">Superposition</a> is when a quantum system exists in multiple states simultaneously</li>
@@ -169,7 +221,7 @@ function goToLevel(index: number) {
         </ul>
         <p><strong>Practice:</strong> <span @click="goToLevel(4)" class="manualLink">Level 5</span> <span @click="goToLevel(5)" class="manualLink">Level 6</span></p>
 
-        <h3 class="manualH3">Entanglement</h3>
+        <h3 id="qm-entanglement" class="manualH3">Entanglement</h3>
         <p><strong>What Is It?</strong></p>
         <ul>
           <li><a href="https://www.quera.com/glossary/entanglement" target="_blank" class="manualLink">Entanglement</a> occurs when two or more <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubits</a> are correlated in a way that cannot be described independently</li>
@@ -181,7 +233,7 @@ function goToLevel(index: number) {
         </ul>
         <p><strong>Practice:</strong> <span @click="goToLevel(10)" class="manualLink">Level 11</span> <span @click="goToLevel(11)" class="manualLink">Level 12</span></p>
 
-        <h3 class="manualH3">Bell States (Pairs)</h3>
+        <h3 id="qm-bell" class="manualH3">Bell States (Pairs)</h3>
         <p><strong>What Is It?</strong></p>
         <ul>
           <li>A <a href="https://www.quera.com/glossary/bell-state" target="_blank" class="manualLink">Bell State</a> represents the simplest example of quantum entanglement, involving exactly two qubits.</li>
@@ -194,7 +246,7 @@ function goToLevel(index: number) {
         </ul>
         <p><strong>Practice:</strong> <span @click="goToLevel(10)" class="manualLink">Level 11</span> <span @click="goToLevel(19)" class="manualLink">Level 20</span></p>
 
-        <h3 class="manualH3">GHZ States (Multi-Qubit)</h3>
+        <h3 id="qm-ghz" class="manualH3">GHZ States (Multi-Qubit)</h3>
         <p><strong>What Is It?</strong></p>
         <ul>
           <li>The <a href="https://www.quera.com/glossary/ghz-state" target="_blank" class="manualLink">Greenberger-Horne-Zeilinger (GHZ) state</a> is an entangled quantum state involving three or more qubits.</li>
@@ -207,7 +259,7 @@ function goToLevel(index: number) {
         </ul>
         <p><strong>Practice:</strong> <span @click="goToLevel(15)" class="manualLink">Level 16</span> <span @click="goToLevel(18)" class="manualLink">Level 19</span></p>
 
-        <h2 class="manualH2">The Bloch Sphere</h2>
+        <h2 id="bloch-sphere" class="manualH2">The Bloch Sphere</h2>
         <p>The circular diagram on the right side of the game shows the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a>, a geometric representation of the state of a single <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a>.</p>
         <p><strong>Understanding the Bloch Sphere:</strong></p>
         <ul>
@@ -217,8 +269,7 @@ function goToLevel(index: number) {
           <li>The arrow shows the current qubit state</li>
         </ul>
         
-
-        <h2 class="manualH2">Tips for Success</h2>
+        <h2 id="tips" class="manualH2">Tips for Success</h2>
         <ol>
           <li><strong>Use the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a> Visualization:</strong> The circular diagram on the right shows the current quantum state. Track how it changes as you apply gates.</li>
           <li><strong>Check the Probability Display:</strong> The P(0) and P(1) values show the <a href="https://www.quera.com/glossary/measurement" target="_blank" class="manualLink">measurement</a> probabilities before you measure.</li>
@@ -227,7 +278,7 @@ function goToLevel(index: number) {
           <li><strong>Reset Between Attempts:</strong> Use the Reset button to return the ion to its initial state when starting over.</li>
         </ol>
 
-        <h2 class="manualH2">Quantum State Legend</h2>
+        <h2 id="legend" class="manualH2">Quantum State Legend</h2>
         <ul>
           <li><strong>|0⟩</strong> - Ground state (100% probability of measuring 0)</li>
           <li><strong>|1⟩</strong> - Excited state (100% probability of measuring 1)</li>
@@ -261,11 +312,14 @@ function goToLevel(index: number) {
   border: 2px solid #0ef;
   border-radius: 4px;
   padding: 32px;
-  max-width: 800px;
+  max-width: 1040px; 
   max-height: 85vh;
   overflow-y: auto;
   box-shadow: 0 0 30px rgba(0, 238, 255, 0.3);
   position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
 }
 
 .manualCloseBtn {
@@ -354,5 +408,49 @@ function goToLevel(index: number) {
 .manualContent strong {
   color: #eee;
   font-weight: bold;
+}
+
+.manualSidebar {
+  position: sticky;
+  top: 0;
+  width: 200px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.indexTitle {
+  color: #0ef;
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #0ef;
+  padding-bottom: 8px;
+}
+
+.indexLink {
+  display: block;
+  color: #aaa;
+  text-decoration: none;
+  font-family: monospace;
+  font-size: 14px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.indexLink:hover {
+  color: #0ef;
+}
+
+.indexLinkSub {
+  margin-left: 16px;
+  font-size: 12px;
+  color: #888;
+}
+
+.indexLinkSub:hover {
+  color: #b47cff;
 }
 </style>
