@@ -6,6 +6,13 @@ import ManualModal from '@/components/ManualModal.vue'
 import GameBoard from '@/components/GameBoard.vue'
 import styles from './Home.module.css'
 
+// Minigame Imports
+import HeatingMinigame from '@/components/minigames/HeatingMinigame.vue'
+import IonizationMinigame from '@/components/minigames/IonizationMinigame.vue'
+import TrapMinigame from '@/components/minigames/TrapMinigame.vue'
+import DopplerCoolingMinigame from '@/components/minigames/DopplerCoolingMinigame.vue'
+
+
 defineOptions({ name: 'GameHome' })
 
 // Constants
@@ -48,8 +55,60 @@ let level: Level = LEVELS[currentLevelIndex.value]!
 const shownPopupIndices = ref(new Set<number>())
 let lastPopupTrigger: string | null = null
 
+// MINIGAMES
+// ------------------
+
+const STAGE_ORDER = ['heating', 'ionization', 'paul-trap', 'cooling', 'main']
+
+const STAGE_CONFIG: Record<string, { name: string; goal: string; component?: any }> = {
+  'heating': { 
+    name: 'Intro 1: Heating', 
+    goal: 'Vaporise the Ytterbium', 
+    component: HeatingMinigame 
+  },
+  'ionization': { 
+    name: 'Intro 2: Ionization', 
+    goal: 'Ionize 15 Yb Atoms', 
+    component: IonizationMinigame 
+  },
+  'paul-trap': { 
+    name: 'Intro 3: Paul Trap', 
+    goal: 'Trap the Yb+ Ion', 
+    component: TrapMinigame 
+  },
+  'cooling': { 
+    name: 'Intro 4: Cooling', 
+    goal: 'Cool the Yb+ Ion', 
+    component: DopplerCoolingMinigame
+  }
+}
+
+const savedStage = localStorage.getItem('quantum_save_stage')
+const currentStage = ref(savedStage && STAGE_ORDER.includes(savedStage) ? savedStage : STAGE_ORDER[0])
+
+function advanceStage() {
+  const currentIndex = STAGE_ORDER.indexOf(currentStage.value)
+  if (currentIndex < STAGE_ORDER.length - 1) {
+    currentStage.value = STAGE_ORDER[currentIndex + 1]
+  }
+}
+
+function selectMinigame(stage: string) {
+  showLevelSelector.value = false;
+  currentStage.value = stage;
+}
+
+const currentStageName = computed(() => 
+  currentStage.value === 'main' ? `Level ${currentLevelIndex.value + 1}` : STAGE_CONFIG[currentStage.value]?.name
+)
+
+const currentStageGoal = computed(() => 
+  currentStage.value === 'main' ? level.goal : STAGE_CONFIG[currentStage.value]?.goal
+)
+
 
 // SAVE/LOAD LOGIC
+// ------------------
 const savedLevel = localStorage.getItem('quantum_save_level')
 if (savedLevel !== null) {
   currentLevelIndex.value = parseInt(savedLevel, 10)
@@ -57,6 +116,10 @@ if (savedLevel !== null) {
 
 watch(currentLevelIndex, (newLevel) => {
   localStorage.setItem('quantum_save_level', newLevel.toString())
+})
+
+watch(currentStage, (newStage) => {
+  localStorage.setItem('quantum_save_stage', newStage)
 })
 
 const displayedGateProgress = computed(() => {
@@ -116,6 +179,7 @@ function initLevelGates() {
 }
 
 async function selectLevel(index: number) {
+  currentStage.value = 'main';
   showLevelSelector.value = false;
   tempPopup.value = null;
   currentLevelIndex.value = index;
@@ -414,30 +478,14 @@ onMounted(() => {
 <template>
   <div :class="styles.gameContainer">
     <h1 :class="styles.title">Quantum Laser Puzzle Game</h1>
-    <p :class="styles.hint">{{ level.hint }}</p>
 
-    <!-- Welcome popup modal -->
-    <div v-if="showWelcome" :class="styles.welcomeOverlay">
-      <div :class="styles.welcomeModal">
-        <div :class="styles.welcomeTitle">{{ WELCOME_POPUP.title }}</div>
-        <div :class="styles.welcomeText">{{ WELCOME_POPUP.text }}</div>
-        <button @click="closeWelcome()" :class="styles.welcomeBtn">Continue</button>
-      </div>
-    </div>
-
-    <div :class="styles.controls">
-      <p :class="styles.controlsText">Left-click to place/rotate mirror · Right-click to remove</p>
-      <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
-    </div>
-
-    <!-- Level select, goal and success message on same line -->
     <div :class="styles.controlsRow">
       <button 
         @click="showLevelSelector = true" 
         :disabled="automatedRunning"
         :class="styles.levelIndicator"
       >
-        Level {{ currentLevelIndex + 1 }}
+        {{ currentStageName }}
       </button>
       
       <button 
@@ -450,11 +498,11 @@ onMounted(() => {
       
       <div :class="styles.goalBox">
         <div :class="styles.goalLabel">Goal</div>
-        <div :class="styles.goalValue">{{ level.goal }}</div>
+        <div :class="styles.goalValue">{{ currentStageGoal }}</div>
       </div>
       
       <div :class="styles.successBoxContainer">
-        <div v-if="showWin" :class="styles.successBox">
+        <div v-if="showWin && currentStage === 'main'" :class="styles.successBox">
           <div :class="styles.successText">ION SUCCESSFULLY EXCITED</div>
           <button 
             @click="nextLevel" 
@@ -466,6 +514,30 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <div v-if="currentStage !== 'main'" style="width: 100%; display: flex; flex-direction: column; flex: 1; margin-top: 10px;">
+      <component 
+        :is="STAGE_CONFIG[currentStage]?.component" 
+        @complete="advanceStage" 
+      />
+    </div>
+
+    <div v-else style="display: contents;">
+      
+      <div :class="styles.controls">
+        <p :class="styles.controlsText">Left-click to place/rotate mirror · Right-click to remove</p>
+        <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
+      </div>
+
+      <p :class="styles.hint">{{ level.hint }}</p>
+
+      <div v-if="showWelcome" :class="styles.welcomeOverlay">
+        <div :class="styles.welcomeModal">
+          <div :class="styles.welcomeTitle">{{ WELCOME_POPUP.title }}</div>
+          <div :class="styles.welcomeText">{{ WELCOME_POPUP.text }}</div>
+          <button @click="closeWelcome()" :class="styles.welcomeBtn">Continue</button>
+        </div>
+      </div>
 
     <!-- Main game area -->
     <div :class="styles.mainArea">
@@ -588,58 +660,6 @@ onMounted(() => {
     </div>
     <!-- End main-area -->
 
-    <!-- Level selector modal -->
-    <div v-if="showLevelSelector" :class="styles.levelSelectorOverlay" @click="showLevelSelector = false">
-      <div :class="styles.levelSelectorModal" @click.stop>
-        
-        <div :class="styles.levelGroup">
-          
-          <div :class="styles.levelGroupTitle">1 Qubit Systems</div>
-          <div :class="styles.levelSelectorGrid">
-            <div
-              v-for="(_, index) in LEVELS.slice(0, 9)"
-              :key="'group1-' + index"
-              @click="selectLevel(index)"
-              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: index === currentLevelIndex }]"
-            >
-              {{ index + 1 }}
-            </div>
-          </div>
-        </div>
-
-        <div :class="styles.levelGroup">
-          
-          <div :class="styles.levelGroupTitle">2 Qubit Systems</div>
-          <div :class="styles.levelSelectorGrid">
-            <div
-              v-for="(_, index) in LEVELS.slice(9,15)"
-              :key="'group2-' + index"
-              @click="selectLevel(index + 9)"
-              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: (index + 9) === currentLevelIndex }]"
-            >
-              {{ index + 10 }}
-            </div>
-          </div>
-        </div>
-
-        <div :class="styles.levelGroup">
-          
-          <div :class="styles.levelGroupTitle">3 & 4 Qubit Systems</div>
-          <div :class="styles.levelSelectorGrid">
-            <div
-              v-for="(_, index) in LEVELS.slice(15)"
-              :key="'group3-' + index"
-              @click="selectLevel(index + 15)"
-              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: (index + 15) === currentLevelIndex }]"
-            >
-              {{ index + 16 }}
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
     <!-- Laser Gates modal -->
     <div v-if="showLaserGates" :class="styles.laserGatesOverlay" @click="showLaserGates = false">
       <div :class="styles.laserGatesModal" @click.stop>
@@ -717,6 +737,86 @@ onMounted(() => {
         <button @click="advancePopup()" :class="styles.popupBtn">
           {{ level.popups.length - 1 > popupIndex ? 'Next' : 'Got it' }}
         </button>
+      </div>
+    </div>
+    </div>
+
+    <!-- Level selector modal -->
+    <div v-if="showLevelSelector" :class="styles.levelSelectorOverlay" @click="showLevelSelector = false">
+      <div :class="styles.levelSelectorModal" @click.stop style="max-height: 90vh; overflow-y: auto;">
+        
+        <div :class="styles.levelGroup">
+          <div :class="styles.levelGroupTitle">Introduction</div>
+          <div :class="styles.levelSelectorGrid">
+            <div
+              @click="selectMinigame('heating')"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'heating' }]"
+            >
+              1
+            </div>
+            <div
+              @click="selectMinigame('ionization')"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'ionization' }]"
+            >
+              2
+            </div>
+            <div
+              @click="selectMinigame('paul-trap')"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'paul-trap' }]"
+            >
+              3
+            </div>
+            <div
+              @click="selectMinigame('cooling')"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'cooling' }]"
+            >
+              4
+            </div>
+          </div>
+        </div>
+          
+        <div :class="styles.levelGroup">
+          <div :class="styles.levelGroupTitle">1 Qubit Systems</div>
+          <div :class="styles.levelSelectorGrid">
+            <div
+              v-for="(_, index) in LEVELS.slice(0, 9)"
+              :key="'group1-' + index"
+              @click="selectLevel(index)"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: index === currentLevelIndex }]"
+            >
+              {{ index + 1 }}
+            </div>
+          </div>
+        </div>
+
+        <div :class="styles.levelGroup">
+          <div :class="styles.levelGroupTitle">2 Qubit Systems</div>
+          <div :class="styles.levelSelectorGrid">
+            <div
+              v-for="(_, index) in LEVELS.slice(9,15)"
+              :key="'group2-' + index"
+              @click="selectLevel(index + 9)"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: (index + 9) === currentLevelIndex }]"
+            >
+              {{ index + 10 }}
+            </div>
+          </div>
+        </div>
+
+        <div :class="styles.levelGroup">
+          <div :class="styles.levelGroupTitle">3 & 4 Qubit Systems</div>
+          <div :class="styles.levelSelectorGrid">
+            <div
+              v-for="(_, index) in LEVELS.slice(15)"
+              :key="'group3-' + index"
+              @click="selectLevel(index + 15)"
+              :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: (index + 15) === currentLevelIndex }]"
+            >
+              {{ index + 16 }}
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
