@@ -21,6 +21,35 @@ function goToLevel(index: number) {
       <div class="manualContent">
         <h1 class="manualH1">Quantum Laser Puzzle - Player Manual</h1>
 
+        <h2 class="manualH2">The Science of Ion Preparation</h2>
+        <p>Before manipulating quantum information, individual atoms must be isolated and prepared. The intro levels simulate the laboratory process used by research groups like the <a href="https://www.sussex.ac.uk/physics/iqt/" target="_blank" class="manualLink">University of Sussex Ion Quantum Technology Group</a> to create trapped-ion qubits.</p>
+
+        <h3 class="manualH3">1. Heating</h3>
+        <p><strong>The Science:</strong> To trap an atom, you first need a source of them. In the lab, a sample (Ytterbium is used at Sussex University) is placed inside an oven within a vacuum chamber. The oven is heated to release neutral Ytterbium atoms.</p>
+        <ul>
+          <li><strong>Further Reading:</strong> Learn more about trapped ion systems via the <a href="https://www.sussex.ac.uk/physics/iqt/" target="_blank" class="manualLink">Sussex IQT group</a>.</li>
+        </ul>
+
+        <h3 class="manualH3">2. Ionization</h3>
+        <p><strong>The Science:</strong> Neutral atoms can't be contained by electric fields so charged Ions are created. The neutral atoms are subjected to high-energy electron bombardment. This process strips an electron from Yb atom, creating a positively charged Yb+ ion. The charge allows the ion to be manipulated by electromagnetic fields.</p>
+        <ul>
+          <li><strong>Further Reading:</strong> <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped Ions Overview (QuEra)</a></li>
+        </ul>
+
+        <h3 class="manualH3">3. The Paul Trap</h3>
+        <p><strong>The Science:</strong> A charged particle cannot be held using static electric fields (imagine trying to hold the north poles of two magnets together). Physicists use a <a href="https://medium.com/@anastasiya.khromova17/paul-radio-frequency-ion-traps-e60770ef3b6c" target="_blank" class="manualLink">Paul Trap</a> (named after Wolfgang Paul). By moving electric fields around the ion, the trap pushes the ion toward the center. Imagine the ion is always running towards the exit but you constantly move the door so it can never escape.</p>
+        <ul>
+          <li><strong>Further Reading:</strong> <a href="https://en.wikipedia.org/wiki/Quadrupole_ion_trap" target="_blank" class="manualLink">The Physics of Quadrupole Ion Traps</a></li>
+        </ul>
+
+        <h3 class="manualH3">4. Laser Cooling (Doppler & Sideband)</h3>
+        <p><strong>The Science:</strong> When trapped, the ion still vibrates due to thermal energy. <a href="https://www.quera.com/glossary/laser-cooling" target="_blank" class="manualLink">Laser cooling</a> uses the momentum of photons to slow the ion down. First, <strong>Doppler Cooling</strong> uses lasers tuned to the ion's resonant frequency to cool the ion. To ensure the ion is stable for longer, researchers then apply <strong>Sideband Cooling</strong> to calm the ion further.</p>
+        <ul>
+          <li><strong>Further Reading:</strong> Watch this video on Doppler Cooling for more information: <a href="https://www.youtube.com/watch?v=WPwlS8SKlns" target="_blank" class="manualLink">"Laser Cooling | Doppler Effect"</a>.</li>
+        </ul>
+
+        <hr style="border-color: #0ef; opacity: 0.3; margin: 30px 0;">
+
         <h2 class="manualH2">Basic Mechanics</h2>
 
         <h3 class="manualH3">Placing and Removing Mirrors</h3>
@@ -68,7 +97,7 @@ function goToLevel(index: number) {
         <p><strong>Removing Gates:</strong></p>
         <ul>
           <li>Click the red x button next to a gate to remove it</li>
-          <li>Note: Some levels may lock certain gates to prevent removal (like the hadamard gate in Level 5)</li>
+          <li>Note: Some levels may lock certain gates to prevent removal (like the Hadamard gate in Level 5)</li>
         </ul>
 
         <p><strong>Practice:</strong> <span @click="goToLevel(2)" class="manualLink">Level 3 - X-Gate</span></p>
@@ -152,6 +181,32 @@ function goToLevel(index: number) {
         </ul>
         <p><strong>Practice:</strong> <span @click="goToLevel(10)" class="manualLink">Level 11</span> <span @click="goToLevel(11)" class="manualLink">Level 12</span></p>
 
+        <h3 class="manualH3">Bell States (Pairs)</h3>
+        <p><strong>What Is It?</strong></p>
+        <ul>
+          <li>A <a href="https://www.quera.com/glossary/bell-state" target="_blank" class="manualLink">Bell State</a> represents the simplest example of quantum entanglement, involving exactly two qubits.</li>
+        </ul>
+        <p><strong>In The Game:</strong></p>
+        <ul>
+          <li>You create Bell pairs by applying a Hadamard gate to your first ion and then routing a C-NOT gate through both.</li>
+          <li>Once a Bell pair is created, measuring the ions will yield matching results (or opposite results, depending on the specific Bell state).</li>
+          <li> Measuring an ion instantly affects the other, regardless of distance.</li>
+        </ul>
+        <p><strong>Practice:</strong> <span @click="goToLevel(10)" class="manualLink">Level 11</span> <span @click="goToLevel(19)" class="manualLink">Level 20</span></p>
+
+        <h3 class="manualH3">GHZ States (Multi-Qubit)</h3>
+        <p><strong>What Is It?</strong></p>
+        <ul>
+          <li>The <a href="https://www.quera.com/glossary/ghz-state" target="_blank" class="manualLink">Greenberger-Horne-Zeilinger (GHZ) state</a> is an entangled quantum state involving three or more qubits.</li>
+          <li>It shows that entanglement can cascade across multiple qubits and create complex interactions.</li>
+        </ul>
+        <p><strong>In The Game:</strong></p>
+        <ul>
+          <li>You create GHZ states by chaining C-NOT gates down a line of multiple ions, starting with the first ion in superposition.</li>
+          <li>When you observe the ions, you will notice that all ions collapse to match each other every time (e.g. all |0⟩'s or all |1⟩'s).</li>
+        </ul>
+        <p><strong>Practice:</strong> <span @click="goToLevel(15)" class="manualLink">Level 16</span> <span @click="goToLevel(18)" class="manualLink">Level 19</span></p>
+
         <h2 class="manualH2">The Bloch Sphere</h2>
         <p>The circular diagram on the right side of the game shows the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a>, a geometric representation of the state of a single <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a>.</p>
         <p><strong>Understanding the Bloch Sphere:</strong></p>
@@ -182,7 +237,7 @@ function goToLevel(index: number) {
           <li><strong>—</strong> - State undefined (beam hasn't hit ion yet)</li>
         </ul>
 
-        <h2 class="manualH2">What Is a <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped Ion?</a>?</h2>
+        <h2 class="manualH2">What Is a <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped Ion?</a></h2>
         <p><a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped ions</a> are one of the leading platforms for building quantum computers and their technology is currently being researched at the <a href="https://www.sussex.ac.uk/physics/iqt/" target="_blank" class="manualLink">University of Sussex</a>.</p> 
         <p>In this game, you're manipulating a simulated <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">trapped ion</a> using laser pulses to apply <a href="https://www.quera.com/glossary/quantum-gates" target="_blank" class="manualLink">quantum gates</a>.</p>
       </div>
