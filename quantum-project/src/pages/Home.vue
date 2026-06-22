@@ -83,7 +83,8 @@ const STAGE_CONFIG: Record<string, { name: string; goal: string; component?: any
   }
 }
 
-const currentStage = ref(STAGE_ORDER[0]) // Starts at 'heating'
+const savedStage = localStorage.getItem('quantum_save_stage')
+const currentStage = ref(savedStage && STAGE_ORDER.includes(savedStage) ? savedStage : STAGE_ORDER[0])
 
 function advanceStage() {
   const currentIndex = STAGE_ORDER.indexOf(currentStage.value)
@@ -115,6 +116,10 @@ if (savedLevel !== null) {
 
 watch(currentLevelIndex, (newLevel) => {
   localStorage.setItem('quantum_save_level', newLevel.toString())
+})
+
+watch(currentStage, (newStage) => {
+  localStorage.setItem('quantum_save_stage', newStage)
 })
 
 const displayedGateProgress = computed(() => {

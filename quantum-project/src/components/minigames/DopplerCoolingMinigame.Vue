@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import './intro-levels.css'
-import styles from '../pages/Home.module.css'
+import styles from '@/pages/Home.module.css'
 
 const emits = defineEmits<{
   (e: 'complete'): void
