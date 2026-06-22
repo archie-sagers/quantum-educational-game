@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import './intro-levels.css'
-import styles from '/Users/archiesagers/Documents/GitHub/Quantum Educational Game/quantum-educational-game/quantum-project/src/pages/Home.module.css'
+import styles from '../pages/Home.module.css'
 
 const emits = defineEmits<{
   (e: 'complete'): void
