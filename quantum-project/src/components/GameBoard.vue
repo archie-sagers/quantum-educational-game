@@ -173,14 +173,14 @@ function draw() {
 
     // Calculate colour specifically for this source
     const myGates = props.sourceGates[sIdx] || []
-    let myColour = colours.cyan
+    let myColour: string = colours.cyan
     if (myGates.includes('CNOT')) myColour = colours.green
     else if (myGates.includes('X')) myColour = colours.orange
     else if (myGates.includes('H')) myColour = colours.purple
 
     ctx.fillStyle = myColour
     ctx.fillRect(sx + 4, sy + 4, CELL - 8, CELL - 8)
-    ctx.fillStyle = '#000'
+    ctx.fillStyle = colours.black
     ctx.font = '9px monospace'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -192,8 +192,8 @@ function draw() {
   for (const w of props.level.walls) {
     const wx = w.col * CELL
     const wy = w.row * CELL
-    let strokeCol = '#ff4444'
-    if (w.type === 'standard' || w.type === 'all') strokeCol = '#ff4444'
+    let strokeCol: string = colours.red
+    if (w.type === 'standard' || w.type === 'all') strokeCol = colours.red
     else if (w.type === 'cyan') strokeCol = colours.cyan
     else if (w.type === 'orange') strokeCol = colours.orange
     else if (w.type === 'purple') strokeCol = colours.purple
@@ -213,15 +213,15 @@ function draw() {
     const ion = props.level.ions[ionIdx]!
     const ix = ion.col * CELL + CELL / 2
     const iy = ion.row * CELL + CELL / 2
-    ctx.strokeStyle = '#f84'
+    ctx.strokeStyle = colours.orange
     ctx.lineWidth = 2
-    ctx.shadowColor = '#f84'
+    ctx.shadowColor = colours.orange
     ctx.shadowBlur = 12
     ctx.beginPath()
     ctx.arc(ix, iy, 20, 0, Math.PI * 2)
     ctx.stroke()
     ctx.shadowBlur = 0
-    ctx.fillStyle = '#f84'
+    ctx.fillStyle = colours.orange
     ctx.font = 'bold 9px monospace'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -229,7 +229,7 @@ function draw() {
   }
 
   // Mirrors
-  ctx.strokeStyle = '#aaa'
+  ctx.strokeStyle = colours.lightGray
   ctx.lineWidth = 3
   for (let r = 0; r < props.level.rows; r++) {
     for (let c = 0; c < props.level.cols; c++) {
@@ -431,7 +431,7 @@ defineExpose({ resetPhoton })
 
 /* Game Style (Home.vue) */
 .gameCanvas {
-  border: 2px solid #333;
+  border: 2px solid var(--color-border);
   cursor: crosshair;
   max-width: 100%;
   width: auto;

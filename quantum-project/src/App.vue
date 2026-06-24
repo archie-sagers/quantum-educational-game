@@ -30,9 +30,9 @@ body, html, #app {
 
 .navLink {
   cursor: pointer;
-  background: #0a0a0a;
-  color: #0ef;
-  border: 1px solid #0ef;
+  background: var(--color-bg-light);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
   padding: 6px 14px;
   font-size: 11px;
   font-family: monospace;
@@ -43,7 +43,7 @@ body, html, #app {
 }
 
 .navLink:hover {
-  background: #1a1a1a;
-  box-shadow: 0 0 8px #0ef;
+  background: var(--color-bg-dark);
+  box-shadow: 0 0 8px var(--color-primary);
 }
 </style>

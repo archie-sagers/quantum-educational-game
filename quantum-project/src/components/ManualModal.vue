@@ -2,7 +2,6 @@
 import { ref, watch, nextTick } from 'vue'
 import ManualSidebar from './manual/ManualSidebar.vue'
 import ManualContent from './manual/ManualContent.vue'
-import { COLORS, SHADOWS } from '@/constants'
 
 const props = defineProps<{
   isOpen: boolean
@@ -73,14 +72,14 @@ watch(() => props.isOpen, (newVal) => {
 }
 
 .manualModal {
-  background: #0a0a0a;
-  border: 2px solid #0ef;
+  background: var(--color-bg-light);
+  border: 2px solid var(--color-primary);
   border-radius: 4px;
   padding: 32px;
   max-width: 1040px; 
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 0 30px rgba(0, 238, 255, 0.3);
+  box-shadow: var(--shadow-glow);
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -93,7 +92,7 @@ watch(() => props.isOpen, (newVal) => {
   right: 16px;
   background: transparent;
   border: none;
-  color: #0ef;
+  color: var(--color-primary);
   font-size: 24px;
   cursor: pointer;
   transition: 0.2s;
@@ -105,7 +104,7 @@ watch(() => props.isOpen, (newVal) => {
 }
 
 .manualCloseBtn:hover {
-  color: #1af;
+  color: var(--color-primary-light);
   transform: scale(1.2);
 }
 </style>

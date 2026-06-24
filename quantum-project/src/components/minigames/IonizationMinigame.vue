@@ -249,15 +249,15 @@ onUnmounted(() => {
   position: absolute;
   width: 60px;
   height: 60px;
-  background: radial-gradient(circle at 30% 30%, #555, #222);
-  border: 2px solid #777;
+  background: radial-gradient(circle at 30% 30%, var(--color-border), var(--color-bg-dark));
+  border: 2px solid var(--color-border);
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   font-weight: bold;
   font-size: 18px;
-  color: #aaa;
+  color: var(--color-text-dim);
   transform: translate(-50%, -50%);
   transition: all 0.2s ease-out;
   box-shadow: 0 0 10px rgba(0,0,0,0.8);
@@ -266,7 +266,7 @@ onUnmounted(() => {
 .atom.ionized {
   background: radial-gradient(circle at 30% 30%, var(--color-secondary), var(--color-secondary));
   border-color: var(--color-secondary);
-  color: #fff;
+  color: var(--color-text);
   box-shadow: 0 0 20px rgba(162, 0, 255, 0.6);
 }
 
@@ -311,7 +311,7 @@ onUnmounted(() => {
 .score-display {
   margin-top: 40px;
   text-align: center;
-  color: #888;
+  color: var(--color-subtle);
   font-size: 16px;
 }
 
@@ -319,11 +319,11 @@ onUnmounted(() => {
   margin-top: 10px;
   font-size: 36px;
   font-weight: bold;
-  color: #555;
+  color: var(--color-border);
 }
 
 .score-numbers span {
-  color: #eee;
+  color: var(--color-text);
   transition: color 0.3s;
 }
 
@@ -335,7 +335,7 @@ onUnmounted(() => {
 .instructions {
   margin-top: auto;
   margin-bottom: 20px;
-  color: #666;
+  color: var(--color-muted);
   font-size: 14px;
   text-align: center;
 }

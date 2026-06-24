@@ -35,18 +35,18 @@ defineEmits<{
 }
 
 .indexTitle {
-  color: #0ef;
+  color: var(--color-primary);
   font-size: 18px;
   font-weight: bold;
   letter-spacing: 0.1em;
   margin-bottom: 20px;
-  border-bottom: 1px solid #0ef;
+  border-bottom: 1px solid var(--color-primary);
   padding-bottom: 8px;
 }
 
 .indexLink {
   display: block;
-  color: #aaa;
+  color: var(--color-muted);
   text-decoration: none;
   font-family: monospace;
   font-size: 14px;
@@ -56,16 +56,16 @@ defineEmits<{
 }
 
 .indexLink:hover {
-  color: #0ef;
+  color: var(--color-primary);
 }
 
 .indexLinkSub {
   margin-left: 16px;
   font-size: 12px;
-  color: #888;
+  color: var(--color-subtle);
 }
 
 .indexLinkSub:hover {
-  color: #b47cff;
+  color: var(--color-secondary);
 }
 </style>

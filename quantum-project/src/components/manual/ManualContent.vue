@@ -35,7 +35,7 @@ defineEmits<{
       <li><strong>Further Reading:</strong> Watch this video on Doppler Cooling for more information: <a href="https://www.youtube.com/watch?v=WPwlS8SKlns" target="_blank" class="manualLink">"Laser Cooling | Doppler Effect"</a>.</li>
     </ul>
 
-    <hr style="border-color: #0ef; opacity: 0.3; margin: 30px 0;">
+    <hr style="border-color: var(--color-primary); opacity: 0.3; margin: 30px 0;">
 
     <h2 id="mechanics" class="manualH2">Basic Mechanics</h2>
 
@@ -231,24 +231,24 @@ defineEmits<{
 
 <style scoped>
 .manualContent {
-  color: #eee;
+  color: var(--color-text);
   font-size: 14px;
   line-height: 1.8;
   font-family: monospace;
 }
 
 .manualH1 {
-  color: #0ef;
+  color: var(--color-primary);
   font-size: 24px;
   font-weight: bold;
   letter-spacing: 0.1em;
   margin: 0 0 24px 0;
-  border-bottom: 2px solid #0ef;
+  border-bottom: 2px solid var(--color-primary);
   padding-bottom: 12px;
 }
 
 .manualH2 {
-  color: #b47cff;
+  color: var(--color-secondary);
   font-size: 18px;
   font-weight: bold;
   letter-spacing: 0.08em;
@@ -256,7 +256,7 @@ defineEmits<{
 }
 
 .manualH3 {
-  color: #0ef;
+  color: var(--color-primary);
   font-size: 14px;
   font-weight: bold;
   letter-spacing: 0.05em;
@@ -264,16 +264,16 @@ defineEmits<{
 }
 
 .manualLink {
-  color: #b47cff;
+  color: var(--color-secondary);
   text-decoration: none;
   transition: 0.2s;
   cursor: pointer;
-  border-bottom: 1px dotted #b47cff;
+  border-bottom: 1px dotted var(--color-secondary);
 }
 
 .manualLink:hover {
-  color: #d4aaff;
-  border-bottom: 1px solid #b47cff;
+  color: var(--color-secondary-light);
+  border-bottom: 1px solid var(--color-secondary);
 }
 
 .manualContent p {
@@ -288,11 +288,11 @@ defineEmits<{
 
 .manualContent li {
   margin: 6px 0;
-  color: #eee;
+  color: var(--color-text);
 }
 
 .manualContent strong {
-  color: #eee;
+  color: var(--color-text);
   font-weight: bold;
 }
 </style>
