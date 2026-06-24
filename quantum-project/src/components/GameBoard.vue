@@ -1,19 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { Level, CELL } from '@/game/quantumgame'
+import { COLORS, TIMING } from '@/constants'
 
-// Constants
-const TRAVEL_MS = 800
-const FPS = 60
-
-const colours = {
-  cyan: '#0ef',
-  purple: '#b47cff',
-  green: '#0f8',
-  orange: '#f84',
-  lightPurple: '#d4aaff',
-  gray: '#333',
-}
+const TRAVEL_MS = TIMING.PHOTON_TRAVEL_MS
+const FPS = TIMING.ANIMATION_FPS
+const colours = COLORS
 
 // Props
 const props = defineProps<{
