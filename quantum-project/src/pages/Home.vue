@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { measureAll, getBlochAngle, getBlochLabel, checkWinCondition, calculateQuantumState, WELCOME_POPUP, Level, type IonQuantumState, CELL } from '@/game/quantumgame'
+import { measureAll, getBlochAngle, getBlochLabel, checkWinCondition, calculateQuantumState, WELCOME_POPUP, Level, type IonQuantumState } from '@/game/quantumgame'
 import { LEVELS } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
 import GameBoard from '@/components/GameBoard.vue'
@@ -60,7 +60,7 @@ let lastPopupTrigger: string | null = null
 
 const STAGE_ORDER = ['heating', 'ionization', 'paul-trap', 'cooling', 'main']
 
-const STAGE_CONFIG: Record<string, { name: string; goal: string; component?: any }> = {
+const STAGE_CONFIG: Record<string, { name: string; goal: string; component?: object }> = {
   'heating': { 
     name: 'Intro 1: Heating', 
     goal: 'Vaporise the Ytterbium', 
@@ -84,12 +84,14 @@ const STAGE_CONFIG: Record<string, { name: string; goal: string; component?: any
 }
 
 const savedStage = localStorage.getItem('quantum_save_stage')
-const currentStage = ref(savedStage && STAGE_ORDER.includes(savedStage) ? savedStage : STAGE_ORDER[0])
+const currentStage = ref(
+  (savedStage && STAGE_ORDER.includes(savedStage) ? savedStage : STAGE_ORDER[0]) as string
+)
 
 function advanceStage() {
   const currentIndex = STAGE_ORDER.indexOf(currentStage.value)
   if (currentIndex < STAGE_ORDER.length - 1) {
-    currentStage.value = STAGE_ORDER[currentIndex + 1]
+    currentStage.value = STAGE_ORDER[currentIndex + 1]!
   }
 }
 
@@ -99,11 +101,11 @@ function selectMinigame(stage: string) {
 }
 
 const currentStageName = computed(() => 
-  currentStage.value === 'main' ? `Level ${currentLevelIndex.value + 1}` : STAGE_CONFIG[currentStage.value]?.name
+  currentStage.value === 'main' ? `Level ${currentLevelIndex.value + 1}` : STAGE_CONFIG[currentStage.value]?.name ?? ''
 )
 
 const currentStageGoal = computed(() => 
-  currentStage.value === 'main' ? level.goal : STAGE_CONFIG[currentStage.value]?.goal
+  currentStage.value === 'main' ? level.goal : STAGE_CONFIG[currentStage.value]?.goal ?? ''
 )
 
 
@@ -119,7 +121,7 @@ watch(currentLevelIndex, (newLevel) => {
 })
 
 watch(currentStage, (newStage) => {
-  localStorage.setItem('quantum_save_stage', newStage)
+  localStorage.setItem('quantum_save_stage', String(newStage))
 })
 
 const displayedGateProgress = computed(() => {
@@ -429,7 +431,6 @@ function handleMeasure() {
     const stateInfo = calculateQuantumState(level, sourceGates.value, null)
     const states = stateInfo.states ?? []
     const wc = level.winCondition
-    let win = false
     
     if (checkWinCondition(wc, states)) { 
       showWin.value = true

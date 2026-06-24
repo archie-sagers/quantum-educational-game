@@ -180,7 +180,7 @@ onUnmounted(() => {
   align-items: center;
   font-size: 28px;
   font-weight: bold;
-  color: #fff;
+  color: var(--color-text);
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
   box-shadow: 0 0 30px rgba(255, 170, 0, 0.2);
   z-index: 10;

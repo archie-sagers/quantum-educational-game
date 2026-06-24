@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { reactive, ref, computed, watch } from 'vue'
+defineOptions({ name: 'LabPage' })
 import styles from './Home.module.css'
 import GameBoard from '@/components/GameBoard.vue'
-import { Level, CELL, measureAll, getBlochAngle, checkWinCondition, getBlochLabel, calculateQuantumState, type IonQuantumState } from '@/game/quantumgame'
+import { Level, measureAll, getBlochAngle, checkWinCondition, getBlochLabel, calculateQuantumState, type IonQuantumState, type WallType } from '@/game/quantumgame'
 
 // Level config interface
 interface LevelConfigLocal {
@@ -11,7 +12,7 @@ interface LevelConfigLocal {
   rows: number
   sources: Array<{ col: number; row: number; dir?: string }>
   ions: Array<{ col: number; row: number }>
-  walls?: Array<{ col: number; row: number; type?: string }>
+  walls?: Array<{ col: number; row: number; type?: WallType }>
   availableGates?: string[]
   prePlacedGates?: string[][]
   lockedGateIndices?: number[]
@@ -47,7 +48,7 @@ const editorLevel = computed(() => {
     rows: levelConfig.rows,
     sources: levelConfig.sources.map(s => ({ col: s.col, row: s.row, dir: s.dir ?? 'right' })),
     ions: levelConfig.ions.map(i => ({ col: i.col, row: i.row })),
-    walls: (levelConfig.walls || []).map(w => ({ col: w.col, row: w.row, type: (w.type ?? 'standard') as any })),
+    walls: (levelConfig.walls || []).map(w => ({ col: w.col, row: w.row, type: (w.type ?? 'standard') as WallType })),
     availableGates: levelConfig.availableGates || [],
     prePlacedGates: levelConfig.prePlacedGates || [],
     lockedGateIndices: levelConfig.lockedGateIndices || [],
@@ -217,13 +218,13 @@ function isGateLocked(localIndex: number) {
 // Edit Mode
 // -------------------------------------------
 const paletteItems = [
-  { type: 'source', label: 'Laser Source', icon: '■', color: '#0ef' },
-  { type: 'ion', label: 'Ion', icon: '●', color: '#f84' },
-  { type: 'wall-standard', label: 'Wall (Blocks All)', icon: '✕', color: '#ff4444' },
-  { type: 'wall-cyan', label: 'Wall (Cyan)', icon: '✕', color: '#0ef' },
-  { type: 'wall-purple', label: 'Wall (Purple)', icon: '✕', color: '#b47cff' },
-  { type: 'wall-green', label: 'Wall (Green)', icon: '✕', color: '#0f8' },
-  { type: 'wall-orange', label: 'Wall (Orange)', icon: '✕', color: '#f84' },
+  { type: 'source', label: 'Laser Source', icon: '■', color: 'var(--color-primary)' },
+  { type: 'ion', label: 'Ion', icon: '●', color: 'var(--color-danger)' },
+  { type: 'wall-standard', label: 'Wall (Blocks All)', icon: '✕', color: 'var(--color-danger)' },
+  { type: 'wall-cyan', label: 'Wall (Cyan)', icon: '✕', color: 'var(--color-primary)' },
+  { type: 'wall-purple', label: 'Wall (Purple)', icon: '✕', color: 'var(--color-secondary)' },
+  { type: 'wall-green', label: 'Wall (Green)', icon: '✕', color: 'var(--color-success)' },
+  { type: 'wall-orange', label: 'Wall (Orange)', icon: '✕', color: 'var(--color-danger)' },
 ]
 
 function onPaletteItemDragStart(e: DragEvent, item: typeof paletteItems[0]) {
@@ -246,7 +247,7 @@ function handleItemDrop(col: number, row: number, itemType: string) {
     levelConfig.ions.push({ col, row })
   } else if (itemType.startsWith('wall-')) {
     if (levelConfig.walls?.some(w => w.col === col && w.row === row)) return
-    const wallType = itemType.split('-')[1] || 'standard'
+    const wallType = (itemType.split('-')[1] || 'standard') as WallType
     levelConfig.walls = levelConfig.walls || []
     levelConfig.walls.push({ col, row, type: wallType })
   }
@@ -270,7 +271,7 @@ function testLevel() {
     alert('Add at least one laser source to test')
     return
   }
-  const cfg: any = {
+  const cfg: LevelConfigLocal = {
     name: levelConfig.name,
     cols: levelConfig.cols,
     rows: levelConfig.rows,
@@ -290,7 +291,7 @@ function testLevel() {
   playGateInventory.value = { ...(levelConfig.gateInventory || {}) }
 
   const flatLocked = playSourceGates.value.flat();
-  for (const idx of cfg.lockedGateIndices) {
+  for (const idx of cfg.lockedGateIndices ?? []) {
     if (idx < flatLocked.length) {
       const gate = flatLocked[idx];
       if (gate && playGateInventory.value[gate] !== undefined && playGateInventory.value[gate] > 0) {
@@ -385,9 +386,9 @@ function uploadLevel(e: Event) {
   const reader = new FileReader()
   reader.onload = (event) => {
     try {
-      const data = JSON.parse(event.target?.result as string)
+      const data = JSON.parse(event.target?.result as string) as Partial<LevelConfigLocal>
       Object.assign(levelConfig, data)
-    } catch (err) {
+    } catch {
       alert('Failed to parse level file')
     }
   }
@@ -398,9 +399,9 @@ function uploadLevel(e: Event) {
 <template>
   <div :class="styles.gameContainer" style="display: flex; flex-direction: column; height: 100%; min-height: 85vh; padding: 0;">
     
-    <div style="display: flex; flex: 1; align-items: stretch; width: 100%; overflow: hidden; border-top: 1px solid #333; border-left: 6px solid #333;">
+    <div style="display: flex; flex: 1; align-items: stretch; width: 100%; overflow: hidden; border-top: 1px solid var(--color-border); border-left: 6px solid var(--color-border);">
       
-      <div style="flex: 0 0 320px; background: #0a0a0a; border-right: 1px solid #333; padding: 15px; overflow-y: auto; display: flex; flex-direction: column;">
+      <div style="flex: 0 0 320px; background: var(--color-bg-light); border-right: 1px solid var(--color-border); padding: 15px; overflow-y: auto; display: flex; flex-direction: column;">
         
         <h1 :class="styles.title" style="margin: 50px 0 4px 0; font-size: 22px;">Lab Mode</h1>
         <p :class="styles.hint" style="margin-bottom: 12px;">Design your own quantum puzzle levels</p>
@@ -428,8 +429,8 @@ function uploadLevel(e: Event) {
 
         <div v-if="mode === 'edit'" style="display: flex; flex-direction: column; gap: 10px;">
           
-          <section style="padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 3px">
-            <h3 style="margin: 0 0 6px 0; font-size: 11px; color: #888; text-transform: uppercase">Metadata</h3>
+          <section style="padding: 10px; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: 3px">
+            <h3 style="margin: 0 0 6px 0; font-size: 11px; color: var(--color-subtle); text-transform: uppercase">Metadata</h3>
             <label style="display: block; margin-bottom: 6px">
               Name
               <input v-model="levelConfig.name" type="text" style="width: 100%; padding: 2px 4px; margin-top: 2px" />
@@ -468,8 +469,8 @@ function uploadLevel(e: Event) {
             </label>
           </section>
 
-          <section style="padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 3px">
-            <h3 style="margin: 0 0 6px 0; font-size: 11px; color: #888; text-transform: uppercase">Grid Size</h3>
+          <section style="padding: 10px; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: 3px">
+            <h3 style="margin: 0 0 6px 0; font-size: 11px; color: var(--color-subtle); text-transform: uppercase">Grid Size</h3>
             <div style="display: flex; gap: 8px; align-items: center">
               <label style="display: flex; align-items: center; gap: 4px">
                 Cols
@@ -482,15 +483,15 @@ function uploadLevel(e: Event) {
             </div>
           </section>
 
-          <section style="padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 3px">
-            <h3 style="margin: 0 0 6px 0; font-size: 11px; color: #888; text-transform: uppercase">Available Gates</h3>
+          <section style="padding: 10px; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: 3px">
+            <h3 style="margin: 0 0 6px 0; font-size: 11px; color: var(--color-subtle); text-transform: uppercase">Available Gates</h3>
             
             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px;">
               <div v-for="g in gateOptions" :key="g" style="display: flex; flex-direction: column; gap: 4px;">
                 
                 <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
                   <input type="checkbox" :checked="levelConfig.availableGates?.includes(g)" @change="() => toggleGate(g)" />
-                  <span :style="{ color: levelConfig.availableGates?.includes(g) ? '#eee' : '#666' }">
+                  <span :style="{ color: levelConfig.availableGates?.includes(g) ? 'var(--color-text)' : 'var(--color-muted)' }">
                     {{ g }} Gate
                   </span>
                 </label>
@@ -505,7 +506,7 @@ function uploadLevel(e: Event) {
                       style="width: 50px; padding: 2px 4px; font-size: 11px;" 
                     />
 
-                  <span style="font-size: 11px; color: #888; margin-left: 10px;">Locked?</span>
+                  <span style="font-size: 11px; color: var(--color-subtle); margin-left: 10px;">Locked?</span>
                     <input 
                       type="text" 
                       v-model="levelConfig.lockedTo[g]" 
@@ -519,15 +520,15 @@ function uploadLevel(e: Event) {
             
           </section>
 
-          <section style="padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 3px">
-            <h3 style="margin: 0 0 6px 0; font-size: 11px; color: #888; text-transform: uppercase">Save/Load</h3>
+          <section style="padding: 10px; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: 3px">
+            <h3 style="margin: 0 0 6px 0; font-size: 11px; color: var(--color-subtle); text-transform: uppercase">Save/Load</h3>
             <div style="display: flex; gap: 8px;">
               <button @click="downloadLevel" style="flex: 1; padding: 4px; font-size: 11px;">
                 Download
               </button>
               <label style="flex: 1;">
                 <input type="file" accept=".json" @change="uploadLevel" style="display: none" />
-                <span style="display: block; padding: 4px; background: #0a3a0a; border: 1px solid #0f8; cursor: pointer; text-align: center; border-radius: 3px; font-size: 11px;">
+                <span style="display: block; padding: 4px; background: var(--color-success); border: 1px solid var(--color-success); cursor: pointer; text-align: center; border-radius: 3px; font-size: 11px;">
                   Upload
                 </span>
               </label>
@@ -536,20 +537,20 @@ function uploadLevel(e: Event) {
         </div>
 
         <div v-if="mode === 'play'" style="display: flex; flex-direction: column; gap: 10px;">
-          <section style="padding: 10px; background: #0a0a0a; border: 1px solid #333; border-radius: 3px">
-            <h3 style="margin: 0 0 8px 0; font-size: 11px; color: #888; text-transform: uppercase">Level Information</h3>
-            <div style="margin-bottom: 6px; font-size: 12px; color: #eee;"><strong style="color: #888; display: inline-block; width: 60px;">Name:</strong> {{ levelConfig.name }}</div>
-            <div style="margin-bottom: 6px; font-size: 12px; color: #eee;"><strong style="color: #888; display: inline-block; width: 60px;">Hint:</strong> {{ levelConfig.hint || 'None' }}</div>
-            <div style="margin-bottom: 6px; font-size: 12px; color: #eee;"><strong style="color: #888; display: inline-block; width: 60px;">Goal:</strong> {{ levelConfig.goal || 'None' }}</div>
-            <div style="font-size: 12px; color: #eee;"><strong style="color: #888; display: inline-block; width: 60px;">Win:</strong> {{ levelConfig.winCondition }}</div>
+          <section style="padding: 10px; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: 3px">
+            <h3 style="margin: 0 0 8px 0; font-size: 11px; color: var(--color-subtle); text-transform: uppercase">Level Information</h3>
+            <div style="margin-bottom: 6px; font-size: 12px; color: var(--color-text);"><strong style="color: var(--color-subtle); display: inline-block; width: 60px;">Name:</strong> {{ levelConfig.name }}</div>
+            <div style="margin-bottom: 6px; font-size: 12px; color: var(--color-text);"><strong style="color: var(--color-subtle); display: inline-block; width: 60px;">Hint:</strong> {{ levelConfig.hint || 'None' }}</div>
+            <div style="margin-bottom: 6px; font-size: 12px; color: var(--color-text);"><strong style="color: var(--color-subtle); display: inline-block; width: 60px;">Goal:</strong> {{ levelConfig.goal || 'None' }}</div>
+            <div style="font-size: 12px; color: var(--color-text);"><strong style="color: var(--color-subtle); display: inline-block; width: 60px;">Win:</strong> {{ levelConfig.winCondition }}</div>
           </section>
         </div>
 
       </div>
 
-      <div v-if="mode === 'edit'" style="flex: 0 0 180px; background: #111; border-right: 1px solid #333; padding: 20px; overflow-y: auto;">
-        <h3 style="margin: 50px 0 12px 0; font-size: 12px; color: #888; text-transform: uppercase">Palette</h3>
-        <p style="font-size: 11px; color: #888; margin-bottom: 16px; line-height: 1.4;">
+      <div v-if="mode === 'edit'" style="flex: 0 0 180px; background: var(--color-bg); border-right: 1px solid var(--color-border); padding: 20px; overflow-y: auto;">
+        <h3 style="margin: 50px 0 12px 0; font-size: 12px; color: var(--color-subtle); text-transform: uppercase">Palette</h3>
+        <p style="font-size: 11px; color: var(--color-subtle); margin-bottom: 16px; line-height: 1.4;">
           Drag to canvas.<br/>Right-click to delete.
         </p>
         <div style="display: flex; flex-direction: column; gap: 10px">
@@ -558,11 +559,11 @@ function uploadLevel(e: Event) {
             :key="item.type"
             draggable="true"
             @dragstart="onPaletteItemDragStart($event, item)"
-            :style="{
+              :style="{
               padding: '10px 8px',
               background: item.color,
-              color: '#000',
-              border: '1px solid #555',
+              color: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
               borderRadius: '3px',
               cursor: 'grab',
               fontSize: '11px',
@@ -577,7 +578,7 @@ function uploadLevel(e: Event) {
         </div>
       </div>
 
-      <div style="flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #000; padding: 20px; position: relative;">
+      <div style="flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; background: var(--color-bg); padding: 20px; position: relative;">
         <GameBoard
           v-if="mode === 'edit' && !playLevel"
           :mode="'edit'"
@@ -599,10 +600,10 @@ function uploadLevel(e: Event) {
         />
       </div>
 
-  <aside v-if="mode === 'play'" :class="styles.sidebar" style="flex: 0 0 400px; background: #0a0a0a; border-left: 1px solid #333; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+  <aside v-if="mode === 'play'" :class="styles.sidebar" style="flex: 0 0 400px; background: var(--color-bg-light); border-left: 1px solid var(--color-border); display: flex; flex-direction: column; padding: 0; overflow: hidden;">
         
         <div style="flex: 0 0 auto; padding: 30px 20px 10px;">
-          <h3 style="margin: 0; font-size: 12px; color: #888; text-transform: uppercase;">Test Results</h3>
+          <h3 style="margin: 0; font-size: 12px; color: var(--color-subtle); text-transform: uppercase;">Test Results</h3>
         </div>
         
           <div :class="styles.ionWrapper" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; padding: 10px; flex: 0 1 auto; min-height: min-content;">
