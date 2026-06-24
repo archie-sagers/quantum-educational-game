@@ -11,19 +11,8 @@ const showWelcome = ref(true)
 const finished = ref(false)
 const stage = ref<'doppler' | 'sideband' | 'done'>('doppler')
 
-// Same shape used for both dials; sideband is harder.
-interface Dial {
-  value: number
-  targetCenter: number
-  zoneWidth: number
-  wobbleSpeed: number
-  wobbleAmp: number
-  fillMs: number
-  progress: number
-  locked: boolean
-}
-
-function makeDial(zoneWidth: number, wobbleSpeed: number, wobbleAmp: number, fillMs: number): Dial {
+// same shape used for both dials, sideband is harder
+function makeDial(zoneWidth: number, wobbleSpeed: number, wobbleAmp: number, fillMs: number) {
   return reactive({
     value: 0,
     targetCenter: 50,
@@ -33,7 +22,7 @@ function makeDial(zoneWidth: number, wobbleSpeed: number, wobbleAmp: number, fil
     fillMs,
     progress: 0,
     locked: false,
-  }) as Dial
+  })
 }
 
 const dopplerDial = makeDial(20, 1500, 30, 8000)
@@ -58,7 +47,7 @@ const vibration = computed(() => {
   return 0
 })
 
-function updateDial(dial: Dial, dt: number, time: number, onDone: () => void) {
+function updateDial(dial: any, dt: number, time: number, onDone: () => void) {
   dial.targetCenter = 50 + Math.sin(time / dial.wobbleSpeed) * dial.wobbleAmp + Math.cos(time / 380) * 4
   const min = Math.max(0, dial.targetCenter - dial.zoneWidth / 2)
   const max = Math.min(100, dial.targetCenter + dial.zoneWidth / 2)
@@ -250,7 +239,7 @@ onUnmounted(() => {
   width: 50px;
   height: 50px;
   background: var(--color-danger);
-  color: var(--color-bg);
+  color: #000;
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: bold;
