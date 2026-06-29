@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { measureAll, getBlochAngle, getBlochLabel, checkWinCondition, calculateQuantumState, WELCOME_POPUP, Level, type IonQuantumState } from '@/game/quantumgame'
+import { measureAll, getBlochAngle, getBlochLabel, checkWinCondition, calculateQuantumState, WELCOME_POPUP, MAIN_WELCOME_POPUP,  Level, type IonQuantumState } from '@/game/quantumgame'
 import { LEVELS } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
 import GameBoard from '@/components/GameBoard.vue'
@@ -40,7 +40,6 @@ const automatedDone = ref(false)
 const showPopup = ref(false)
 const popupIndex = ref(0)
 const tempPopup = ref<{ title: string; text: string } | null>(null)
-const showWelcome = ref(true)
 const showManual = ref(false)
 const gateInventory = ref<Record<string, number>>({})
 
@@ -284,6 +283,8 @@ function isGateLocked(localIndex: number) {
   return localIndex < prePlacedCount;
 }
 
+const showWelcome = ref(currentStage.value === 'heating')
+const showMainWelcome = ref(currentStage.value === 'main')
 
 // Popup Control
 // ------------------
@@ -516,6 +517,22 @@ onMounted(() => {
       </div>
     </div>
 
+    <div v-if="showWelcome" :class="styles.welcomeOverlay">
+        <div :class="styles.welcomeModal">
+          <div :class="styles.welcomeTitle">{{ WELCOME_POPUP.title }}</div>
+          <div :class="styles.welcomeText">{{ WELCOME_POPUP.text }}</div>
+          <button @click="closeWelcome()" :class="styles.welcomeBtn">Continue</button>
+        </div>
+      </div>
+
+    <div v-if="showMainWelcome" :class="styles.welcomeOverlay">
+        <div :class="styles.welcomeModal">
+          <div :class="styles.welcomeTitle">{{ MAIN_WELCOME_POPUP.title }}</div>
+          <div :class="styles.welcomeText">{{ MAIN_WELCOME_POPUP.text }}</div>
+          <button @click="showMainWelcome = false" :class="styles.welcomeBtn">Continue</button>
+        </div>
+      </div>
+      
     <div v-if="currentStage !== 'main'" style="width: 100%; display: flex; flex-direction: column; flex: 1; margin-top: 10px;">
       <component 
         :is="STAGE_CONFIG[currentStage]?.component" 
@@ -532,13 +549,7 @@ onMounted(() => {
 
       <p :class="styles.hint">{{ level.hint }}</p>
 
-      <div v-if="showWelcome" :class="styles.welcomeOverlay">
-        <div :class="styles.welcomeModal">
-          <div :class="styles.welcomeTitle">{{ WELCOME_POPUP.title }}</div>
-          <div :class="styles.welcomeText">{{ WELCOME_POPUP.text }}</div>
-          <button @click="closeWelcome()" :class="styles.welcomeBtn">Continue</button>
-        </div>
-      </div>
+      
 
     <!-- Main game area -->
     <div :class="styles.mainArea">

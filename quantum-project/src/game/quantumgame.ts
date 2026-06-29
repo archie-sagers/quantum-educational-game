@@ -432,5 +432,10 @@ export class Level {
 
 export const WELCOME_POPUP = {
   title: 'Welcome to the Quantum Laser Puzzle',
+  text: 'Learn the basics of Quantum Computing through this interactive game. You will start by trapping an ion and preparing it for quantum computation.'
+};
+
+export const MAIN_WELCOME_POPUP = {
+  title: 'Welcome to the Quantum Laser Puzzle',
   text: 'Explore how quantum logic transitions affect the probability state and phase of a qubit prior to final measurement.'
 };
