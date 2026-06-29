@@ -104,7 +104,9 @@ const currentStageName = computed(() =>
 )
 
 const currentStageGoal = computed(() => 
-  currentStage.value === 'main' ? level.goal : STAGE_CONFIG[currentStage.value]?.goal ?? ''
+  currentStage.value === 'main' 
+    ? LEVELS[currentLevelIndex.value]?.goal 
+    : STAGE_CONFIG[currentStage.value]?.goal ?? ''
 )
 
 
@@ -124,14 +126,15 @@ watch(currentStage, (newStage) => {
 })
 
 const displayedGateProgress = computed(() => {
-  if (level.requiredGateCount === null) return null;
+  const activeLevel = LEVELS[currentLevelIndex.value];
+  if (!activeLevel || activeLevel.requiredGateCount === null) return null;
   
-  if (Array.isArray(level.requiredGateCount)) {
-    const requiredForThisSource = level.requiredGateCount[activeSourceIndex.value] ?? 0;
+  if (Array.isArray(activeLevel.requiredGateCount)) {
+    const requiredForThisSource = activeLevel.requiredGateCount[activeSourceIndex.value] ?? 0;
     return `(${activeGates.value.length}/${requiredForThisSource})`;
   } else {
     const totalApplied = sourceGates.value.flat().length;
-    return `(${totalApplied}/${level.requiredGateCount})`;
+    return `(${totalApplied}/${activeLevel.requiredGateCount})`;
   }
 })
 

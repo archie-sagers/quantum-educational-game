@@ -391,7 +391,7 @@ export const LEVELS = [
       availableGates: ['H', 'CNOT'],
       goal: 'Two Independent Entangled Pairs',
       winCondition: 'any',
-      hint: 'Create one Bell pair on the top, and a separate Bell pair on the bottom.',
+      hint: 'Create one Bell pair on the top and a separate Bell pair on the bottom.',
       showResetButton: true,
       preInitialized: true,
       gateInventory: { 'H': 2, 'CNOT': 2 },
