@@ -5,6 +5,7 @@ import ManualContent from './manual/ManualContent.vue'
 
 const props = defineProps<{
   isOpen: boolean
+  targetSection?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -39,9 +40,14 @@ watch(() => props.isOpen, (newVal) => {
   if (newVal) {
     nextTick(() => {
       if (modalRef.value) {
-        const savedScroll = localStorage.getItem('quantum_manual_scroll')
-        if (savedScroll) {
-          modalRef.value.scrollTop = parseInt(savedScroll, 10)
+        if (props.targetSection) {
+          // If a target section is specified, scroll to that section
+          scrollToSection(props.targetSection)
+        } else {
+          const savedScroll = localStorage.getItem('quantum_manual_scroll')
+          if (savedScroll) {
+            modalRef.value.scrollTop = parseInt(savedScroll, 10)
+          }
         }
       }
     })

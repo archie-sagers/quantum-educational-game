@@ -288,6 +288,7 @@ interface LevelConfig {
   prePlacedGates?: string[][];
   lockedGateIndices?: number[];
   gateInventory?: Record<string, number>;
+  manualLink?: { label: string; sectionId: string };
 }
 
 interface TraceSegment {
@@ -320,8 +321,9 @@ export class Level {
   prePlacedGates?: string[][];
   lockedGateIndices: number[];
   gateInventory: Record<string, number>;
+  manualLink?: { label: string; sectionId: string };
 
-  constructor({ name, cols, rows, sources, ions, walls, hint, goal, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, automateMeasurement, initialGates, popups, requiredGateCount, prePlacedGates, lockedGateIndices, gateInventory }: LevelConfig) {
+  constructor({ name, cols, rows, sources, ions, walls, hint, goal, winCondition, availableGates, gatePlacementPositions, showResetButton, preInitialized, automateMeasurement, initialGates, popups, requiredGateCount, prePlacedGates, lockedGateIndices, gateInventory, manualLink }: LevelConfig) {
     this.name = name;
     this.cols = cols;
     this.rows = rows;
@@ -343,6 +345,7 @@ export class Level {
     this.prePlacedGates = prePlacedGates || [];
     this.lockedGateIndices = lockedGateIndices || [];
     this.gateInventory = gateInventory || {};
+    this.manualLink = manualLink;
   }
 
   isFixed(col: number, row: number) {
