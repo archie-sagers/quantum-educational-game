@@ -116,6 +116,7 @@ export const LEVELS = [
       showResetButton: true,
       preInitialized: true,
       automateMeasurement: true,
+      manualLink: { label: 'Learn more about phase', sectionId: 'qm-phase' },
       popups: [
         { title: 'Negative Superposition', text: 'Create a negative superposition (|-⟩)', trigger: 'onLoad' },
         { title: 'Automated Measurement', text: 'The ion will be automatically reset and measured 10 times to show the superposition. You will see that phase is not visible in measurement statistics.', trigger: 'onAutomatedStart' },
@@ -235,6 +236,7 @@ export const LEVELS = [
       lockedGateIndices: [],
       requiredGateCount: 3,
       automateMeasurement: true,
+      manualLink: { label: 'Learn more about Anti-Correlation', sectionId: 'qm-anticorrelation' },
       popups: [
         { title: 'Anti-Correlation', text: 'Entangled states can be modified locally. See what happens when you apply an X-gate to one half of an entangled pair.', trigger: 'onLoad' },
         { title: 'Measurement Demo', text: 'The results are perfectly opposite (strictly 0,1 or 1,0). Applying the X-gate inverted their relationship while preserving the entanglement.', trigger: 'onAutomatedStart' }
@@ -258,6 +260,7 @@ export const LEVELS = [
       gateInventory: { 'H': 2, 'CNOT': 2 },
       requiredGateCount: 4,
       automateMeasurement: false,
+      manualLink: { label: 'Learn more about Uncomputing', sectionId: 'qm-uncomputing' },
       popups: [
         { title: 'Uncomputing', text: 'Quantum operations are reversible. If you perform an operation, you can undo it by applying the same operations in reverse order.', trigger: 'onLoad' },
         { title: 'The Challenge', text: 'Can you reverse the operation to return the system to |0⟩ |0⟩?', trigger: 'onLaserGatesOpen' }

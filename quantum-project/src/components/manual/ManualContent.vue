@@ -155,7 +155,19 @@ defineEmits<{
       <li>After another Hadamard: |0⟩ (back to ground state)</li>
     </ul>
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 4)" class="manualLink">Level 5</span> <span @click="$emit('goToLevel', 5)" class="manualLink">Level 6</span></p>
-
+    <h3 id="qm-phase" class="manualH3">Phase</h3>
+    <p><strong>What Is It?</strong></p>
+    <ul>
+      <li>Quantum phase relates to the wave-like nature of quantum states.</li>
+      <li>When a <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a> is in <a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a>, the phase determines how states will interfere with each other during future operations.</li>
+    </ul>
+    <p><strong>In The Game:</strong></p>
+    <ul>
+      <li>States like |+⟩ and |-⟩ both have a 50% chance of being measured as 0 or 1, but they have different phases.</li>
+      <li>|+⟩ has a positive phase, while |-⟩ has a negative phase.</li>
+      <li>This difference is noticable when applying further gates, as it decides whether the state will interfere constructively or destructively (e.g. go back to |0⟩ or to |1⟩ after a Hadamard gate is applied).</li>
+    </ul>
+    <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 6)" class="manualLink">Level 7</span></p>
     <h3 id="qm-entanglement" class="manualH3">Entanglement</h3>
     <p><strong>What Is It?</strong></p>
     <ul>
@@ -169,7 +181,7 @@ defineEmits<{
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 10)" class="manualLink">Level 11</span> <span @click="$emit('goToLevel', 11)" class="manualLink">Level 12</span></p>
 
     <h3 id="qm-bell" class="manualH3">Bell States (Pairs)</h3>
-    <p><strong>What Is It?</strong></p>
+    <p><strong>What Are They?</strong></p>
     <ul>
       <li>A <a href="https://www.quera.com/glossary/bell-state" target="_blank" class="manualLink">Bell State</a> represents the simplest example of quantum entanglement, involving exactly two qubits.</li>
     </ul>
@@ -182,7 +194,7 @@ defineEmits<{
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 10)" class="manualLink">Level 11</span> <span @click="$emit('goToLevel', 19)" class="manualLink">Level 20</span></p>
 
     <h3 id="qm-ghz" class="manualH3">GHZ States (Multi-Qubit)</h3>
-    <p><strong>What Is It?</strong></p>
+    <p><strong>What Are They?</strong></p>
     <ul>
       <li>The <a href="https://www.quera.com/glossary/ghz-state" target="_blank" class="manualLink">Greenberger-Horne-Zeilinger (GHZ) state</a> is an entangled quantum state involving three or more qubits.</li>
       <li>It shows that entanglement can cascade across multiple qubits and create complex interactions.</li>
@@ -193,7 +205,33 @@ defineEmits<{
       <li>When you observe the ions, you will notice that all ions collapse to match each other every time (e.g. all |0⟩'s or all |1⟩'s).</li>
     </ul>
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 15)" class="manualLink">Level 16</span> <span @click="$emit('goToLevel', 18)" class="manualLink">Level 19</span></p>
+    <h3 id="qm-uncomputing" class="manualH3">Uncomputing</h3>
+    <p><strong>What Is It?</strong></p>
+    <ul>
+      <li><a href="https://qrisp.eu/reference/Core/Uncomputation.html" target="_blank" class="manualLink">Uncomputing</a> is the process of reversing quantum operations to remove entanglement or return a <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a> to a previous state.</li>
+      <li>Because quantum gates are reversible (unitary), applying the inverse of an operation undoes (or uncomputes) its effect.</li>
+    </ul>
 
+    <li>more on unitary operations: <a href="https://www.youtube.com/watch?v=dD-oYfhSKhg" target="_blank" class="manualLink">(Watch) What are unitary operators? | Maths of Quantum Mechanics</a></li>
+    <p><strong>In The Game:</strong></p>
+    <ul>
+      <li>Gates like Hadamard, X and C-NOT are their own inverses so applying the same gate twice will "uncompute" the operation.</li>
+      <li>Applying a C-NOT gate to an entangled pair using the same control and target ions will unentangle them, breaking the connection between them.</li>
+    </ul>
+    <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 13)" class="manualLink">Level 14</span> <span @click="$emit('goToLevel', 17)" class="manualLink">Level 18</span></p>
+
+    <h3 id="qm-anticorrelation" class="manualH3">Anti-correlation</h3>
+    <p><strong>What Is It?</strong></p>
+    <ul>
+      <li>Anti-correlation is a measurement outcome of an entangled state where two <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubits</a> always yield opposite results.</li>
+      <li>If one qubit is measured as |0⟩, the other is guaranteed to measure as |1⟩ (and vice versa.)</li>
+    </ul>
+    <p><strong>In The Game:</strong></p>
+    <ul>
+      <li>You can create anti-correlated states by modifying a <a href="https://www.quera.com/glossary/bell-state" target="_blank" class="manualLink">Bell State</a> by applying an X-gate to one of the entangled ions.</li>
+      <li>When measuring you will see pairs of measurements like (|0⟩,|1⟩) or (|1⟩,|0⟩) showing up, but never (|0⟩,|0⟩) or (|1⟩,|1⟩).</li>
+    </ul>
+    <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 12)" class="manualLink">Level 13</span></p>
     <h2 id="bloch-sphere" class="manualH2">The Bloch Sphere</h2>
     <p>The circular diagram on the right side of the game shows the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a>, a geometric representation of the state of a single <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a>.</p>
     <p><strong>Understanding the Bloch Sphere:</strong></p>
