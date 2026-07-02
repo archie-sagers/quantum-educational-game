@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { LEVELS } from '@/game/levels';
-import { calculateQuantumState, checkWinCondition } from '@/game/quantumgame';
+import { LEVELS } from '../../levels';
+import { calculateQuantumState, checkWinCondition } from '../../quantumgame';
 
 describe('Specific level behavior', () => {
   
