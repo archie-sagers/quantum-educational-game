@@ -8,7 +8,6 @@ afterEach(() => {
   clearAppError()
 })
 
-
 describe('App', () => {
   it('renders a fallback when a global error is reported', () => {
     reportAppError(new Error('Boom'), 'Lab page')
