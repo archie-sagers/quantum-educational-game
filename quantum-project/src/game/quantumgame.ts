@@ -1,12 +1,10 @@
 import { QuantumSystem } from './quantumsystem';
+import type { QuantumState, WallType, IonQuantumState, LevelConfig, TraceSegment } from './types';
+import { GRID } from '@/constants';
 
-export const CELL = 56;
-
-export type QuantumState = '|0⟩' | '|1⟩' | '|+⟩' | '|-⟩';
+export const CELL = GRID.CELL_SIZE;
 
 let lastQuantumSystem: QuantumSystem | null = null;
-
-export type WallType = 'all' | 'standard' | 'cyan' | 'purple' | 'green' | 'orange';
 
 // Function for 1 qubit quantum state
 // Reads amplitudes and probabilities to determine the exact state,
@@ -156,13 +154,6 @@ export function getBlochLabel(state: string): string {
   return labelMap[state] ?? 'No state';
 }
 
-export interface IonQuantumState {
-  ionIndex: number;
-  state: QuantumState | '—';
-  p0: string | '—';
-  p1: string | '—';
-}
-
 export function calculateQuantumState(
   level: Level,
   laserGates: string[][],
@@ -265,38 +256,6 @@ export function checkWinCondition(wc: string, states: IonQuantumState[]): boolea
   if (wc === '10') return states.length === 2 && states[0]?.state === '|1⟩' && states[1]?.state === '|0⟩';
 
   return false;
-}
-
-interface LevelConfig {
-  name: string;
-  cols: number;
-  rows: number;
-  sources: Array<{ col: number; row: number; dir?: string }>;
-  ions: Array<{ col: number; row: number }>;
-  walls?: Array<{ col: number; row: number; type?: WallType }>;
-  hint?: string;
-  goal?: string;
-  winCondition?: string;
-  availableGates?: string[];
-  gatePlacementPositions?: Array<[number, number]>;
-  showResetButton?: boolean;
-  preInitialized?: boolean;
-  automateMeasurement?: boolean;
-  initialGates?: string[];
-  popups?: Array<{ title: string; text: string; trigger?: string }>;
-  requiredGateCount?: number | number[] | null;
-  prePlacedGates?: string[][];
-  lockedGateIndices?: number[];
-  gateInventory?: Record<string, number>;
-  manualLink?: { label: string; sectionId: string };
-}
-
-interface TraceSegment {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  colours: string[];
 }
 
 export class Level {

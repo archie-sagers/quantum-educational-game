@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import type { Ion } from '@/game/types'
 import './intro-levels.css'
 import styles from '@/pages/Home.module.css'
 
@@ -15,17 +16,6 @@ const viewportRef = ref<HTMLElement | null>(null)
 const WIN_TIME_MS = 8000
 const SPRING_CONSTANT = 0.0007
 const TRAP_BOUNDS = { min: 25, max: 75 }
-
-interface Ion {
-  id: number
-  x: number
-  y: number
-  vx: number
-  vy: number
-  isDragging: boolean
-  inTrap: boolean
-  timeInTrap: number
-}
 
 const ions = ref<Ion[]>([
   { id: 1, x: 10, y: 25, vx: 0, vy: 0, isDragging: false, inTrap: false, timeInTrap: 0 },

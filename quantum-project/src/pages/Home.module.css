@@ -1,21 +1,4 @@
 .gameContainer {
-  --color-primary: #0ef;
-  --color-primary-light: #1af;
-  --color-secondary: #b47cff;
-  --color-secondary-light: #d4aaff;
-  --color-danger: #f84;
-  --color-danger-light: #ff6644;
-  --color-success: #0f0;
-  --color-text: #eee;
-  --color-text-dim: #999;
-  --color-text-darker: #666;
-  --color-bg: #000000;
-  --color-bg-light: #0a0a0a;
-  --color-border: #333;
-  --border-radius: 3px;
-  --transition: 0.2s;
-  --font-mono: monospace;
-
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-mono);
@@ -65,7 +48,7 @@
 
 .clearBtn {
   cursor: pointer;
-  background: #1a1a1a;
+  background: var(--color-surface);
   color: var(--color-text-dim);
   border: 1px solid var(--color-border);
   padding: 4px 12px;
@@ -76,9 +59,9 @@
 }
 
 .clearBtn:hover {
-  background: #2a2a2a;
+  background: var(--color-surface-hover);
   border-color: #666;
-  color: #ddd;
+  color: var(--color-text-soft);
 }
 
 .mainArea {
@@ -97,31 +80,6 @@
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
-}
-
-.gameCanvas {
-  border: 2px solid var(--color-border);
-  cursor: crosshair;
-  max-height: 60vh;
-  max-width: 100%;
-  height: auto;
-  width: auto;
-}
-
-.winOverlay {
-  display: flex;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.92);
-  color: var(--color-success);
-  font-size: 32px;
-  font-weight: bold;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  z-index: 1000;
-  letter-spacing: 0.1em;
 }
 
 .sidebar {
@@ -161,7 +119,7 @@
   align-items: center;
   gap: 4px;
   background: var(--color-bg-light);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   flex: 0 0 auto;
 }
 
@@ -177,16 +135,6 @@
   font-weight: bold;
   color: var(--color-primary);
   letter-spacing: 0.1em;
-}
-
-.goalSection {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 0;
-  border-bottom: 1px solid #222;
-  width: 100%;
 }
 
 .blochSvg {
@@ -269,10 +217,6 @@
 
 .infoValPurple {
   color: var(--color-secondary);
-}
-
-.infoValMagenta {
-  color: #ff47ff;
 }
 
 .infoValOrange {
@@ -519,7 +463,6 @@
 }
 
 .appliedSection,
-.slotsSection,
 .gatesSection {
   display: flex;
   flex-direction: column;
@@ -834,118 +777,9 @@
 }
 
 .manualBtn:hover {
-  background: #1a1a1a;
+  background: var(--color-surface);
   color: var(--color-primary);
   box-shadow: 0 0 8px var(--color-primary);
-}
-
-.manualOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.92);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 3000;
-}
-
-.manualModal {
-  background: var(--color-bg-light);
-  border: 2px solid var(--color-primary);
-  border-radius: 4px;
-  padding: 32px;
-  max-width: 800px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 0 30px rgba(0, 238, 255, 0.3);
-  position: relative;
-}
-
-.manualCloseBtn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: transparent;
-  border: none;
-  color: var(--color-primary);
-  font-size: 24px;
-  cursor: pointer;
-  transition: var(--transition);
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.manualCloseBtn:hover {
-  color: #1af;
-  transform: scale(1.2);
-}
-
-.manualContent {
-  color: var(--color-text);
-  font-size: 14px;
-  line-height: 1.8;
-}
-
-.manualH1 {
-  color: var(--color-primary);
-  font-size: 24px;
-  font-weight: bold;
-  letter-spacing: 0.1em;
-  margin: 0 0 24px 0;
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 12px;
-}
-
-.manualH2 {
-  color: var(--color-secondary);
-  font-size: 18px;
-  font-weight: bold;
-  letter-spacing: 0.08em;
-  margin: 24px 0 12px 0;
-}
-
-.manualH3 {
-  color: var(--color-primary);
-  font-size: 14px;
-  font-weight: bold;
-  letter-spacing: 0.05em;
-  margin: 16px 0 8px 0;
-}
-
-.manualLink {
-  color: var(--color-secondary);
-  text-decoration: none;
-  transition: var(--transition);
-  cursor: pointer;
-  border-bottom: 1px dotted var(--color-secondary);
-}
-
-.manualLink:hover {
-  color: #d4aaff;
-  border-bottom: 1px solid var(--color-secondary);
-}
-
-.manualContent p {
-  margin: 8px 0;
-}
-
-.manualContent ul,
-.manualContent ol {
-  margin: 8px 0 8px 20px;
-  padding: 0;
-}
-
-.manualContent li {
-  margin: 6px 0;
-  color: var(--color-text);
-}
-
-.manualContent strong {
-  color: var(--color-text);
-  font-weight: bold;
 }
 
 .ionSection {
@@ -996,14 +830,4 @@
 .blochSvgCompact {
   width: 90px;
   height: 90px;
-}
-
-.infoPanelCompact {
-  padding: 8px;
-  gap: 4px;
-}
-
-.infoPanelCompact .infoRow {
-  font-size: 10px;
-  gap: 8px;
 }

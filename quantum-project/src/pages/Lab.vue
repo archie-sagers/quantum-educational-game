@@ -3,7 +3,8 @@ import { reactive, ref, computed, watch } from 'vue'
 defineOptions({ name: 'LabPage' })
 import styles from './Home.module.css'
 import GameBoard from '@/components/GameBoard.vue'
-import { Level, measureAll, getBlochAngle, checkWinCondition, getBlochLabel, calculateQuantumState, type IonQuantumState, type WallType } from '@/game/quantumgame'
+import { Level, measureAll, getBlochAngle, checkWinCondition, getBlochLabel, calculateQuantumState } from '@/game/quantumgame'
+import { type IonQuantumState, type WallType } from '@/game/types'
 
 // Level config interface
 interface LevelConfigLocal {
@@ -39,6 +40,46 @@ const defaultConfig = (): LevelConfigLocal => ({
   goal: 'Test',
   winCondition: 'any',
 })
+// Checks if a value is a plain object (not null or an array)
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+// normalises an uploaded level (to prevent errors)
+function normaliseLoadedLevel(data: Partial<LevelConfigLocal>): LevelConfigLocal {
+  const fallback = defaultConfig()
+
+  return {
+    ...fallback,
+    ...data,
+    name: typeof data.name === 'string' ? data.name : fallback.name,
+    hint: typeof data.hint === 'string' ? data.hint : fallback.hint,
+    goal: typeof data.goal === 'string' ? data.goal : fallback.goal,
+    winCondition: typeof data.winCondition === 'string' ? data.winCondition : fallback.winCondition,
+    cols: typeof data.cols === 'number' ? data.cols : fallback.cols,
+    rows: typeof data.rows === 'number' ? data.rows : fallback.rows,
+    sources: Array.isArray(data.sources) ? data.sources : fallback.sources,
+    ions: Array.isArray(data.ions) ? data.ions : fallback.ions,
+    walls: Array.isArray(data.walls) ? data.walls : fallback.walls,
+    availableGates: Array.isArray(data.availableGates) ? data.availableGates : fallback.availableGates,
+    prePlacedGates: Array.isArray(data.prePlacedGates) ? data.prePlacedGates : fallback.prePlacedGates,
+    lockedGateIndices: Array.isArray(data.lockedGateIndices) ? data.lockedGateIndices : fallback.lockedGateIndices,
+    gateInventory: isRecord(data.gateInventory) ? data.gateInventory : fallback.gateInventory,
+    lockedTo: isRecord(data.lockedTo) ? data.lockedTo : fallback.lockedTo,
+  }
+}
+
+const statusMessage = ref('')
+const statusTone = ref<'neutral' | 'success' | 'error'>('neutral')
+
+function setStatus(message: string, tone: 'neutral' | 'success' | 'error' = 'error') {
+  statusMessage.value = message
+  statusTone.value = tone
+}
+
+function clearStatus() {
+  statusMessage.value = ''
+  statusTone.value = 'neutral'
+}
 
 // User made level
 const editorLevel = computed(() => {
@@ -268,46 +309,51 @@ function handleEditCanvasClick(col: number, row: number) {
 
 function testLevel() {
   if (levelConfig.sources.length === 0) {
-    alert('Add at least one laser source to test')
+    setStatus('Add at least one laser source to test', 'error')
     return
   }
-  const cfg: LevelConfigLocal = {
-    name: levelConfig.name,
-    cols: levelConfig.cols,
-    rows: levelConfig.rows,
-    sources: levelConfig.sources.map(s => ({ col: s.col, row: s.row, dir: s.dir ?? 'right' })),
-    ions: levelConfig.ions.map(i => ({ col: i.col, row: i.row })),
-    walls: (levelConfig.walls || []).map(w => ({ col: w.col, row: w.row, type: w.type ?? 'standard' })),
-    availableGates: levelConfig.availableGates || [],
-    prePlacedGates: levelConfig.prePlacedGates || [],
-    lockedGateIndices: levelConfig.lockedGateIndices || [],
-    gateInventory: levelConfig.gateInventory || {},
-    winCondition: levelConfig.winCondition,
-    hint: levelConfig.hint,
-    goal: levelConfig.goal,
-  }
-  playLevel.value = new Level(cfg)
-  playSourceGates.value = (cfg.prePlacedGates || []).map((g: string[]) => [...g])
-  playGateInventory.value = { ...(levelConfig.gateInventory || {}) }
+  try {
+    const cfg: LevelConfigLocal = {
+      name: levelConfig.name,
+      cols: levelConfig.cols,
+      rows: levelConfig.rows,
+      sources: levelConfig.sources.map(s => ({ col: s.col, row: s.row, dir: s.dir ?? 'right' })),
+      ions: levelConfig.ions.map(i => ({ col: i.col, row: i.row })),
+      walls: (levelConfig.walls || []).map(w => ({ col: w.col, row: w.row, type: w.type ?? 'standard' })),
+      availableGates: levelConfig.availableGates || [],
+      prePlacedGates: levelConfig.prePlacedGates || [],
+      lockedGateIndices: levelConfig.lockedGateIndices || [],
+      gateInventory: levelConfig.gateInventory || {},
+      winCondition: levelConfig.winCondition,
+      hint: levelConfig.hint,
+      goal: levelConfig.goal,
+    }
+    playLevel.value = new Level(cfg)
+    playSourceGates.value = (cfg.prePlacedGates || []).map((g: string[]) => [...g])
+    playGateInventory.value = { ...(levelConfig.gateInventory || {}) }
 
-  const flatLocked = playSourceGates.value.flat();
-  for (const idx of cfg.lockedGateIndices ?? []) {
-    if (idx < flatLocked.length) {
-      const gate = flatLocked[idx];
-      if (gate && playGateInventory.value[gate] !== undefined && playGateInventory.value[gate] > 0) {
-        playGateInventory.value[gate]--;
+    const flatLocked = playSourceGates.value.flat()
+    for (const idx of cfg.lockedGateIndices ?? []) {
+      if (idx < flatLocked.length) {
+        const gate = flatLocked[idx]
+        if (gate && playGateInventory.value[gate] !== undefined && playGateInventory.value[gate] > 0) {
+          playGateInventory.value[gate]--
+        }
       }
     }
+
+    // Reset Play state
+    isMeasured.value = false
+    measuredValues.value = null
+    result.value = '—'
+    history.value = []
+    showWin.value = false
+    clearStatus()
+    updatePlayState()
+    mode.value = 'play'
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : 'Failed to start test level', 'error')
   }
-  
-  // Reset Play state
-  isMeasured.value = false
-  measuredValues.value = null
-  result.value = '—'
-  history.value = []
-  showWin.value = false
-  updatePlayState()
-  mode.value = 'play'
 }
 
 function backToEdit() {
@@ -386,10 +432,11 @@ function uploadLevel(e: Event) {
   const reader = new FileReader()
   reader.onload = (event) => {
     try {
-      const data = JSON.parse(event.target?.result as string) as Partial<LevelConfigLocal>
-      Object.assign(levelConfig, data)
+      const parsed = JSON.parse(event.target?.result as string) as Partial<LevelConfigLocal>
+      Object.assign(levelConfig, normaliseLoadedLevel(parsed))
+      setStatus('Level file loaded.', 'success')
     } catch {
-      alert('Failed to parse level file')
+      setStatus('Failed to parse level file', 'error')
     }
   }
   reader.readAsText(file)
@@ -425,6 +472,23 @@ function uploadLevel(e: Event) {
           >
             Test Level
           </button>
+        </div>
+
+        <div
+          v-if="statusMessage"
+          :style="{
+            marginBottom: '12px',
+            padding: '8px 10px',
+            borderRadius: '3px',
+            border: '1px solid',
+            fontSize: '11px',
+            lineHeight: '1.4',
+            color: statusTone === 'success' ? 'var(--color-success)' : 'var(--color-danger)',
+            borderColor: statusTone === 'success' ? 'var(--color-success)' : 'var(--color-danger)',
+            background: statusTone === 'success' ? 'rgba(0, 160, 110, 0.1)' : 'rgba(220, 70, 70, 0.12)'
+          }"
+        >
+          {{ statusMessage }}
         </div>
 
         <div v-if="mode === 'edit'" style="display: flex; flex-direction: column; gap: 10px;">
@@ -788,27 +852,27 @@ function uploadLevel(e: Event) {
 input[type='number'],
 input[type='text'],
 select {
-  background: #1a1a1a;
-  color: #eee;
-  border: 1px solid #333;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
   border-radius: 2px;
-  font-family: monospace;
+  font-family: var(--font-mono);
 }
 
 input[type='number']:focus,
 input[type='text']:focus,
 select:focus {
-  outline: 1px solid #0ef;
-  border-color: #0ef;
+  outline: 1px solid var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .lab-button {
-  background: #1a1a1a;
-  color: #eee;
-  border: 1px solid #333;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
   padding: 6px 10px;
   cursor: pointer;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   transition: 0.2s;
 }
 

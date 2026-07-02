@@ -51,11 +51,11 @@ defineEmits<{
   display: block;
   color: var(--color-muted);
   text-decoration: none;
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 14px;
   margin-bottom: 12px;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color var(--duration-fast);
 }
 
 .indexLink:hover {

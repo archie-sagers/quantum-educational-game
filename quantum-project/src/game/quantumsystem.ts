@@ -7,7 +7,7 @@ export class QuantumSystem {
   constructor(numQubits: number) {
     if (numQubits < 1 || numQubits > 6) {
       // Limiting to 6 qubits to keep state vector size manageable
-      throw new Error('Number of qubits must be between 1 and 6');
+      throw new RangeError(`QuantumSystem supports 1 to 6 qubits; received ${numQubits}`);
     }
 
     this.numQubits = numQubits;

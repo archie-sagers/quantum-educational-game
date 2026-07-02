@@ -3,25 +3,6 @@
   Shared layout and theme for all intro level components.
 */
 
-:root {
-  --color-primary: #0ef;
-  --color-primary-light: #1af;
-  --color-secondary: #b47cff;
-  --color-secondary-light: #d4aaff;
-  --color-danger: #f84;
-  --color-danger-light: #ff6644;
-  --color-success: #0f0;
-  --color-text: #eee;
-  --color-text-dim: #999;
-  --color-text-darker: #666;
-  --color-bg: #000;
-  --color-bg-light: #0a0a0a;
-  --color-border: #333;
-  --border-radius: 3px;
-  --transition: 0.2s;
-  --font-mono: monospace;
-}
-
 .container {
   display: flex;
   width: 100%;

@@ -70,7 +70,7 @@ watch(() => props.isOpen, (newVal) => {
 .manualOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.92);
+  background: var(--color-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -80,8 +80,8 @@ watch(() => props.isOpen, (newVal) => {
 .manualModal {
   background: var(--color-bg-light);
   border: 2px solid var(--color-primary);
-  border-radius: 4px;
-  padding: 32px;
+  border-radius: var(--radius-md);
+  padding: var(--space-xl);
   max-width: 1040px; 
   max-height: 85vh;
   overflow-y: auto;
@@ -89,19 +89,19 @@ watch(() => props.isOpen, (newVal) => {
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 32px;
+  gap: var(--space-xl);
 }
 
 .manualCloseBtn {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: var(--space-lg);
+  right: var(--space-lg);
   background: transparent;
   border: none;
   color: var(--color-primary);
   font-size: 24px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: var(--duration-fast);
   width: 32px;
   height: 32px;
   display: flex;

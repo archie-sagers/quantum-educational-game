@@ -272,7 +272,7 @@ defineEmits<{
   color: var(--color-text);
   font-size: 14px;
   line-height: 1.8;
-  font-family: monospace;
+  font-family: var(--font-mono);
 }
 
 .manualH1 {
