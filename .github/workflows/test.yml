@@ -2,11 +2,7 @@ name: Test
 
 on:
   push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
 
 jobs:
   test:
@@ -25,9 +21,12 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
+          cache-dependency-path: './quantum-project/package-lock.json'
 
       - name: Install dependencies
+        working-directory: ./quantum-project
         run: npm ci
 
       - name: Run type-check and tests
+        working-directory: ./quantum-project
         run: npm run test:ci
