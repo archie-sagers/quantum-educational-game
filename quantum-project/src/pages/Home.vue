@@ -375,6 +375,27 @@ function advancePopup() {
   }
 }
 
+// Manual Modal Control
+const targetManualSection = ref<string | null>(null)
+
+function openManualToSection(sectionId: string) {
+  targetManualSection.value = sectionId
+  showManual.value = true
+}
+
+const activeManualLink = computed(() => {
+  if (currentStage.value !== 'main') return null;
+  return LEVELS[currentLevelIndex.value]?.manualLink;
+})
+
+function handleManualClick() {
+  if (activeManualLink.value) {
+    openManualToSection(activeManualLink.value.sectionId)
+  } else {
+    targetManualSection.value = null
+    showManual.value = true
+  }
+}
 
 // Mirror Controls
 // ------------------
@@ -494,11 +515,12 @@ onMounted(() => {
       </button>
       
       <button 
-        @click="showManual = true" 
+        @click="handleManualClick" 
         :disabled="automatedRunning"
         :class="styles.manualBtn"
+        :style="activeManualLink"
       >
-        Manual
+        {{ activeManualLink ? activeManualLink.label : 'Manual' }}
       </button>
       
       <div :class="styles.goalBox">
@@ -836,6 +858,11 @@ onMounted(() => {
     </div>
 
     <!-- Manual Modal Component -->
-    <ManualModal :isOpen="showManual" @close="showManual = false" @selectLevel="selectLevel" />
+    <ManualModal 
+      :isOpen="showManual" 
+      :targetSection="targetManualSection"
+      @close="showManual = false; targetManualSection = null"
+      @selectLevel="selectLevel" 
+    />
   </div>
 </template>

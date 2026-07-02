@@ -45,6 +45,7 @@ export const LEVELS = [
     hint: 'Select the X-gate from the laser menu and measure the ion',
     showResetButton: false,
     preInitialized: true,
+    manualLink: { label: 'Learn more about the X-Gate', sectionId: 'gate-x' },
     popups: [
       { title: 'Ion Initialised', text: 'The ion has been initialised to the ground state |0⟩ for you.', trigger: 'onLoad' },
       { title: 'The X-Gate', text: 'Click on the laser source to open the laser gates menu.', trigger: 'onLoad' },
@@ -79,6 +80,7 @@ export const LEVELS = [
     prePlacedGates: [['H']],
     lockedGateIndices: [0],
     gateInventory: { 'H': 12 },
+    manualLink: { label: 'Learn more about the Hadamard Gate', sectionId: 'gate-h' },
     popups: [
       { title: 'Superposition', text: 'The ion is already in a superposition |+⟩. We want to measure |0⟩. Can you apply another Hadamard gate to collapse the superposition back to |0⟩?', trigger: 'onLoad' }
     ]
@@ -95,6 +97,7 @@ export const LEVELS = [
     showResetButton: true,
     preInitialized: true,
     automateMeasurement: true,
+    manualLink: { label: 'Learn more about superposition', sectionId: 'qm-superposition' },
     popups: [
       { title: 'Hadamard Gate', text: 'Now we want the ion in a superposition. Use the Hadamard gate to put the ion into |+⟩.', trigger: 'onLoad' },
       { title: 'Automated Measurement', text: 'We will now automatically reset and measure the ion 10 times to show the effect of superposition (roughly 50/50 split between |0⟩ and |1⟩).', trigger: 'onAutomatedStart' },
@@ -113,6 +116,7 @@ export const LEVELS = [
       showResetButton: true,
       preInitialized: true,
       automateMeasurement: true,
+      manualLink: { label: 'Learn more about phase', sectionId: 'qm-phase' },
       popups: [
         { title: 'Negative Superposition', text: 'Create a negative superposition (|-⟩)', trigger: 'onLoad' },
         { title: 'Automated Measurement', text: 'The ion will be automatically reset and measured 10 times to show the superposition. You will see that phase is not visible in measurement statistics.', trigger: 'onAutomatedStart' },
@@ -162,10 +166,11 @@ export const LEVELS = [
       availableGates: ['X', 'CNOT'],
       goal: '|1⟩ |1⟩',
       winCondition: 'all-1',
-      hint: 'Apply X-gate to Ion A, then route CNOT through both ions to flip Ion B',
+      hint: 'Apply X-gate to Ion A, then route C-NOT through both ions to flip Ion B',
       showResetButton: true,
       preInitialized: true,
       gateInventory: { 'X': 1, 'CNOT': 1 },
+      manualLink: { label: 'Learn more about the C-NOT Gate', sectionId: 'gate-cnot' },
       popups: [
         { title: 'Objective', text: 'Read a state of |1⟩ from the 2nd ion using the new CNOT gate.', trigger: 'onLoad' },
         { title: 'Strategy', text: 'You can only reach Ion B with a CNOT laser gate (shown in green). An orange wall prevents direct access.', trigger: 'onLoad' },
@@ -188,6 +193,7 @@ export const LEVELS = [
       prePlacedGates: [['H']],
       requiredGateCount: 2,
       automateMeasurement: true,
+      manualLink: { label: 'Learn more about entanglement', sectionId: 'qm-entanglement' },
       popups: [
         { title: 'Spooky Action at a Distance', text: 'Here we will introduce you to the concept of entanglement, where one ion\'s state determines the other.', trigger: 'onLoad' },
         { title: 'The Bell State', text: 'Ion A is in a superposition. Drag the CNOT gate onto the laser to entangle the ions so that measuring one guarantees the result of the other.', trigger: 'onLaserGatesOpen' },
@@ -230,6 +236,7 @@ export const LEVELS = [
       lockedGateIndices: [],
       requiredGateCount: 3,
       automateMeasurement: true,
+      manualLink: { label: 'Learn more about Anti-Correlation', sectionId: 'qm-anticorrelation' },
       popups: [
         { title: 'Anti-Correlation', text: 'Entangled states can be modified locally. See what happens when you apply an X-gate to one half of an entangled pair.', trigger: 'onLoad' },
         { title: 'Measurement Demo', text: 'The results are perfectly opposite (strictly 0,1 or 1,0). Applying the X-gate inverted their relationship while preserving the entanglement.', trigger: 'onAutomatedStart' }
@@ -253,6 +260,7 @@ export const LEVELS = [
       gateInventory: { 'H': 2, 'CNOT': 2 },
       requiredGateCount: 4,
       automateMeasurement: false,
+      manualLink: { label: 'Learn more about Uncomputing', sectionId: 'qm-uncomputing' },
       popups: [
         { title: 'Uncomputing', text: 'Quantum operations are reversible. If you perform an operation, you can undo it by applying the same operations in reverse order.', trigger: 'onLoad' },
         { title: 'The Challenge', text: 'Can you reverse the operation to return the system to |0⟩ |0⟩?', trigger: 'onLaserGatesOpen' }
@@ -296,6 +304,7 @@ export const LEVELS = [
       lockedGateIndices: [],
       requiredGateCount: [2, 1],
       automateMeasurement: true,
+      manualLink: { label: 'Learn more about GHZ States', sectionId: 'qm-ghz' },
       popups: [
         { title: '3 Qubit Levels: The GHZ State', text: 'You now have three ions on the board. Can you entangle all of them to always collapse to the exact same correlated outcomes: either |000⟩ or |111⟩?', trigger: 'onLoad' },
         { title: 'Measurement Demo', text: 'Look at the history log! Notice how all three ions perfectly collapse to match each other every single iteration. This is a Greenberger-Horne-Zeilinger (GHZ) state.', trigger: 'onAutomatedStart' }
@@ -398,6 +407,7 @@ export const LEVELS = [
       lockedGateIndices: [],
       requiredGateCount: [2, 2],
       automateMeasurement: true,
+      manualLink: { label: 'Learn more about Bell Pairs', sectionId: 'qm-bell' },
       popups: [
         { title: 'Bell Pairs', text: 'Entanglement only exists between the specific qubits you entangle. Can you create two separately entangled pairs?', trigger: 'onLoad' },
         { title: 'Measurement Demo', text: 'Look at the results: A perfectly matches B, and C perfectly matches D. However, the two pairs operate completely independently of each other', trigger: 'onAutomatedStart' }

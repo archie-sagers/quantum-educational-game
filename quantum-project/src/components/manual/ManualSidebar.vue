@@ -15,9 +15,12 @@ defineEmits<{
     <a class="indexLink indexLinkSub" @click="$emit('scrollToSection', 'gate-cnot')">C-NOT Gate</a>
     <a class="indexLink" @click="$emit('scrollToSection', 'quantum-mechanics')">Quantum Mechanics</a>
     <a class="indexLink indexLinkSub" @click="$emit('scrollToSection', 'qm-superposition')">Superposition</a>
+    <a class="indexLink indexLinkSub" @click="$emit('scrollToSection', 'qm-phase')">Phase</a>
     <a class="indexLink indexLinkSub" @click="$emit('scrollToSection', 'qm-entanglement')">Entanglement</a>
     <a class="indexLink indexLinkSub" @click="$emit('scrollToSection', 'qm-bell')">Bell States</a>
     <a class="indexLink indexLinkSub" @click="$emit('scrollToSection', 'qm-ghz')">GHZ States</a>
+    <a class="indexLink indexLinkSub" @click="$emit('scrollToSection', 'qm-uncomputing')">Uncomputing</a>
+    <a class="indexLink indexLinkSub" @click="$emit('scrollToSection', 'qm-anticorrelation')">Anti-correlation</a>
     <a class="indexLink" @click="$emit('scrollToSection', 'bloch-sphere')">The Bloch Sphere</a>
     <a class="indexLink" @click="$emit('scrollToSection', 'tips')">Tips for Success</a>
     <a class="indexLink" @click="$emit('scrollToSection', 'legend')">State Legend</a>
