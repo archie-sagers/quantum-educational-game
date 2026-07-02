@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import type { Photon } from '@/game/types'
 import './intro-levels.css'
 import styles from '@/pages/Home.module.css'
 
@@ -25,6 +26,8 @@ function makeDial(zoneWidth: number, wobbleSpeed: number, wobbleAmp: number, fil
   })
 }
 
+export type Dial = ReturnType<typeof makeDial>
+
 const dopplerDial = makeDial(20, 1500, 30, 8000)
 const sidebandDial = makeDial(14, 1100, 24, 8000) // narrower zone + faster wobble, slightly harder
 
@@ -33,7 +36,6 @@ const sidebandVisible = computed(() => stage.value !== 'doppler')
 const ionShake = reactive({ x: 0, y: 0 })
 const laserLocked = ref(false)
 
-interface Photon { id: number; x: number; y: number; vx: number; vy: number; opacity: number }
 const photons = ref<Photon[]>([])
 let nextPhotonId = 0
 
@@ -47,7 +49,7 @@ const vibration = computed(() => {
   return 0
 })
 
-function updateDial(dial: any, dt: number, time: number, onDone: () => void) {
+function updateDial(dial: Dial, dt: number, time: number, onDone: () => void) {
   dial.targetCenter = 50 + Math.sin(time / dial.wobbleSpeed) * dial.wobbleAmp + Math.cos(time / 380) * 4
   const min = Math.max(0, dial.targetCenter - dial.zoneWidth / 2)
   const max = Math.min(100, dial.targetCenter + dial.zoneWidth / 2)

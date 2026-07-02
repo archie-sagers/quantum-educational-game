@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { measureAll, getBlochAngle, getBlochLabel, checkWinCondition, calculateQuantumState, WELCOME_POPUP, MAIN_WELCOME_POPUP,  Level, type IonQuantumState } from '@/game/quantumgame'
+import { measureAll, getBlochAngle, getBlochLabel, checkWinCondition, calculateQuantumState, WELCOME_POPUP, MAIN_WELCOME_POPUP,  Level} from '@/game/quantumgame'
+import { type IonQuantumState } from '@/game/types'
 import { LEVELS } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
 import GameBoard from '@/components/GameBoard.vue'

@@ -3,7 +3,8 @@ import { reactive, ref, computed, watch } from 'vue'
 defineOptions({ name: 'LabPage' })
 import styles from './Home.module.css'
 import GameBoard from '@/components/GameBoard.vue'
-import { Level, measureAll, getBlochAngle, checkWinCondition, getBlochLabel, calculateQuantumState, type IonQuantumState, type WallType } from '@/game/quantumgame'
+import { Level, measureAll, getBlochAngle, checkWinCondition, getBlochLabel, calculateQuantumState } from '@/game/quantumgame'
+import { type IonQuantumState, type WallType } from '@/game/types'
 
 // Level config interface
 interface LevelConfigLocal {
