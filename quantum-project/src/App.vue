@@ -22,10 +22,10 @@ body, html, #app {
 <style scoped>
 .navbar {
   position: absolute;
-  top: 20px;
-  left: 20px;
+  top: var(--space-lg);
+  left: var(--space-lg);
   display: flex;
-  gap: 12px;
+  gap: var(--space-md);
 }
 
 .navLink {
@@ -35,9 +35,9 @@ body, html, #app {
   border: 1px solid var(--color-primary);
   padding: 6px 14px;
   font-size: 11px;
-  font-family: monospace;
-  border-radius: 3px;
-  transition: 0.2s;
+  font-family: var(--font-mono);
+  border-radius: var(--radius-sm);
+  transition: var(--duration-fast);
   text-decoration: none;
   display: inline-block;
 }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { Level, CELL } from '@/game/quantumgame'
-import { COLORS, TIMING } from '@/constants'
+import { BOARD_STYLE, COLORS, TIMING } from '@/constants'
 
 const TRAVEL_MS = TIMING.PHOTON_TRAVEL_MS
 const FPS = TIMING.ANIMATION_FPS
@@ -110,7 +110,7 @@ function draw() {
       const colourKey = s.colours[i] || 'cyan'
       ctx.strokeStyle = colourMap[colourKey] || colours.cyan
       ctx.shadowColor = String(ctx.strokeStyle)
-      ctx.shadowBlur = 8
+      ctx.shadowBlur = BOARD_STYLE.BEAM_GLOW_BLUR
       ctx.beginPath()
       ctx.moveTo(x1, y1)
       ctx.lineTo(x2, y2)
@@ -156,9 +156,9 @@ function draw() {
       const colourKey = seg.colours[i] || 'cyan'
       ctx.fillStyle = colourMap[colourKey] || colours.cyan
       ctx.shadowColor = String(ctx.fillStyle)
-      ctx.shadowBlur = 10
+      ctx.shadowBlur = BOARD_STYLE.PHOTON_GLOW_BLUR
       ctx.beginPath()
-      ctx.arc(px, py, 4, 0, Math.PI * 2)
+      ctx.arc(px, py, BOARD_STYLE.PHOTON_RADIUS, 0, Math.PI * 2)
       ctx.fill()
     }
     ctx.shadowBlur = 0
@@ -179,9 +179,14 @@ function draw() {
     else if (myGates.includes('H')) myColour = colours.purple
 
     ctx.fillStyle = myColour
-    ctx.fillRect(sx + 4, sy + 4, CELL - 8, CELL - 8)
+    ctx.fillRect(
+      sx + BOARD_STYLE.LASER_INSET,
+      sy + BOARD_STYLE.LASER_INSET,
+      CELL - BOARD_STYLE.LASER_INSET * 2,
+      CELL - BOARD_STYLE.LASER_INSET * 2,
+    )
     ctx.fillStyle = colours.black
-    ctx.font = '9px monospace'
+    ctx.font = `${BOARD_STYLE.LABEL_FONT_PX}px monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText('LASER', sx + CELL / 2, sy + CELL / 2)
@@ -198,12 +203,13 @@ function draw() {
     else if (w.type === 'orange') strokeCol = colours.orange
     else if (w.type === 'purple') strokeCol = colours.purple
     else if (w.type === 'green') strokeCol = colours.green
+    const wallInset = BOARD_STYLE.WALL_INSET
     ctx.strokeStyle = strokeCol
     ctx.beginPath()
-    ctx.moveTo(wx + 16, wy + 16)
-    ctx.lineTo(wx + CELL - 16, wy + CELL - 16)
-    ctx.moveTo(wx + CELL - 16, wy + 16)
-    ctx.lineTo(wx + 16, wy + CELL - 16)
+    ctx.moveTo(wx + wallInset, wy + wallInset)
+    ctx.lineTo(wx + CELL - wallInset, wy + CELL - wallInset)
+    ctx.moveTo(wx + CELL - wallInset, wy + wallInset)
+    ctx.lineTo(wx + wallInset, wy + CELL - wallInset)
     ctx.stroke()
   }
 
@@ -216,13 +222,13 @@ function draw() {
     ctx.strokeStyle = colours.orange
     ctx.lineWidth = 2
     ctx.shadowColor = colours.orange
-    ctx.shadowBlur = 12
+    ctx.shadowBlur = BOARD_STYLE.ION_GLOW_BLUR
     ctx.beginPath()
-    ctx.arc(ix, iy, 20, 0, Math.PI * 2)
+    ctx.arc(ix, iy, BOARD_STYLE.ION_RADIUS, 0, Math.PI * 2)
     ctx.stroke()
     ctx.shadowBlur = 0
     ctx.fillStyle = colours.orange
-    ctx.font = 'bold 9px monospace'
+    ctx.font = `bold ${BOARD_STYLE.LABEL_FONT_PX}px monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText('ION ' + ionLabels[ionIdx], ix, iy)

@@ -789,27 +789,27 @@ function uploadLevel(e: Event) {
 input[type='number'],
 input[type='text'],
 select {
-  background: #1a1a1a;
-  color: #eee;
-  border: 1px solid #333;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
   border-radius: 2px;
-  font-family: monospace;
+  font-family: var(--font-mono);
 }
 
 input[type='number']:focus,
 input[type='text']:focus,
 select:focus {
-  outline: 1px solid #0ef;
-  border-color: #0ef;
+  outline: 1px solid var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .lab-button {
-  background: #1a1a1a;
-  color: #eee;
-  border: 1px solid #333;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
   padding: 6px 10px;
   cursor: pointer;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   transition: 0.2s;
 }
 

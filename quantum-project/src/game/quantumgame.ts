@@ -1,7 +1,8 @@
 import { QuantumSystem } from './quantumsystem';
 import type { QuantumState, WallType, IonQuantumState, LevelConfig, TraceSegment } from './types';
+import { GRID } from '@/constants';
 
-export const CELL = 56;
+export const CELL = GRID.CELL_SIZE;
 
 let lastQuantumSystem: QuantumSystem | null = null;
 
