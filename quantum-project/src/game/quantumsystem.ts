@@ -21,7 +21,6 @@ export class QuantumSystem {
   // -----------
   // Apply X gate to a specific qubit
   // Bitwise swap for X-gate to avoid matrix multiplication overhead
-
   applyX(targetQubit: number): void {
     // Validate target qubit index (throws error if out of range)
     this.validateQubitIndex(targetQubit);
