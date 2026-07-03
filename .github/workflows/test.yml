@@ -25,7 +25,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./quantum-project
-        run: npm ci
+        run: npm install
 
       - name: Run type-check and tests
         working-directory: ./quantum-project
