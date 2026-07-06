@@ -39,7 +39,7 @@ defineEmits<{
 
 .indexTitle {
   color: var(--color-primary);
-  font-size: 18px;
+  font-size: 26px;
   font-weight: bold;
   letter-spacing: 0.1em;
   margin-bottom: 20px;
@@ -52,7 +52,7 @@ defineEmits<{
   color: var(--color-muted);
   text-decoration: none;
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 20px;
   margin-bottom: 12px;
   cursor: pointer;
   transition: color var(--duration-fast);
@@ -64,7 +64,7 @@ defineEmits<{
 
 .indexLinkSub {
   margin-left: 16px;
-  font-size: 12px;
+  font-size: 18px;
   color: var(--color-subtle);
 }
 

@@ -6,6 +6,7 @@ import { LEVELS } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
 import GameBoard from '@/components/GameBoard.vue'
 import styles from './Home.module.css'
+import MobileWarning from './MobileWarning.vue'
 
 // Minigame Imports
 import HeatingMinigame from '@/components/minigames/HeatingMinigame.vue'
@@ -290,6 +291,21 @@ function isGateLocked(localIndex: number) {
 const showWelcome = ref(currentStage.value === 'heating')
 const showMainWelcome = ref(currentStage.value === 'main')
 
+// Mobile
+// ----------------
+function addGateToActive(gateType: string) {
+  const available = gateInventory.value[gateType] ?? -1
+  if (available === 0) return
+  if (gateInventory.value[gateType] !== undefined) {
+    gateInventory.value[gateType]!--
+  }
+  const idx = activeSourceIndex.value
+  if (!sourceGates.value[idx]) sourceGates.value[idx] = []
+  sourceGates.value[idx].push(gateType)
+  isMeasured.value = false
+  measuredValues.value = null
+  updateStateForTracing()
+}
 // Popup Control
 // ------------------
 function closeWelcome() {
@@ -504,6 +520,7 @@ onMounted(() => {
 
 <template>
   <div :class="styles.gameContainer">
+    <MobileWarning />
     <h1 :class="styles.title">Quantum Laser Puzzle Game</h1>
 
     <div :class="styles.controlsRow">
@@ -731,6 +748,7 @@ onMounted(() => {
                   :key="`gate-${index}`"
                   draggable="true"
                   @dragstart="onGateDragStart($event, gate)"
+                  @click="addGateToActive(gate)"
                   :class="[styles.gateItem,
                     { [styles.gateItemX as string]: gate === 'X' },
                     { [styles.gateItemH as string]: gate === 'H' },
