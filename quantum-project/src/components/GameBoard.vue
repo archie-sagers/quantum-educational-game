@@ -23,6 +23,7 @@ const emits = defineEmits<{
   (e: 'mouse-move', col: number, row: number): void
 }>()
 
+
 const canvas = ref<HTMLCanvasElement | null>(null)
 let ctx: CanvasRenderingContext2D | null = null
 let animationFrameId: number | null = null
