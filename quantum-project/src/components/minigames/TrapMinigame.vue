@@ -207,7 +207,7 @@ onUnmounted(() => {
     <div v-if="showWelcome" :class="styles.welcomeOverlay">
       <div :class="styles.welcomeModal">
         <div :class="styles.welcomeTitle">Initialise Trap</div>
-        <div :class="styles.welcomeText">Balance a Yb+ ion inside the Paul trap by modulating the magnetic fields.</div>
+        <div :class="styles.welcomeText">Drag and drop a Yb+ ion into the Paul trap and modulate the magnetic field to keep it in place.</div>
         <button :class="styles.welcomeBtn" @click="showWelcome = false">Begin</button>
       </div>
     </div>

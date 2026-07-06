@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import './intro-levels.css'
+import styles from '@/pages/Home.module.css'
 
 const emits = defineEmits<{
   (e: 'complete'): void
 }>()
 
+const showWelcome = ref(true)
+const welcomeStep = ref(1)
 const temperature = ref(0)
 const targetCenter = ref(50)
 const progress = ref(0)
@@ -17,7 +20,7 @@ let rafId: number | null = null
 let lastTime = performance.now()
 let nextId = 0
 
-const ZONE_WIDTH = 20
+const ZONE_WIDTH = 30
 const FILL_DURATION = 8000
 const WOBBLE_SPEED = 1500;
 const FADE_RATE = 3000;
@@ -27,7 +30,11 @@ const targetMin = computed(() => Math.max(0, targetCenter.value - ZONE_WIDTH / 2
 const targetMax = computed(() => Math.min(100, targetCenter.value + ZONE_WIDTH / 2))
 
 function tick(time: number) {
-  if (isComplete.value) return
+  if (showWelcome.value || isComplete.value) {
+    lastTime = time
+    rafId = requestAnimationFrame(tick)
+    return
+  }
 
   const dt = time - lastTime
   lastTime = time
@@ -69,8 +76,10 @@ function tick(time: number) {
 
 function finish() {
   isComplete.value = true
-  if (rafId) cancelAnimationFrame(rafId)
-  setTimeout(() => emits('complete'), 2000)
+}
+
+function proceed() {
+  emits('complete')
 }
 
 onMounted(() => {
@@ -114,8 +123,8 @@ onUnmounted(() => {
     <div class="sidebar">
       <h3>Heating Element</h3>
       <p class="description">
-    Adjust the temperature to vaporise the ytterbium atoms. Keep it within the yellow zone to fill the progress bar.
-  </p>
+        Adjust the temperature to vaporise the ytterbium atoms. Keep it within the yellow zone to fill the progress bar.
+      </p>
 
       <div class="progress-bar-track">
         <div class="progress-bar-fill" :style="{ width: progress + '%' }" />
@@ -139,12 +148,36 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <div v-if="showWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
+      <div :class="styles.welcomeModal">
+
+        <template v-if="welcomeStep === 1">
+          <div :class="styles.welcomeTitle">Introductory Stage</div>
+          <div :class="styles.welcomeText">Welcome to the introductory stage - you will first start by heating Ytterbium in an atomic oven.</div>
+          <button :class="styles.welcomeBtn" @click="welcomeStep = 2">Next</button>
+        </template>
+
+        <template v-else>
+          <div :class="styles.welcomeTitle">Initialise Heating</div>
+          <div :class="styles.welcomeText">Start by dragging the slider on the right and holding it in the correct purple position.</div>
+          <button :class="styles.welcomeBtn" @click="showWelcome = false">Begin</button>
+        </template>
+
+      </div>
+    </div>
+
+    <div v-if="isComplete" :class="styles.popupOverlay">
+      <div :class="styles.popupModal" style="border-color: var(--color-success); box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);">
+        <div :class="styles.popupTitle" style="color: var(--color-success);">Vaporisation Complete</div>
+        <div :class="styles.popupText">The Ytterbium atoms have been successfully vaporised. We are now ready to ionize them.</div>
+        <button :class="styles.nextBtn" @click="proceed" style="align-self: flex-end;">Proceed to Ionization</button>
+      </div>
+    </div>
+
   </div>
-  
 </template>
 
 <style scoped>
-
 .viewport {
   display: flex;
   justify-content: center;

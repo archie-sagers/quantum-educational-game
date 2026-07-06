@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import './intro-levels.css'
+import styles from '@/pages/Home.module.css'
 
 const emit = defineEmits<{
   (e: 'complete'): void
 }>()
 
+const showWelcome = ref(true)
 const score = ref(0)
 const isComplete = ref(false)
 const gunAngleRad = ref(-Math.PI / 2)
-const viewportRef = ref<HTMLElement | null>(null) 
+const viewportRef = ref<HTMLElement | null>(null)
 const targetAtom = ref<{ x: number; y: number } | null>(null)
 const atoms = ref<Array<{ id: number; x: number; y: number; speed: number; isIonized: boolean }>>([])
 const pulses = ref<Array<{ id: number; x: number; y: number; vx: number; vy: number; angle: number }>>([])
@@ -20,27 +22,27 @@ let lastTime = performance.now()
 let nextId = 0
 
 const TARGET_SCORE = 15
-const ATOM_SPAWN_RATE = 0.0005 
+const ATOM_SPAWN_RATE = 0.0005
 // TODO: add difficulty scaling as score increases
-const PULSE_SPEED = 60 
-const HIT_RADIUS = 6 
+const PULSE_SPEED = 60
+const HIT_RADIUS = 6
 const GUN_LENGTH_PX = 60
 const GUN_PIVOT_OFFSET_BOTTOM_PX = 10
 
 // Gun tracking
 function updateAim(e: MouseEvent) {
   if (isComplete.value || !viewportRef.value) return
-  
+
   const rect = viewportRef.value.getBoundingClientRect()
   const gunX = rect.left + rect.width / 2
-  const gunY = rect.bottom - GUN_PIVOT_OFFSET_BOTTOM_PX 
-  
+  const gunY = rect.bottom - GUN_PIVOT_OFFSET_BOTTOM_PX
+
   const dx = e.clientX - gunX
-  const dy = e.clientY - gunY 
-  
+  const dy = e.clientY - gunY
+
   let angle = Math.atan2(dy, dx)
-  if (angle > 0) angle = angle > Math.PI / 2 ? Math.PI : 0 
-  
+  if (angle > 0) angle = angle > Math.PI / 2 ? Math.PI : 0
+
   gunAngleRad.value = angle
 }
 
@@ -48,11 +50,11 @@ function fire() {
   if (isComplete.value || !viewportRef.value) return
 
   const rect = viewportRef.value.getBoundingClientRect()
-  
+
   const pivotYPercent = 100 - (GUN_PIVOT_OFFSET_BOTTOM_PX / rect.height) * 100
   const tipXPercent = 50 + (Math.cos(gunAngleRad.value) * GUN_LENGTH_PX / rect.width) * 100
   const tipYPercent = pivotYPercent + (Math.sin(gunAngleRad.value) * GUN_LENGTH_PX / rect.height) * 100
-  
+
   pulses.value.push({
     id: nextId++,
     x: tipXPercent,
@@ -64,7 +66,11 @@ function fire() {
 }
 
 function tick(time: number) {
-  if (isComplete.value) return
+  if (showWelcome.value || isComplete.value) {
+    lastTime = time
+    rafId = requestAnimationFrame(tick)
+    return
+  }
 
   const dt = time - lastTime
   lastTime = time
@@ -90,7 +96,7 @@ function tick(time: number) {
   for (const electron of electrons.value) {
     electron.x += (electron.vx * dt) / 1000
     electron.y += (electron.vy * dt) / 1000
-    electron.opacity -= dt / 1000 
+    electron.opacity -= dt / 1000
   }
   electrons.value = electrons.value.filter(e => e.opacity > 0)
 
@@ -126,12 +132,12 @@ function tick(time: number) {
         if (score.value >= TARGET_SCORE) {
           triggerWin(atom)
         }
-        break 
+        break
       }
     }
 
     if (pulseHit || pulse.y < -10 || pulse.x < -10 || pulse.x > 110) {
-      pulses.value.splice(i, 1) 
+      pulses.value.splice(i, 1)
     }
   }
 
@@ -141,9 +147,9 @@ function tick(time: number) {
 function triggerWin(finalAtom: { x: number; y: number }) {
   isComplete.value = true
   targetAtom.value = { x: finalAtom.x, y: finalAtom.y }
-  
+
   if (rafId) cancelAnimationFrame(rafId)
-  
+
   setTimeout(() => emit('complete'), 2500)
 }
 
@@ -159,14 +165,14 @@ onUnmounted(() => {
 
 <template>
   <div class="container" @mousemove="updateAim" @click="fire">
-    
-    <div 
-      class="viewport" 
+
+    <div
+      class="viewport"
       ref="viewportRef"
       :class="{ 'zoom-in': isComplete }"
       :style="targetAtom ? { '--zoom-x': targetAtom.x + '%', '--zoom-y': targetAtom.y + '%' } : {}"
     >
-      
+
       <div
         v-for="atom in atoms"
         :key="atom.id"
@@ -181,8 +187,8 @@ onUnmounted(() => {
         v-for="pulse in pulses"
         :key="pulse.id"
         class="pulse"
-        :style="{ 
-          left: pulse.x + '%', 
+        :style="{
+          left: pulse.x + '%',
           top: pulse.y + '%',
           transform: `translate(-50%, -50%) rotate(${pulse.angle}rad)`
         }"
@@ -192,16 +198,16 @@ onUnmounted(() => {
         v-for="electron in electrons"
         :key="electron.id"
         class="electron"
-        :style="{ 
-          left: electron.x + '%', 
-          top: electron.y + '%', 
-          opacity: electron.opacity 
+        :style="{
+          left: electron.x + '%',
+          top: electron.y + '%',
+          opacity: electron.opacity
         }"
       >
         e⁻
       </div>
 
-      <div 
+      <div
         class="gun"
         :style="{ transform: `rotate(${gunAngleRad}rad)` }"
       />
@@ -210,7 +216,7 @@ onUnmounted(() => {
 
     <div class="sidebar">
       <h3>Ionization</h3>
-      
+
       <div class="score-display">
         Ytterbium atoms ionized
         <div class="score-numbers">
@@ -222,6 +228,15 @@ onUnmounted(() => {
       <div class="instructions">
         <p>Target un-ionized Yb atoms.</p>
         <p><strong>Click</strong> to fire high energy electrons.</p>
+      </div>
+    </div>
+
+    <!-- Welcome Modal -->
+    <div v-if="showWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
+      <div :class="styles.welcomeModal">
+        <div :class="styles.welcomeTitle">Ionization Stage</div>
+        <div :class="styles.welcomeText">Point and click to fire electrons at the Yb atoms and Ionize them.</div>
+        <button :class="styles.welcomeBtn" @click="showWelcome = false">Begin</button>
       </div>
     </div>
 
@@ -297,7 +312,7 @@ onUnmounted(() => {
 
 .gun {
   position: absolute;
-  bottom: 10px; 
+  bottom: 10px;
   left: 50%;
   width: 60px;
   height: 12px;
@@ -305,7 +320,7 @@ onUnmounted(() => {
   border-radius: 4px;
   transform-origin: left center;
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
-  margin-bottom: -6px; 
+  margin-bottom: -6px;
 }
 
 .score-display {

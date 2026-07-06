@@ -28,8 +28,8 @@ function makeDial(zoneWidth: number, wobbleSpeed: number, wobbleAmp: number, fil
 
 export type Dial = ReturnType<typeof makeDial>
 
-const dopplerDial = makeDial(20, 1500, 30, 8000)
-const sidebandDial = makeDial(14, 1100, 24, 8000) // narrower zone + faster wobble, slightly harder
+const dopplerDial = makeDial(30, 1500, 30, 8000)
+const sidebandDial = makeDial(20, 1100, 24, 8000) // narrower zone + faster wobble, slightly harder
 
 const sidebandVisible = computed(() => stage.value !== 'doppler')
 
@@ -132,11 +132,11 @@ onUnmounted(() => {
 <template>
   <div class="container">
     <div class="viewport grid-bg">
-      
+
       <div class="laser-emitter" :class="{ locked: laserLocked }">
         LASER
       </div>
-      
+
       <div class="beam" :class="{ locked: laserLocked }" />
 
       <div
@@ -210,7 +210,7 @@ onUnmounted(() => {
     <div v-if="showWelcome" :class="styles.welcomeOverlay">
       <div :class="styles.welcomeModal">
         <div :class="styles.welcomeTitle">Initiate Cooling</div>
-        <div :class="styles.welcomeText">We need to prepare the ion using doppler cooling.</div>
+        <div :class="styles.welcomeText">Cool the Yb+ ion using Doppler Cooling and then Sideband Cooling. Drag the slider to keep the circle inside the purple zone.</div>
         <button :class="styles.welcomeBtn" @click="showWelcome = false">Begin</button>
       </div>
     </div>
