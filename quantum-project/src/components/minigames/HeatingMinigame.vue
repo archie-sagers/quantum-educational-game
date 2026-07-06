@@ -123,7 +123,7 @@ onUnmounted(() => {
     <div class="sidebar">
       <h3>Heating Element</h3>
       <p class="description">
-        Adjust the temperature to vaporise the ytterbium atoms. Keep it within the yellow zone to fill the progress bar.
+        Adjust the temperature to vaporise the ytterbium atoms. Keep it within the purple zone to fill the progress bar.
       </p>
 
       <div class="progress-bar-track">
