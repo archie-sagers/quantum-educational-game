@@ -20,6 +20,7 @@ describe('Lab mode', () => {
         stubs: {
           GameBoard: GameBoardStub,
           ManualModal: true,
+          MobileWarning: true,
         },
       },
     });

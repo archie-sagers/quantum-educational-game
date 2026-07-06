@@ -37,13 +37,15 @@ describe('MobileWarning', () => {
     expect(wrapper.text()).not.toContain('Mobile Notice');
   });
 
-  it('shows the warning on mobile viewports dismissed', () => {
-    setViewport(true);
+it('shows the warning on mobile viewports', async () => {
+  setViewport(true);
 
-    const wrapper = mount(MobileWarning);
+  const wrapper = mount(MobileWarning);
 
-    expect(wrapper.text()).toContain('Mobile Notice');
-    expect(wrapper.text()).toContain('best experienced on desktop');
-  });
+  await nextTick();
+
+  expect(wrapper.text()).toContain('Mobile Notice');
+  expect(wrapper.text()).toContain('best experienced on desktop');
+});
 
   });
