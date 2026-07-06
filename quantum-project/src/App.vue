@@ -126,7 +126,7 @@ body, html, #app {
   color: var(--color-primary);
   border: 1px solid var(--color-primary);
   padding: 6px 14px;
-  font-size: 11px;
+  font-size: 20px;
   font-family: var(--font-mono);
   border-radius: var(--radius-sm);
   transition: var(--duration-fast);

@@ -2,7 +2,7 @@ import { nextTick } from 'vue';
 import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 
-import Lab from '../Lab.vue';
+import Lab from '@/pages/Lab.vue';
 
 const GameBoardStub = {
   template: `
@@ -20,6 +20,7 @@ describe('Lab mode', () => {
         stubs: {
           GameBoard: GameBoardStub,
           ManualModal: true,
+          MobileWarning: true,
         },
       },
     });

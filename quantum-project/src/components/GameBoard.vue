@@ -23,6 +23,7 @@ const emits = defineEmits<{
   (e: 'mouse-move', col: number, row: number): void
 }>()
 
+
 const canvas = ref<HTMLCanvasElement | null>(null)
 let ctx: CanvasRenderingContext2D | null = null
 let animationFrameId: number | null = null
@@ -32,10 +33,10 @@ let photon = { progress: 1, segCount: 0 }
 // Setup canvas and context
 function setupCanvas() {
   if (!canvas.value) return
-  
+
   const baseWidth = props.level.cols * CELL
   const baseHeight = props.level.rows * CELL
-  
+
   // Scale up canvas resolution
   const dpr = window.devicePixelRatio || 1
   const scale = dpr * 3
@@ -43,7 +44,15 @@ function setupCanvas() {
   canvas.value.height = baseHeight * scale
 
   ctx = canvas.value.getContext('2d')
+  ctx?.setTransform(1, 0, 0, 1, 0, 0)
   ctx?.scale(scale, scale)
+}
+
+// Resize window
+let resizeTimeout: number
+function handleResize() {
+  clearTimeout(resizeTimeout)
+  resizeTimeout = window.setTimeout(setupCanvas, 150)
 }
 
 
@@ -298,7 +307,10 @@ function handleCanvasClick(e: MouseEvent) {
   if (props.mode === 'play') {
     // In play mode, handle mirror placement
     if (!props.level.isFixed(col, row)) {
-      props.level.grid[row]![col]! = props.level.grid[row]![col]! === 'fwd' ? 'back' : 'fwd'
+      // Three click cycle for mirrors
+      const current = props.level.grid[row]![col]
+      const next = current === null ? 'fwd' : current === 'fwd' ? 'back' : null
+      props.level.grid[row]![col] = next
       emits('canvas-mirror-place', col, row)
     }
   }
@@ -318,8 +330,8 @@ function handleCanvasRightClick(e: MouseEvent) {
     // In play mode, right-click clears mirrors
     if (!props.level.isFixed(col, row)) {
       props.level.grid[row]![col] = null
-      
-      emits('canvas-mirror-place', col, row) 
+
+      emits('canvas-mirror-place', col, row)
       emits('canvas-right-click', col, row)
     }
   }
@@ -327,14 +339,14 @@ function handleCanvasRightClick(e: MouseEvent) {
 
 function handleCanvasMouseMove(e: MouseEvent) {
   const { col, row } = getCellFromEvent(e)
-  
+
   if (col >= 0 && row >= 0) {
     emits('mouse-move', col, row)
 
     // Dynamically change cursor to pointer
     if (canvas.value) {
       const isSource = props.level.sources.some(s => s.col === col && s.row === row)
-      
+
       // Only if in play mode
       if (props.mode === 'play' && isSource && props.level.availableGates.length > 0) {
         canvas.value.style.cursor = 'pointer'
@@ -373,6 +385,8 @@ onMounted(async () => {
   await nextTick()
   setupCanvas()
   draw()
+  window.addEventListener('resize', handleResize)
+  window.addEventListener('orientationchange', handleResize)
 })
 
 onUnmounted(() => {
@@ -380,6 +394,9 @@ onUnmounted(() => {
     cancelAnimationFrame(animationFrameId)
     animationFrameId = null
   }
+  window.removeEventListener('resize', handleResize)
+  window.removeEventListener('orientationchange', handleResize)
+  if (animationFrameId) cancelAnimationFrame(animationFrameId)
 })
 
 // Watch for level changes and reset animation frame

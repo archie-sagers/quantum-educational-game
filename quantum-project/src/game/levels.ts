@@ -13,7 +13,7 @@ export const LEVELS = [
     preInitialized: false,
     popups: [
       { title: 'Unknown State', text: 'The ion is in an unknown quantum state. It needs optical pumping to reset it to a ground state.', trigger: 'onLoad' },
-      { title: 'Your Goal', text: 'Notice the goal box above the Bloch sphere: we need to measure the ion in the ground state |0⟩.', trigger: 'onLoad' },
+      { title: 'Your Goal', text: 'Notice the goal box at the top of the screen. We need to measure the ion in the ground state |0⟩.', trigger: 'onLoad' },
       { title: 'Step 1', text: 'Click the Reset button to initialise the ion to the ground state |0⟩.', trigger: 'onLoad' },
       { title: 'Step 2', text: 'Click the Measure button to read out the state of the ion.', trigger: 'onReset' }
     ]
@@ -255,7 +255,7 @@ export const LEVELS = [
       hint: 'Apply gates in the exact reverse order to uncompute the entanglement.',
       showResetButton: true,
       preInitialized: true,
-      prePlacedGates: [['H', 'CNOT']], 
+      prePlacedGates: [['H', 'CNOT']],
       lockedGateIndices: [0, 1],
       gateInventory: { 'H': 2, 'CNOT': 2 },
       requiredGateCount: 4,
@@ -278,7 +278,7 @@ export const LEVELS = [
       hint: 'Use 2 CNOT gates alternating control and target routing.',
       showResetButton: true,
       preInitialized: true,
-      prePlacedGates: [['X']], 
+      prePlacedGates: [['X']],
       gateInventory: { 'CNOT': 3 },
       lockedGateIndices: [0],
       requiredGateCount: 3,
@@ -324,7 +324,7 @@ export const LEVELS = [
       showResetButton: true,
       preInitialized: true,
       prePlacedGates: [['X'], [],],
-      lockedGateIndices: [0], 
+      lockedGateIndices: [0],
       gateInventory: { 'CNOT': 3, 'X': 3 },
       requiredGateCount: [2],
       automateMeasurement: false,
@@ -347,9 +347,9 @@ export const LEVELS = [
       showResetButton: true,
       preInitialized: true,
       prePlacedGates: [['H', 'CNOT'], ['CNOT']],
-      lockedGateIndices: [0, 1, 2], 
+      lockedGateIndices: [0, 1, 2],
       gateInventory: { 'H': 2, 'CNOT': 4 },
-      requiredGateCount: [4, 2], 
+      requiredGateCount: [4, 2],
       automateMeasurement: false,
       popups: [
         { title: 'Uncomputing Three Ions', text: 'These three ions are entangled together in the GHZ state you created earlier. Can you use what you know about reversible operations to return the ions to the ground state |0⟩, |0⟩, |0⟩ ?', trigger: 'onLoad' },

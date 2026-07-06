@@ -241,7 +241,7 @@ defineEmits<{
       <li>Points on the equator represent <a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a> in the positive or negative state like |+⟩ and |-⟩</li>
       <li>The arrow shows the current qubit state</li>
     </ul>
-    
+
     <h2 id="tips" class="manualH2">Tips for Success</h2>
     <ol>
       <li><strong>Use the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a> Visualization:</strong> The circular diagram on the right shows the current quantum state. Track how it changes as you apply gates.</li>
@@ -252,7 +252,7 @@ defineEmits<{
     </ol>
 
     <h2 class="manualH2">What Is a <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped Ion?</a></h2>
-    <p><a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped ions</a> are one of the leading platforms for building quantum computers and their technology is currently being researched at the <a href="https://www.sussex.ac.uk/physics/iqt/" target="_blank" class="manualLink">University of Sussex</a>.</p> 
+    <p><a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped ions</a> are one of the leading platforms for building quantum computers and their technology is currently being researched at the <a href="https://www.sussex.ac.uk/physics/iqt/" target="_blank" class="manualLink">University of Sussex</a>.</p>
     <p>In this game, you're manipulating a simulated <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">trapped ion</a> using laser pulses to apply <a href="https://www.quera.com/glossary/quantum-gates" target="_blank" class="manualLink">quantum gates</a>.</p>
 
     <h2 id="legend" class="manualH2">Quantum State Legend</h2>
@@ -270,14 +270,14 @@ defineEmits<{
 <style scoped>
 .manualContent {
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 18px;
   line-height: 1.8;
   font-family: var(--font-mono);
 }
 
 .manualH1 {
   color: var(--color-primary);
-  font-size: 24px;
+  font-size: 30px;
   font-weight: bold;
   letter-spacing: 0.1em;
   margin: 0 0 24px 0;
@@ -287,7 +287,7 @@ defineEmits<{
 
 .manualH2 {
   color: var(--color-secondary);
-  font-size: 18px;
+  font-size: 24px;
   font-weight: bold;
   letter-spacing: 0.08em;
   margin: 24px 0 12px 0;
@@ -295,7 +295,7 @@ defineEmits<{
 
 .manualH3 {
   color: var(--color-primary);
-  font-size: 14px;
+  font-size: 22px;
   font-weight: bold;
   letter-spacing: 0.05em;
   margin: 16px 0 8px 0;

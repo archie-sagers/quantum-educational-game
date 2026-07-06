@@ -6,6 +6,7 @@ import { LEVELS } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
 import GameBoard from '@/components/GameBoard.vue'
 import styles from './Home.module.css'
+import MobileWarning from '@/components/MobileWarning.vue'
 
 // Minigame Imports
 import HeatingMinigame from '@/components/minigames/HeatingMinigame.vue'
@@ -61,24 +62,24 @@ let lastPopupTrigger: string | null = null
 const STAGE_ORDER = ['heating', 'ionization', 'paul-trap', 'cooling', 'main']
 
 const STAGE_CONFIG: Record<string, { name: string; goal: string; component?: object }> = {
-  'heating': { 
-    name: 'Intro 1: Heating', 
-    goal: 'Vaporise the Ytterbium', 
-    component: HeatingMinigame 
+  'heating': {
+    name: 'Intro 1: Heating',
+    goal: 'Vaporise the Ytterbium',
+    component: HeatingMinigame
   },
-  'ionization': { 
-    name: 'Intro 2: Ionization', 
-    goal: 'Ionize 15 Yb Atoms', 
-    component: IonizationMinigame 
+  'ionization': {
+    name: 'Intro 2: Ionization',
+    goal: 'Ionize 15 Yb Atoms',
+    component: IonizationMinigame
   },
-  'paul-trap': { 
-    name: 'Intro 3: Paul Trap', 
-    goal: 'Trap the Yb+ Ion', 
-    component: TrapMinigame 
+  'paul-trap': {
+    name: 'Intro 3: Paul Trap',
+    goal: 'Trap the Yb+ Ion',
+    component: TrapMinigame
   },
-  'cooling': { 
-    name: 'Intro 4: Cooling', 
-    goal: 'Cool the Yb+ Ion', 
+  'cooling': {
+    name: 'Intro 4: Cooling',
+    goal: 'Cool the Yb+ Ion',
     component: DopplerCoolingMinigame
   }
 }
@@ -100,13 +101,13 @@ function selectMinigame(stage: string) {
   currentStage.value = stage;
 }
 
-const currentStageName = computed(() => 
+const currentStageName = computed(() =>
   currentStage.value === 'main' ? `Level ${currentLevelIndex.value + 1}` : STAGE_CONFIG[currentStage.value]?.name ?? ''
 )
 
-const currentStageGoal = computed(() => 
-  currentStage.value === 'main' 
-    ? LEVELS[currentLevelIndex.value]?.goal 
+const currentStageGoal = computed(() =>
+  currentStage.value === 'main'
+    ? LEVELS[currentLevelIndex.value]?.goal
     : STAGE_CONFIG[currentStage.value]?.goal ?? ''
 )
 
@@ -129,7 +130,7 @@ watch(currentStage, (newStage) => {
 const displayedGateProgress = computed(() => {
   const activeLevel = LEVELS[currentLevelIndex.value];
   if (!activeLevel || activeLevel.requiredGateCount === null) return null;
-  
+
   if (Array.isArray(activeLevel.requiredGateCount)) {
     const requiredForThisSource = activeLevel.requiredGateCount[activeSourceIndex.value] ?? 0;
     return `(${activeGates.value.length}/${requiredForThisSource})`;
@@ -194,12 +195,12 @@ async function selectLevel(index: number) {
   ionInitialized.value = level.preInitialized;
   shownPopupIndices.value.clear();
   lastPopupTrigger = null;
-  
+
   gateInventory.value = { ...level.gateInventory };
-  
+
   await nextTick();
   initLevelGates();
-  
+
   const flatLocked = sourceGates.value.flat();
   for (const idx of level.lockedGateIndices) {
     if (idx < flatLocked.length) {
@@ -250,7 +251,7 @@ function onLaserDrop(e: DragEvent) {
       if (gateInventory.value[gateType]! > 0) {
         gateInventory.value[gateType]!--
       } else {
-        return 
+        return
       }
     }
     const idx = activeSourceIndex.value
@@ -264,18 +265,18 @@ function onLaserDrop(e: DragEvent) {
 
 function removeLaserGate(index: number) {
   const activeIdx = activeSourceIndex.value;
-  
+
   if (isGateLocked(index)) {
     return;
   }
-  
+
   const gate = sourceGates.value[activeIdx]![index]!;
   sourceGates.value[activeIdx]!.splice(index, 1);
-  
+
   if (gateInventory.value[gate] !== undefined) {
     gateInventory.value[gate]!++;
   }
-  
+
   isMeasured.value = false;
   measuredValues.value = null;
   updateStateForTracing();
@@ -290,6 +291,21 @@ function isGateLocked(localIndex: number) {
 const showWelcome = ref(currentStage.value === 'heating')
 const showMainWelcome = ref(currentStage.value === 'main')
 
+// Mobile
+// ----------------
+function addGateToActive(gateType: string) {
+  const available = gateInventory.value[gateType] ?? -1
+  if (available === 0) return
+  if (gateInventory.value[gateType] !== undefined) {
+    gateInventory.value[gateType]!--
+  }
+  const idx = activeSourceIndex.value
+  if (!sourceGates.value[idx]) sourceGates.value[idx] = []
+  sourceGates.value[idx].push(gateType)
+  isMeasured.value = false
+  measuredValues.value = null
+  updateStateForTracing()
+}
 // Popup Control
 // ------------------
 function closeWelcome() {
@@ -423,14 +439,14 @@ function handleMeasure() {
     const measResults = measureAll()
     measuredValues.value = measResults
     isMeasured.value = true
-    
+
     updateStateForTracing()
     result.value = measResults.join(',')
     history.value.push(measResults)
     if (history.value.length > 20) history.value.shift()
 
     canMeasure.value = true
-    
+
     if (level.requiredGateCount !== null) {
       if (Array.isArray(level.requiredGateCount)) {
         let isValid = true;
@@ -453,12 +469,12 @@ function handleMeasure() {
         }
       }
     }
-    
+
     const stateInfo = calculateQuantumState(level, sourceGates.value, null)
     const states = stateInfo.states ?? []
     const wc = level.winCondition
-    
-    if (checkWinCondition(wc, states)) { 
+
+    if (checkWinCondition(wc, states)) {
       showWin.value = true
 
       if (level.automateMeasurement && !automatedRunning.value) {
@@ -504,36 +520,37 @@ onMounted(() => {
 
 <template>
   <div :class="styles.gameContainer">
+    <MobileWarning />
     <h1 :class="styles.title">Quantum Laser Puzzle Game</h1>
 
     <div :class="styles.controlsRow">
-      <button 
-        @click="showLevelSelector = true" 
+      <button
+        @click="showLevelSelector = true"
         :disabled="automatedRunning"
         :class="styles.levelIndicator"
       >
         {{ currentStageName }}
       </button>
-      
-      <button 
-        @click="handleManualClick" 
+
+      <button
+        @click="handleManualClick"
         :disabled="automatedRunning"
         :class="styles.manualBtn"
         :style="activeManualLink"
       >
         {{ activeManualLink ? activeManualLink.label : 'Manual' }}
       </button>
-      
+
       <div :class="styles.goalBox">
         <div :class="styles.goalLabel">Goal</div>
         <div :class="styles.goalValue">{{ currentStageGoal }}</div>
       </div>
-      
+
       <div :class="styles.successBoxContainer">
         <div v-if="showWin && currentStage === 'main'" :class="styles.successBox">
           <div :class="styles.successText">ION SUCCESSFULLY EXCITED</div>
-          <button 
-            @click="nextLevel" 
+          <button
+            @click="nextLevel"
             :disabled="automatedRunning"
             :class="styles.nextBtn"
           >
@@ -543,31 +560,15 @@ onMounted(() => {
       </div>
     </div>
 
-    <div v-if="showWelcome" :class="styles.welcomeOverlay">
-        <div :class="styles.welcomeModal">
-          <div :class="styles.welcomeTitle">{{ WELCOME_POPUP.title }}</div>
-          <div :class="styles.welcomeText">{{ WELCOME_POPUP.text }}</div>
-          <button @click="closeWelcome()" :class="styles.welcomeBtn">Continue</button>
-        </div>
-      </div>
-
-    <div v-if="showMainWelcome" :class="styles.welcomeOverlay">
-        <div :class="styles.welcomeModal">
-          <div :class="styles.welcomeTitle">{{ MAIN_WELCOME_POPUP.title }}</div>
-          <div :class="styles.welcomeText">{{ MAIN_WELCOME_POPUP.text }}</div>
-          <button @click="showMainWelcome = false" :class="styles.welcomeBtn">Continue</button>
-        </div>
-      </div>
-      
     <div v-if="currentStage !== 'main'" style="width: 100%; display: flex; flex-direction: column; flex: 1; margin-top: 10px;">
-      <component 
-        :is="STAGE_CONFIG[currentStage]?.component" 
-        @complete="advanceStage" 
+      <component
+        :is="STAGE_CONFIG[currentStage]?.component"
+        @complete="advanceStage"
       />
     </div>
 
     <div v-else style="display: contents;">
-      
+
       <div :class="styles.controls">
         <p :class="styles.controlsText">Left-click to place/rotate mirror · Right-click to remove</p>
         <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
@@ -575,7 +576,7 @@ onMounted(() => {
 
       <p :class="styles.hint">{{ level.hint }}</p>
 
-      
+
 
     <!-- Main game area -->
     <div :class="styles.mainArea">
@@ -590,36 +591,36 @@ onMounted(() => {
           @canvas-mirror-place="updateStateForTracing"
         />
       </div>
- 
+
       <!-- Sidebar: Bloch sphere + measurement info for each ion -->
       <aside :class="styles.sidebar">
- 
+
         <div :class="styles.ionWrapper">
-          <div 
-            v-for="(ionState, idx) in ionStates" 
-            :key="idx" 
+          <div
+            v-for="(ionState, idx) in ionStates"
+            :key="idx"
             :class="[styles.ionSection, { [styles.ionSectionCompact as string]: ionStates.length >= 3 }]"
           >
             <div :class="[styles.blochPanel, { [styles.blochPanelCompact as string]: ionStates.length >= 3 }]" style="text-align: center;">
               <div :class="styles.blochTitle">
                 Ion {{ String.fromCharCode(65 + idx) }}<span v-if="ionStates.length < 3"> - Bloch Sphere</span>
               </div>
-              
-              <svg 
-                :class="[styles.blochSvg, { [styles.blochSvgCompact as string]: ionStates.length >= 3 }]" 
-                viewBox="0 0 160 160" 
-                xmlns="http://www.w3.org/2000/svg" 
+
+              <svg
+                :class="[styles.blochSvg, { [styles.blochSvgCompact as string]: ionStates.length >= 3 }]"
+                viewBox="0 0 160 160"
+                xmlns="http://www.w3.org/2000/svg"
                 :style="ionStates.length >= 3 ? 'max-width: 90px; height: auto; margin: 0 auto;' : 'max-width: 100%; height: auto; margin: 0 auto;'"
               >
                 <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>
                 <text x="80" y="156" :class="styles.blochLabel" text-anchor="middle">|0⟩</text>
                 <text x="10" y="84" :class="styles.blochLabel" text-anchor="middle">−</text>
                 <text x="150" y="84" :class="styles.blochLabel" text-anchor="middle">+</text>
-    
+
                 <circle cx="80" cy="80" r="52" :class="styles.blochCircle" />
-    
+
                 <ellipse cx="80" cy="80" rx="52" ry="14" :class="styles.blochEquator" />
-    
+
                 <g v-if="getBlochAngle(ionState.state) !== null">
                   <line
                     x1="80" y1="80"
@@ -634,21 +635,21 @@ onMounted(() => {
                     :class="styles.blochTip"
                   />
                 </g>
-    
+
                 <circle cx="80" cy="80" r="3" :class="styles.blochCenter" />
               </svg>
-    
-              <div 
+
+              <div
                 :class="{
                   [styles.blochState as string]: true,
                   [styles.blochStateSuperposition as string]: ionState.state === '|+⟩' || ionState.state === '|-⟩'
-                }" 
+                }"
                 :style="ionStates.length >= 3 ? 'max-width: 90px; white-space: normal !important; word-wrap: break-word; line-height: 1.2; margin: 0 auto;' : 'max-width: 100%; white-space: normal !important; word-wrap: break-word; line-height: 1.2; margin: 0 auto;'"
               >
                 {{ getBlochLabel(ionState.state) }}
               </div>
             </div>
-    
+
             <div v-if="ionStates.length < 3" :class="styles.infoPanel">
               <div :class="styles.infoRow">
                 <span :class="styles.infoKey">State</span>
@@ -665,9 +666,9 @@ onMounted(() => {
             </div>
           </div>
         </div>
-        
+
         <div :class="styles.sharedControls">
-          <button 
+          <button
             @click="handleMeasure"
             :disabled="!canMeasure || automatedRunning"
             :class="styles.measureBtn"
@@ -683,7 +684,7 @@ onMounted(() => {
           >
             Reset Ion
           </button>
-          
+
           <div :class="styles.infoRow">
             <span :class="styles.infoKey">Last</span>
             <span :class="[styles.infoVal, resultcolourClass]">{{ result }}</span>
@@ -693,7 +694,7 @@ onMounted(() => {
             <span :class="styles.historyBits">{{ history.map((r: number[]) => r.join('')).join(' ') }}</span>
           </div>
         </div>
- 
+
       </aside>
     </div>
     <!-- End main-area -->
@@ -702,7 +703,7 @@ onMounted(() => {
     <div v-if="showLaserGates" :class="styles.laserGatesOverlay" @click="showLaserGates = false">
       <div :class="styles.laserGatesModal" @click.stop>
         <div :class="styles.laserGatesTitle">Laser Gates</div>
-        
+
         <div :class="styles.gateContainer">
           <!-- Applied gates -->
           <div :class="styles.appliedSection">
@@ -722,7 +723,7 @@ onMounted(() => {
                   :key="`laser-gate-${index}`"
                   :class="[
                     styles.laserGate,
-                    { [styles.laserGateX as string]: gate === 'X' }, 
+                    { [styles.laserGateX as string]: gate === 'X' },
                     { [styles.laserGateH as string]: gate === 'H' },
                     { [styles.laserGateCNOT as string]: gate === 'CNOT' }
                   ]"
@@ -747,7 +748,8 @@ onMounted(() => {
                   :key="`gate-${index}`"
                   draggable="true"
                   @dragstart="onGateDragStart($event, gate)"
-                  :class="[styles.gateItem, 
+                  @click="addGateToActive(gate)"
+                  :class="[styles.gateItem,
                     { [styles.gateItemX as string]: gate === 'X' },
                     { [styles.gateItemH as string]: gate === 'H' },
                     { [styles.gateItemCNOT as string]: gate === 'CNOT' },
@@ -782,7 +784,7 @@ onMounted(() => {
     <!-- Level selector modal -->
     <div v-if="showLevelSelector" :class="styles.levelSelectorOverlay" @click="showLevelSelector = false">
       <div :class="styles.levelSelectorModal" @click.stop style="max-height: 90vh; overflow-y: auto;">
-        
+
         <div :class="styles.levelGroup">
           <div :class="styles.levelGroupTitle">Introduction</div>
           <div :class="styles.levelSelectorGrid">
@@ -812,7 +814,7 @@ onMounted(() => {
             </div>
           </div>
         </div>
-          
+
         <div :class="styles.levelGroup">
           <div :class="styles.levelGroupTitle">1 Qubit Systems</div>
           <div :class="styles.levelSelectorGrid">
@@ -859,11 +861,28 @@ onMounted(() => {
     </div>
 
     <!-- Manual Modal Component -->
-    <ManualModal 
-      :isOpen="showManual" 
+    <ManualModal
+      :isOpen="showManual"
       :targetSection="targetManualSection"
       @close="showManual = false; targetManualSection = null"
-      @selectLevel="selectLevel" 
+      @selectLevel="selectLevel"
     />
+
+    <div v-if="showWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
+        <div :class="styles.welcomeModal">
+          <div :class="styles.welcomeTitle">{{ WELCOME_POPUP.title }}</div>
+          <div :class="styles.welcomeText">{{ WELCOME_POPUP.text }}</div>
+          <button @click="closeWelcome()" :class="styles.welcomeBtn">Continue</button>
+        </div>
+      </div>
+
+    <div v-if="showMainWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
+        <div :class="styles.welcomeModal">
+          <div :class="styles.welcomeTitle">{{ MAIN_WELCOME_POPUP.title }}</div>
+          <div :class="styles.welcomeText">{{ MAIN_WELCOME_POPUP.text }}</div>
+          <button @click="showMainWelcome = false" :class="styles.welcomeBtn">Continue</button>
+        </div>
+      </div>
+
   </div>
 </template>

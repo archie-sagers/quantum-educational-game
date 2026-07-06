@@ -207,7 +207,7 @@ onUnmounted(() => {
     <div v-if="showWelcome" :class="styles.welcomeOverlay">
       <div :class="styles.welcomeModal">
         <div :class="styles.welcomeTitle">Initialise Trap</div>
-        <div :class="styles.welcomeText">Balance a Yb+ ion inside the Paul trap by modulating the magnetic fields.</div>
+        <div :class="styles.welcomeText">Drag and drop a Yb+ ion into the Paul trap and modulate the magnetic field to keep it in place.</div>
         <button :class="styles.welcomeBtn" @click="showWelcome = false">Begin</button>
       </div>
     </div>
@@ -321,7 +321,7 @@ onUnmounted(() => {
   background: var(--color-bg-light);
   border: 2px solid var(--color-secondary);
   color: var(--color-text);
-  font-size: 16px;
+  font-size: 20px;
   font-weight: bold;
   border-radius: var(--border-radius);
   cursor: pointer;
@@ -342,12 +342,5 @@ onUnmounted(() => {
   opacity: 0.5;
   cursor: not-allowed;
   border-color: var(--color-text-dim);
-}
-
-.instructions {
-  margin-top: auto;
-  color: var(--color-text-dim);
-  font-size: 14px;
-  line-height: 1.5;
 }
 </style>
