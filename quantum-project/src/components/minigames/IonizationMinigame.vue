@@ -314,8 +314,8 @@ onUnmounted(() => {
   position: absolute;
   bottom: 10px;
   left: 50%;
-  width: 60px;
-  height: 12px;
+  width: 70px;
+  height: 16px;
   background: var(--color-primary);
   border-radius: 4px;
   transform-origin: left center;
@@ -323,39 +323,4 @@ onUnmounted(() => {
   margin-bottom: -6px;
 }
 
-.score-display {
-  margin-top: 40px;
-  text-align: center;
-  color: var(--color-subtle);
-  font-size: 18px;
-}
-
-.score-numbers {
-  margin-top: 10px;
-  font-size: 36px;
-  font-weight: bold;
-  color: var(--color-border);
-}
-
-.score-numbers span {
-  color: var(--color-text);
-  transition: color 0.3s;
-}
-
-.score-numbers span.complete-text {
-  color: var(--color-secondary);
-  text-shadow: 0 0 15px rgba(162, 0, 255, 0.8);
-}
-
-.instructions {
-  margin-top: auto;
-  margin-bottom: 20px;
-  color: var(--color-muted);
-  font-size: 18px;
-  text-align: center;
-}
-
-.instructions strong {
-  color: var(--color-primary);
-}
 </style>

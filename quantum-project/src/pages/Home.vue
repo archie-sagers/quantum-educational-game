@@ -6,7 +6,7 @@ import { LEVELS } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
 import GameBoard from '@/components/GameBoard.vue'
 import styles from './Home.module.css'
-import MobileWarning from './MobileWarning.vue'
+import MobileWarning from '@/components/MobileWarning.vue'
 
 // Minigame Imports
 import HeatingMinigame from '@/components/minigames/HeatingMinigame.vue'

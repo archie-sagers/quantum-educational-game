@@ -131,7 +131,7 @@ onUnmounted(() => {
       </div>
       <div class="progress-label">{{ Math.floor(progress) }}% Vaporised</div>
 
-      <div class="dial">
+      <div class="dial dial--lg">
         <div class="target-track">
           <div
             class="target-zone"
@@ -235,82 +235,5 @@ onUnmounted(() => {
   background: rgba(255, 200, 100, 0.6);
   border-radius: 50%;
   pointer-events: none;
-}
-
-.progress-bar-track {
-  width: 100%;
-  height: 20px;
-  background: var(--color-bg-light);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  overflow: hidden;
-  margin-top: 20px;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background: var(--color-primary);
-  transition: width 0.1s linear;
-}
-
-.progress-label {
-  margin-top: 8px;
-  font-size: 18px;
-  color: var(--color-text-dim);
-}
-
-.dial {
-  position: relative;
-  height: 300px;
-  width: 60px;
-  margin-top: 50px;
-  background: var(--color-bg-light);
-  border: 2px solid var(--color-border);
-  border-radius: 30px;
-}
-
-.slider {
-  appearance: none;
-  position: absolute;
-  width: 300px;
-  height: 60px;
-  background: transparent;
-  outline: none;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-90deg);
-  margin: 0;
-  cursor: pointer;
-  z-index: 5;
-}
-
-.target-track {
-  position: absolute;
-  inset: 20px 0;
-  pointer-events: none;
-  z-index: 2;
-  overflow: hidden;
-}
-
-.target-zone {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  background: var(--color-secondary-light);
-  border-top: 2px solid var(--color-secondary);
-  border-bottom: 2px solid var(--color-secondary);
-  transform: translateY(50%);
-  transition: bottom 0.1s linear;
-}
-
-.slider::-webkit-slider-thumb {
-  appearance: none;
-  width: 40px;
-  height: 40px;
-  background: var(--color-text);
-  border: 4px solid var(--color-border);
-  border-radius: 50%;
-  cursor: grab;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
 </style>

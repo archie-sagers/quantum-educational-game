@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { reactive, ref, computed, watch, onMounted } from 'vue'
+import { reactive, ref, computed, watch } from 'vue'
 defineOptions({ name: 'LabPage' })
 import styles from './Home.module.css'
 import GameBoard from '@/components/GameBoard.vue'
 import { Level, measureAll, getBlochAngle, checkWinCondition, getBlochLabel, calculateQuantumState } from '@/game/quantumgame'
 import { type IonQuantumState, type WallType } from '@/game/types'
-import MobileWarning from './MobileWarning.vue'
+import MobileWarning from '@/components/MobileWarning.vue'
 
 // Level config interface
 interface LevelConfigLocal {

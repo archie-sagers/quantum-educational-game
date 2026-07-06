@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import styles from './Home.module.css'
+import styles from '@/pages/Home.module.css'
 
 const STORAGE_KEY = 'quantum_mobile_warning_dismissed'
 const showMobileWarning = ref(false)

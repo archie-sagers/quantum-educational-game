@@ -323,91 +323,9 @@ onUnmounted(() => {
   z-index: 4;
 }
 
-.sidebar h3 {
-  margin-bottom: 30px;
-}
-
 .dials {
   display: flex;
   gap: 24px;
   margin-top: 20px;
-}
-
-.dial-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.dial-label {
-  font-size: 18px;
-  color: var(--color-text-dim);
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.dial {
-  position: relative;
-  height: 240px;
-  width: 60px;
-  background: var(--color-bg-light);
-  border: 2px solid var(--color-border);
-  border-radius: 30px;
-}
-
-.dial-readout {
-  font-size: 16px;
-  color: var(--color-text-dim);
-}
-
-.target-track {
-  position: absolute;
-  inset: 20px 0;
-  pointer-events: none;
-  z-index: 2;
-  overflow: hidden;
-}
-
-.target-zone {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  background: var(--color-secondary-light);
-  border-top: 2px solid var(--color-secondary);
-  border-bottom: 2px solid var(--color-secondary);
-  transform: translateY(50%);
-  transition: bottom 0.1s linear;
-}
-
-.slider {
-  appearance: none;
-  position: absolute;
-  width: 240px;
-  height: 60px;
-  background: transparent;
-  outline: none;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-90deg);
-  margin: 0;
-  cursor: pointer;
-  z-index: 5;
-}
-
-.slider:disabled {
-  cursor: not-allowed;
-}
-
-.slider::-webkit-slider-thumb {
-  appearance: none;
-  width: 36px;
-  height: 36px;
-  background: var(--color-text);
-  border: 4px solid var(--color-border);
-  border-radius: 50%;
-  cursor: grab;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 </style>

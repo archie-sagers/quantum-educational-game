@@ -321,7 +321,7 @@ onUnmounted(() => {
   background: var(--color-bg-light);
   border: 2px solid var(--color-secondary);
   color: var(--color-text);
-  font-size: 16px;
+  font-size: 20px;
   font-weight: bold;
   border-radius: var(--border-radius);
   cursor: pointer;
@@ -342,12 +342,5 @@ onUnmounted(() => {
   opacity: 0.5;
   cursor: not-allowed;
   border-color: var(--color-text-dim);
-}
-
-.instructions {
-  margin-top: auto;
-  color: var(--color-text-dim);
-  font-size: 14px;
-  line-height: 1.5;
 }
 </style>
