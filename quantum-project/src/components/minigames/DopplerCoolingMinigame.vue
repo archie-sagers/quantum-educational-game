@@ -341,7 +341,7 @@ onUnmounted(() => {
 }
 
 .dial-label {
-  font-size: 12px;
+  font-size: 18px;
   color: var(--color-text-dim);
   text-align: center;
   text-transform: uppercase;
@@ -358,7 +358,7 @@ onUnmounted(() => {
 }
 
 .dial-readout {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-text-dim);
 }
 

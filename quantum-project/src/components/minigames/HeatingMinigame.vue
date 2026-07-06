@@ -255,7 +255,7 @@ onUnmounted(() => {
 
 .progress-label {
   margin-top: 8px;
-  font-size: 14px;
+  font-size: 18px;
   color: var(--color-text-dim);
 }
 

@@ -327,7 +327,7 @@ onUnmounted(() => {
   margin-top: 40px;
   text-align: center;
   color: var(--color-subtle);
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .score-numbers {
@@ -351,7 +351,7 @@ onUnmounted(() => {
   margin-top: auto;
   margin-bottom: 20px;
   color: var(--color-muted);
-  font-size: 14px;
+  font-size: 18px;
   text-align: center;
 }
 

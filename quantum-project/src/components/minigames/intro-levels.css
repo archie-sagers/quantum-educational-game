@@ -63,7 +63,7 @@
 .popup h2 {
   margin: 0;
   color: var(--color-primary);
-  font-size: 24px;
+  font-size: 26px;
   font-weight: bold;
   letter-spacing: 0.1em;
 }
@@ -75,7 +75,7 @@
 .popup p {
   margin: 0;
   color: var(--color-text);
-  font-size: 15px;
+  font-size: 18px;
   line-height: 1.6;
 }
 
@@ -85,7 +85,7 @@
   color: #000;
   border: none;
   padding: 12px 32px;
-  font-size: 14px;
+  font-size: 18px;
   font-family: var(--font-mono);
   font-weight: bold;
   border-radius: var(--border-radius);
