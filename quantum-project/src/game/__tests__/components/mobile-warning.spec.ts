@@ -2,7 +2,7 @@ import { nextTick } from 'vue';
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 
-import MobileWarning from '../MobileWarning.vue';
+import MobileWarning from '@/components/MobileWarning.vue'
 
 const STORAGE_KEY = 'quantum_mobile_warning_dismissed';
 
