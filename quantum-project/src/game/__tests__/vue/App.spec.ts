@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { mount } from '@vue/test-utils'
-import App from '../App.vue'
-import { appError, clearAppError, reportAppError } from '../stores/appError'
+import App from '../../../App.vue'
+import { appError, clearAppError, reportAppError } from '../../../stores/appError';
 
 afterEach(() => {
   clearAppError()

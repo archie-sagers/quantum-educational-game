@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 
-import DopplerCoolingMinigame from '../DopplerCoolingMinigame.vue';
-import HeatingMinigame from '../HeatingMinigame.vue';
-import IonizationMinigame from '../IonizationMinigame.vue';
-import TrapMinigame from '../TrapMinigame.vue';
+import DopplerCoolingMinigame from '../../../components/minigames/DopplerCoolingMinigame.vue';
+import HeatingMinigame from '../../../components/minigames/HeatingMinigame.vue';
+import IonizationMinigame from '../../../components/minigames/IonizationMinigame.vue';
+import TrapMinigame from '../../../components/minigames/TrapMinigame.vue';
 
 beforeEach(() => {
   vi.stubGlobal('requestAnimationFrame', vi.fn(() => 0));
@@ -27,8 +27,8 @@ describe('Intro levels', () => {
   it('Ionization minigame opens main UI after closing welcome screen', async () => {
     const wrapper = mount(IonizationMinigame);
 
-    expect(wrapper.text()).toContain('Ionization');
-    expect(wrapper.text()).toContain('Ytterbium atoms ionized');
+    expect(wrapper.text()).toContain('Ionisation');
+    expect(wrapper.text()).toContain('Ytterbium atoms ionised');
     expect(wrapper.find('input[type="range"]').exists()).toBe(false);
   });
 
