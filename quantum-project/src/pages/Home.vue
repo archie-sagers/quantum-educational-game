@@ -349,6 +349,7 @@ function startAutomatedDemo() {
       updateStateForTracing()
 
       gameBoardRef.value?.resetPhoton()
+      gameBoardRef.value?.triggerFlash();
       await new Promise((res) => setTimeout(res, TRAVEL_MS))
 
       const measResults = measureAll()
