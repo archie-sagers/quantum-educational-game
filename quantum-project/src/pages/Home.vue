@@ -45,6 +45,7 @@ const tempPopup = ref<{ title: string; text: string } | null>(null)
 const showManual = ref(false)
 const gateInventory = ref<Record<string, number>>({})
 const showCompletionPopup = ref(false)
+const draggedGateIndex = ref<number | null>(null)
 
 const currentPopup = computed(() => {
   if (tempPopup.value) return tempPopup.value
@@ -237,19 +238,46 @@ function onGateDragStart(e: DragEvent, gateType: string) {
     e.preventDefault()
     return
   }
+  draggedGateIndex.value = null
   e.dataTransfer!.effectAllowed = 'copy'
   e.dataTransfer!.setData('gateType', gateType)
 }
 
-function onLaserDragOver(e: DragEvent) {
-  e.preventDefault()
-  e.dataTransfer!.dropEffect = 'copy'
+function onPlacedGateDragStart(e: DragEvent, index: number, gateType: string) {
+  if (isGateLocked(index)) {
+    e.preventDefault()
+    return
+  }
+  draggedGateIndex.value = index
+  e.dataTransfer!.effectAllowed = 'move'
+  e.dataTransfer!.setData('gateType', gateType)
 }
 
-function onLaserDrop(e: DragEvent) {
+function handleDrop(e: DragEvent, dropIndex?: number) {
   e.preventDefault()
   const gateType = e.dataTransfer!.getData('gateType')
-  if (gateType) {
+  if (!gateType) return
+
+  const idx = activeSourceIndex.value
+  if (!sourceGates.value[idx]) sourceGates.value[idx] = []
+  const list = sourceGates.value[idx]!
+
+  // Protect locked gates
+  const lockedCount = level.prePlacedGates?.[idx]?.length || 0
+  let safeDropIndex = dropIndex !== undefined ? Math.max(dropIndex, lockedCount) : list.length
+
+  if (draggedGateIndex.value !== null) {
+    const oldIndex = draggedGateIndex.value
+    if (oldIndex === safeDropIndex) return 
+
+    const [movedGate] = list.splice(oldIndex, 1)
+    
+    if (oldIndex < safeDropIndex && dropIndex !== undefined) {
+      safeDropIndex--
+    }
+    
+    list.splice(safeDropIndex, 0, movedGate!)
+  } else {
     if (gateInventory.value[gateType] !== undefined) {
       if (gateInventory.value[gateType]! > 0) {
         gateInventory.value[gateType]!--
@@ -257,13 +285,26 @@ function onLaserDrop(e: DragEvent) {
         return
       }
     }
-    const idx = activeSourceIndex.value
-    if (!sourceGates.value[idx]) sourceGates.value[idx] = []
-    sourceGates.value[idx].push(gateType)
-    isMeasured.value = false
-    measuredValues.value = null
-    updateStateForTracing()
+    list.splice(safeDropIndex, 0, gateType)
   }
+
+  draggedGateIndex.value = null
+  isMeasured.value = false
+  measuredValues.value = null
+  updateStateForTracing()
+}
+
+function onLaserDragOver(e: DragEvent) {
+  e.preventDefault()
+  e.dataTransfer!.dropEffect = draggedGateIndex.value !== null ? 'move' : 'copy'
+}
+
+function onLaserDrop(e: DragEvent) {
+  handleDrop(e) 
+}
+
+function onPlacedGateDrop(e: DragEvent, dropIndex: number) {
+  handleDrop(e, dropIndex)
 }
 
 function removeLaserGate(index: number) {
@@ -741,8 +782,13 @@ onMounted(() => {
                     styles.laserGate,
                     { [styles.laserGateX as string]: gate === 'X' },
                     { [styles.laserGateH as string]: gate === 'H' },
-                    { [styles.laserGateCNOT as string]: gate === 'CNOT' }
+                    { [styles.laserGateCNOT as string]: gate === 'CNOT' },
+                    { [styles.draggableGate as string]: !isGateLocked(index) }
                   ]"
+                  :draggable="!isGateLocked(index)"
+                  @dragstart="onPlacedGateDragStart($event, index, gate)"
+                  @dragover.prevent
+                  @drop.stop="onPlacedGateDrop($event, index)"
                 >
                 <button v-if="!isGateLocked(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
                   <div>{{ gate === 'X' ? 'X-Gate' : gate }}</div>

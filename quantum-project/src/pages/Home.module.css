@@ -939,3 +939,11 @@
     gap: 8px;
   }
 }
+
+.draggableGate {
+  cursor: grab;
+}
+
+.draggableGate:active {
+  cursor: grabbing;
+}
