@@ -325,11 +325,14 @@ export class Level {
       if (!src) continue;
 
       const gates = sourceGates[sIdx] || [];
-      let activeColours: string[] = [];
-      if (gates.includes('X')) activeColours.push('orange');
-      if (gates.includes('H')) activeColours.push('purple');
-      if (gates.includes('CNOT')) activeColours.push('green');
-      if (activeColours.length === 0) activeColours = ['cyan'];
+      const gateToColour: Record<string, string> = {
+        'X': 'orange',
+        'H': 'purple',
+        'CNOT': 'green'
+      };
+      let activeColours = gates.length > 0 
+        ? gates.map(gate => gateToColour[gate] || 'cyan')
+        : ['cyan'];
 
       const segs: TraceSegment[] = [];
       const hitIons: number[] = [];
