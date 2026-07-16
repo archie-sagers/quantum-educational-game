@@ -31,6 +31,13 @@ let animationFrameId: number | null = null
 
 let photon = { progress: 1, segCount: 0 }
 
+// Flash effect for reset
+let flashAlpha = 0
+
+function triggerFlash() {
+  flashAlpha = 0.2 
+}
+
 // Setup canvas and context
 function setupCanvas() {
   if (!canvas.value) return
@@ -263,6 +270,12 @@ function draw() {
       ctx.stroke()
     }
   }
+  // Flash overlay for reset
+  if (flashAlpha > 0) {
+    ctx.fillStyle = `rgba(0, 150, 255, ${flashAlpha})`;
+    ctx.fillRect(0, 0, canvas.value!.width, canvas.value!.height);
+    flashAlpha -= 0.015;
+  }
 
   animationFrameId = requestAnimationFrame(draw)
 }
@@ -429,7 +442,7 @@ function resetPhoton() {
   photon = { progress: 0, segCount: props.level.trace(props.sourceGates).segs.length }
 }
 
-defineExpose({ resetPhoton })
+defineExpose({ resetPhoton, triggerFlash })
 </script>
 
 <template>

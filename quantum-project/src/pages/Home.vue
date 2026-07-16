@@ -421,6 +421,8 @@ function clearMirrors() {
   updateStateForTracing()
 }
 
+// Measurement Logic
+// ------------------
 function handleMeasure() {
   if (!canMeasure.value) return
   canMeasure.value = false
@@ -446,26 +448,21 @@ function handleMeasure() {
     if (history.value.length > 20) history.value.shift()
 
     canMeasure.value = true
+    let passedGateCountCheck = true
 
     if (level.requiredGateCount !== null) {
       if (Array.isArray(level.requiredGateCount)) {
-        let isValid = true;
         for (let i = 0; i < level.requiredGateCount.length; i++) {
           const count = sourceGates.value[i]?.length || 0;
           if (count !== level.requiredGateCount[i]) {
-            isValid = false;
+            passedGateCountCheck = false;
             break;
           }
-        }
-        if (!isValid) {
-          showWin.value = false;
-          return;
         }
       } else {
         const flatGateCount = sourceGates.value.flat().length;
         if (flatGateCount !== level.requiredGateCount) {
-          showWin.value = false;
-          return;
+          passedGateCountCheck = false;
         }
       }
     }
@@ -474,16 +471,25 @@ function handleMeasure() {
     const states = stateInfo.states ?? []
     const wc = level.winCondition
 
-    if (checkWinCondition(wc, states)) {
+    if (passedGateCountCheck && checkWinCondition(wc, states)) {
       showWin.value = true
+    }
 
-      if (level.automateMeasurement && !automatedRunning.value) {
+      if (passedGateCountCheck && level.automateMeasurement && !automatedRunning.value) {
         const anySuperposition = states.some(s => s.state === '|+⟩' || s.state === '|-⟩')
         if (anySuperposition) {
           const shown = showPopupByTrigger('onAutomatedStart')
           if (!shown) startAutomatedDemo()
         }
       }
+
+    if (!showWin.value && !automatedRunning.value) {
+      setTimeout(() => {
+        isMeasured.value = false;
+        measuredValues.value = null;
+        updateStateForTracing();
+        gameBoardRef.value?.triggerFlash();
+      }, 500); 
     }
   }, TRAVEL_MS)
 }
@@ -494,6 +500,7 @@ function handleReset() {
   measuredValues.value = null
   result.value = '—'
   updateStateForTracing()
+  gameBoardRef.value?.triggerFlash()
   showPopupByTrigger('onReset')
 }
 
