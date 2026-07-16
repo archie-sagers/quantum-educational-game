@@ -17,7 +17,7 @@ defineEmits<{
       <li><strong>Further Reading:</strong> Learn more about trapped ion systems via the <a href="https://www.sussex.ac.uk/physics/iqt/" target="_blank" class="manualLink">Sussex IQT group</a>.</li>
     </ul>
 
-    <h3 class="manualH3">2. Ionization</h3>
+    <h3 class="manualH3">2. Ionisation</h3>
     <p><strong>The Science:</strong> Neutral atoms can't be contained by electric fields so charged Ions are created. The neutral atoms are subjected to high-energy electron bombardment. This process strips an electron from Yb atom, creating a positively charged Yb+ ion. The charge allows the ion to be manipulated by electromagnetic fields.</p>
     <ul>
       <li><strong>Further Reading:</strong> <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped Ions Overview (QuEra)</a></li>
@@ -56,7 +56,7 @@ defineEmits<{
     <h3 class="manualH3">Resetting and Measuring the Ion</h3>
     <p><strong>Reset Button:</strong></p>
     <ul>
-      <li>Levels 1 and 2 require you to click the Reset button to initialize the ion to a known quantum state</li>
+      <li>Levels 1 and 2 require you to click the Reset button to initialise the ion to a known quantum state</li>
       <li>This is essential before measuring in real trapped ion systems. This measurement is done for you in later levels</li>
       <li>After resetting, the ion returns to the ground state |0⟩</li>
     </ul>
@@ -244,7 +244,7 @@ defineEmits<{
 
     <h2 id="tips" class="manualH2">Tips for Success</h2>
     <ol>
-      <li><strong>Use the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a> Visualization:</strong> The circular diagram on the right shows the current quantum state. Track how it changes as you apply gates.</li>
+      <li><strong>Use the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a> Visualisation:</strong> The circular diagram on the right shows the current quantum state. Track how it changes as you apply gates.</li>
       <li><strong>Check the Probability Display:</strong> The P(0) and P(1) values show the <a href="https://www.quera.com/glossary/measurement" target="_blank" class="manualLink">measurement</a> probabilities before you measure.</li>
       <li><strong>Review the History:</strong> The measurement history panel shows previous results, helping you verify the probability distribution.</li>
       <li><strong>Experiment:</strong> Try different mirror configurations or gate combinations to see how they affect the quantum state.</li>
@@ -261,7 +261,7 @@ defineEmits<{
       <li><strong>|1⟩</strong> - Excited state (100% probability of measuring 1)</li>
       <li><strong>|+⟩</strong> - Superposition (50% chance of 0 or 1, positive phase)</li>
       <li><strong>|-⟩</strong> - Superposition (50% chance of 0 or 1, negative phase)</li>
-      <li><strong>?</strong> - Unknown state (ion not initialized)</li>
+      <li><strong>?</strong> - Unknown state (ion not initialised)</li>
       <li><strong>—</strong> - State undefined (beam hasn't hit ion yet)</li>
     </ul>
   </div>

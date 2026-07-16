@@ -682,7 +682,7 @@ onMounted(() => {
             :disabled="automatedRunning"
             :class="styles.resetBtn"
           >
-            Reset Ion
+            Reset Ion (Optical Pumping)
           </button>
 
           <div :class="styles.infoRow">

@@ -12,7 +12,7 @@ export const LEVELS = [
     showResetButton: true,
     preInitialized: false,
     popups: [
-      { title: 'Unknown State', text: 'The ion is in an unknown quantum state. It needs optical pumping to reset it to a ground state.', trigger: 'onLoad' },
+      { title: 'Unknown State', text: 'The ion is in an unknown quantum state. It needs to be reset to a ground state. In laboratory settings, this is typically achieved through optical pumping.', trigger: 'onLoad' },
       { title: 'Your Goal', text: 'Notice the goal box at the top of the screen. We need to measure the ion in the ground state |0⟩.', trigger: 'onLoad' },
       { title: 'Step 1', text: 'Click the Reset button to initialise the ion to the ground state |0⟩.', trigger: 'onLoad' },
       { title: 'Step 2', text: 'Click the Measure button to read out the state of the ion.', trigger: 'onReset' }
@@ -30,7 +30,7 @@ export const LEVELS = [
     showResetButton: true,
     preInitialized: false,
     popups: [
-      { title: 'How to Place Mirrors', text: 'Left-click on the grid to place or rotate mirrors. Right-click to remove them. Once you route the beam to the ion, press Reset.', trigger: 'onLoad' },
+      { title: 'How to Place Mirrors', text: 'Left-click on the grid to place or rotate mirrors. Right-click to remove them. Route the beam to the ion and press Reset.', trigger: 'onLoad' },
       { title: 'Measure', text: 'Measure the ion to complete the level.', trigger: 'onLaserToIon' }
     ]
   }),
