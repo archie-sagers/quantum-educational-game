@@ -569,7 +569,7 @@ onMounted(() => {
 
     <div v-else style="display: contents;">
 
-      <div :class="styles.controls">
+      <div v-if="currentLevelIndex !== 0" :class="styles.controls">
         <p :class="styles.controlsText">Left-click to place/rotate mirror · Right-click to remove</p>
         <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
       </div>
@@ -587,6 +587,7 @@ onMounted(() => {
           mode="play"
           :level="level"
           :sourceGates="sourceGates"
+          :disableMirrors="currentLevelIndex === 0"
           @canvas-click="handleGameBoardClick"
           @canvas-mirror-place="updateStateForTracing"
         />

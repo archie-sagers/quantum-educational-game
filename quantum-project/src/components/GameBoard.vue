@@ -13,6 +13,7 @@ const props = defineProps<{
   level: Level
   sourceGates: string[][]
   fillParent?: boolean
+  disableMirrors?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -306,6 +307,7 @@ function handleCanvasClick(e: MouseEvent) {
 
   if (props.mode === 'play') {
     // In play mode, handle mirror placement
+    if (props.disableMirrors) return;
     if (!props.level.isFixed(col, row)) {
       // Three click cycle for mirrors
       const current = props.level.grid[row]![col]
