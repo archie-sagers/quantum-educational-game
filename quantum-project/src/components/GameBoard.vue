@@ -199,7 +199,8 @@ function draw() {
     ctx.font = `${BOARD_STYLE.LABEL_FONT_PX}px monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText('LASER', sx + CELL / 2, sy + CELL / 2)
+    const labelText = props.level.sources.length > 1 ? `LASER ${sIdx + 1}` : 'LASER'
+    ctx.fillText(labelText, sx + CELL / 2, sy + CELL / 2)
   }
 
   // Walls
