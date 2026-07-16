@@ -729,7 +729,7 @@ onMounted(() => {
                   ]"
                 >
                 <button v-if="!isGateLocked(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
-                  <div>{{ gate }}</div>
+                  <div>{{ gate === 'X' ? 'X-Gate' : gate }}</div>
                 </div>
               </div>
               <div v-else :class="styles.dropHint">Drag gates here</div>
@@ -756,7 +756,7 @@ onMounted(() => {
                     { [styles.gateItemDisabled as string]: (gateInventory[gate] ?? -1) === 0 }
                   ]"
                 >
-                <div>{{ gate }}</div>
+                <div>{{ gate === 'X' ? 'X-Gate' : gate }}</div>
                 <div v-if="gateInventory[gate] !== undefined" :class="styles.gateItemCount">
                   {{ gateInventory[gate] }}
                 </div>
