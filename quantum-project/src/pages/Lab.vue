@@ -25,6 +25,8 @@ interface LevelConfigLocal {
   winCondition?: string
 }
 
+const showWelcome = ref(true)
+
 const defaultConfig = (): LevelConfigLocal => ({
   name: 'Custom Level',
   cols: 10,
@@ -285,6 +287,10 @@ function handleItemDrop(col: number, row: number, itemType: string) {
     if (levelConfig.sources.some(s => s.col === col && s.row === row)) return
     levelConfig.sources.push({ col, row, dir: 'right' })
   } else if (itemType === 'ion') {
+    if (levelConfig.ions.length >= 6) {
+      setStatus('Limit reached: Maximum 6 ions allowed', 'error')
+      return
+    }
     if (levelConfig.ions.some(i => i.col === col && i.row === row)) return
     levelConfig.ions.push({ col, row })
   } else if (itemType.startsWith('wall-')) {
@@ -624,19 +630,20 @@ function uploadLevel(e: Event) {
             v-for="item in paletteItems"
             :key="item.type"
             draggable="true"
-            @dragstart="onPaletteItemDragStart($event, item)"
+            @dragstart="item.type === 'ion' && levelConfig.ions.length >= 6 ? $event.preventDefault() : onPaletteItemDragStart($event, item)"
               :style="{
               padding: '10px 8px',
               background: item.color,
               color: 'var(--color-bg)',
               border: '1px solid var(--color-border)',
               borderRadius: '3px',
-              cursor: 'grab',
+              cursor: (item.type === 'ion' && levelConfig.ions.length >= 6) ? 'not-allowed' : 'grab',
               fontSize: '11px',
               fontWeight: 'bold',
               textAlign: 'center',
               userSelect: 'none',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
+              boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
+              opacity: (item.type === 'ion' && levelConfig.ions.length >= 6) ? 0.3 : 1,
             }"
           >
             {{ item.icon }} {{ item.label }}
