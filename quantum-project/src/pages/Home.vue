@@ -44,6 +44,7 @@ const popupIndex = ref(0)
 const tempPopup = ref<{ title: string; text: string } | null>(null)
 const showManual = ref(false)
 const gateInventory = ref<Record<string, number>>({})
+const showCompletionPopup = ref(false)
 
 const currentPopup = computed(() => {
   if (tempPopup.value) return tempPopup.value
@@ -153,6 +154,8 @@ const resultcolourClass = computed(() => {
 function nextLevel() {
   if (currentLevelIndex.value < LEVELS.length - 1) {
     selectLevel(currentLevelIndex.value + 1);
+  } else {
+    showCompletionPopup.value = true;
   }
 }
 
@@ -334,6 +337,10 @@ function closePopup() {
     startAutomatedDemo()
   }
   lastPopupTrigger = null
+}
+
+function goToLab() {
+  window.location.href = '/lab'
 }
 
 function startAutomatedDemo() {
@@ -562,7 +569,7 @@ onMounted(() => {
             :disabled="automatedRunning"
             :class="styles.nextBtn"
           >
-            {{ LEVELS.length - 1 > currentLevelIndex ? 'Next Level' : 'Completed!' }}
+            {{ LEVELS.length - 1 > currentLevelIndex ? 'Next Level' : 'Finish!' }}
           </button>
         </div>
       </div>
@@ -892,6 +899,40 @@ onMounted(() => {
           <button @click="showMainWelcome = false" :class="styles.welcomeBtn">Continue</button>
         </div>
       </div>
+    
+    <div v-if="showCompletionPopup" :class="styles.welcomeOverlay" style="z-index: 9999;">
+      <div :class="styles.welcomeModal">
+        <div :class="styles.welcomeTitle">Congratulations!</div>
+        <div :class="styles.welcomeText">
+          Congratulations on completing the laser puzzle! Read the manual for more info on quantum computing and check out the lab to create and share your own puzzles.
+        </div>
+        
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+          <button 
+            @click="showCompletionPopup = false; showManual = true" 
+            :class="styles.welcomeBtn" 
+            style="flex: 1;"
+          >
+            Manual
+          </button>
+          
+          <button 
+            @click="goToLab" 
+            :class="styles.welcomeBtn" 
+            style="flex: 1; background: purple; color: white;"
+          >
+            Lab
+          </button>
+        </div>
+        
+        <button 
+          @click="showCompletionPopup = false" 
+          style="margin-top: 15px; background: none; border: none; color: gray; cursor: pointer; text-decoration: underline;"
+        >
+          Close
+        </button>
+      </div>
+    </div>
 
   </div>
 </template>

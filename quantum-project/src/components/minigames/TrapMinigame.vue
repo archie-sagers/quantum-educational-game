@@ -200,7 +200,7 @@ onUnmounted(() => {
 
       <div class="instructions">
         <p><strong>Drag and drop</strong> Yb+ ions into the trap.</p>
-        <p>Repeatedly press the button to switch the active electrodes and balance the ion.</p>
+        <p>Repeatedly press the button to balance the ion in the trap.</p>
       </div>
     </div>
 
@@ -214,7 +214,7 @@ onUnmounted(() => {
 
     <div v-if="isComplete" :class="styles.popupOverlay">
       <div :class="styles.popupModal" style="border-color: var(--color-success); box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);">
-        <div :class="styles.popupTitle" style="color: var(--color-success);">Trap Stabilized</div>
+        <div :class="styles.popupTitle" style="color: var(--color-success);">Trap Stabilised</div>
         <div :class="styles.popupText">The ion is now contained in the Paul trap using modulating magnetic fields. We need to cool it and prepare it for storing information.</div>
         <button :class="styles.nextBtn" @click="proceed" style="align-self: flex-end;">Proceed to Cooling</button>
       </div>
