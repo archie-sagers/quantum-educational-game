@@ -237,7 +237,7 @@ export const LEVELS = [
       preInitialized: true,
       gateInventory: { 'H': 1, 'X': 1, 'CNOT': 1 },
       lockedGateIndices: [],
-      requiredGateCount: 3,
+      requiredGateCount: [2,1],
       automateMeasurement: true,
       manualLink: { label: 'Learn more about Anti-Correlation', sectionId: 'qm-anticorrelation' },
       popups: [
@@ -283,7 +283,7 @@ export const LEVELS = [
       preInitialized: true,
       prePlacedGates: [['X'], ['CNOT']],
       gateInventory: { 'CNOT': 2,'X': 1 },
-      requiredGateCount: 3,
+      requiredGateCount: [2,1],
       lockedGateIndices: [0,1],
       automateMeasurement: false,
       popups: [
@@ -329,8 +329,8 @@ export const LEVELS = [
       preInitialized: true,
       prePlacedGates: [['X'], [],],
       lockedGateIndices: [0],
-      gateInventory: { 'CNOT': 3, 'X': 3 },
-      requiredGateCount: [2],
+      gateInventory: { 'CNOT': 3, 'X': 2 },
+      requiredGateCount: [2,1],
       automateMeasurement: false,
       popups: [
         { title: 'Cascading CNOTs', text: 'Read state |1⟩, |1⟩, |1⟩ from this system.', trigger: 'onLoad' },
