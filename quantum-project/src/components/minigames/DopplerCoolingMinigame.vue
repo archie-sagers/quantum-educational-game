@@ -218,7 +218,7 @@ onUnmounted(() => {
     <div v-if="finished" :class="styles.popupOverlay">
       <div :class="styles.popupModal" style="border-color: var(--color-success); box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);">
         <div :class="styles.popupTitle" style="color: var(--color-success);">Ion Stabilized</div>
-        <div :class="styles.popupText">Sideband cooling allows for longer coherence times so the ion can be manipulated to store information for longer. The ion is now ready for further manipulation to store information.</div>
+        <div :class="styles.popupText">Sideband cooling allows for the ion to remain stable for longer (a longer coherence time). The ion is now ready for further manipulation to store information.</div>
         <button :class="styles.nextBtn" @click="proceed" style="align-self: flex-end;">Continue</button>
       </div>
     </div>
