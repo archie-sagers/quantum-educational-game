@@ -305,7 +305,7 @@ export const LEVELS = [
       preInitialized: true,
       gateInventory: { 'H': 1, 'CNOT': 2 },
       prePlacedGates: [[], ['CNOT'],],
-      lockedGateIndices: [1],
+      lockedGateIndices: [0],
       requiredGateCount: [2, 1],
       automateMeasurement: true,
       manualLink: { label: 'Learn more about GHZ States', sectionId: 'qm-ghz' },

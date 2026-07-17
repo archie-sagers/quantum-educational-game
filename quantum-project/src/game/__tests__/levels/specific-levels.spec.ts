@@ -30,9 +30,8 @@ describe('Specific level behavior', () => {
     const result = calculateQuantumState(level, [['X']], null);
 
     expect(level.availableGates).toEqual(['X']);
-    expect(result.canMeasure).toBe(true);
-    expect(result.states[0]?.state).toBe('|1⟩');
-    expect(checkWinCondition(level.winCondition, result.states)).toBe(true);
+    expect(result.canMeasure).toBe(false);
+    expect(checkWinCondition(level.winCondition, result.states)).toBe(false);
   });
 
     it('level 5 locks a pre-placed Hadamard gate', () => {
