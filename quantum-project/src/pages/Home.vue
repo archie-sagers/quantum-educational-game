@@ -524,7 +524,7 @@ function handleMeasure() {
       showWin.value = true
     }
 
-    if (passedGateCountCheck && level.automateMeasurement && !automatedRunning.value) {
+    if (passedGateCountCheck && checkWinCondition(wc, states) && level.automateMeasurement && !automatedRunning.value) {
       const allIonsHit = states.every(s => s.state !== '—');
       
       let shouldRunDemo = allIonsHit && states.some(s => s.state === '|+⟩' || s.state === '|-⟩');

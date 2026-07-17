@@ -231,7 +231,7 @@ export const LEVELS = [
       walls: [],
       availableGates: ['H', 'X', 'CNOT'],
       goal: 'Entangle, then invert Ion B',
-      winCondition: 'any',
+      winCondition: 'superposition',
       hint: 'Entangle the ions first and then apply an X-gate to just Ion B (you can use Laser 2 to target just Ion B).',
       showResetButton: true,
       preInitialized: true,
