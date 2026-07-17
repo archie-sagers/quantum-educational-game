@@ -525,7 +525,9 @@ function handleMeasure() {
     }
 
     if (passedGateCountCheck && level.automateMeasurement && !automatedRunning.value) {
-      let shouldRunDemo = states.some(s => s.state === '|+⟩' || s.state === '|-⟩');
+      const allIonsHit = states.every(s => s.state !== '—');
+      
+      let shouldRunDemo = allIonsHit && states.some(s => s.state === '|+⟩' || s.state === '|-⟩');
 
       // Check for GHZ states
       if (level.winCondition === 'ghz') {
@@ -538,7 +540,7 @@ function handleMeasure() {
             break; 
           }
         }
-        shouldRunDemo = isGHZ;
+        shouldRunDemo = shouldRunDemo && isGHZ;
       }
       if (shouldRunDemo) {
         const shown = showPopupByTrigger('onAutomatedStart')
