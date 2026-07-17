@@ -255,6 +255,23 @@ export function checkWinCondition(wc: string, states: IonQuantumState[]): boolea
   if (wc === '01' || wc === '01') return states.length === 2 && states[0]?.state === '|0⟩' && states[1]?.state === '|1⟩';
   if (wc === '10') return states.length === 2 && states[0]?.state === '|1⟩' && states[1]?.state === '|0⟩';
 
+  // GHZ State - Valid for 3-6 qubits
+  if (wc === 'ghz') {
+    const firstState = states[0]?.state;
+    return states.length >= 3 &&
+          states.length <= 6 &&
+          (firstState === '|0⟩' || firstState === '|1⟩') && 
+          states.every(s => s.state === firstState);
+  }
+
+  // 3 Qubit Specific
+
+  // 4 Qubit Specific
+
+  // 5 Qubit Specific
+
+  // 6 Qubit Specific
+
   return false;
 }
 

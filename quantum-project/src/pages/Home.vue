@@ -524,13 +524,27 @@ function handleMeasure() {
       showWin.value = true
     }
 
-      if (passedGateCountCheck && level.automateMeasurement && !automatedRunning.value) {
-        const anySuperposition = states.some(s => s.state === '|+⟩' || s.state === '|-⟩')
-        if (anySuperposition) {
-          const shown = showPopupByTrigger('onAutomatedStart')
-          if (!shown) startAutomatedDemo()
+    if (passedGateCountCheck && level.automateMeasurement && !automatedRunning.value) {
+      let shouldRunDemo = states.some(s => s.state === '|+⟩' || s.state === '|-⟩');
+
+      // Check for GHZ states
+      if (level.winCondition === 'ghz') {
+        let isGHZ = true;
+        
+        for (let i = 0; i < 20; i++) {
+          const sample = measureAll();
+          if (!sample.every(val => val === sample[0])) {
+            isGHZ = false;
+            break; 
+          }
         }
+        shouldRunDemo = isGHZ;
       }
+      if (shouldRunDemo) {
+        const shown = showPopupByTrigger('onAutomatedStart')
+        if (!shown) startAutomatedDemo()
+      }
+    }
 
     if (!showWin.value && !automatedRunning.value) {
       setTimeout(() => {
