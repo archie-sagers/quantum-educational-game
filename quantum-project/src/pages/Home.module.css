@@ -91,8 +91,9 @@
   flex: 0 0 380px;
   max-width: 380px;
   max-height: 100%;
-  overflow-y: auto;
-  padding-bottom: 80px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; 
 }
 
 .blochPanel {
@@ -854,99 +855,3 @@
 }
 
 
-/* Mobile Alterations */
-
-@media screen and (max-width: 768px) {
-  .gameContainer {
-    height: 100dvh;
-    overflow-y: auto;
-    padding: 10px;
-  }
-
-  .mainArea {
-    flex-direction: column !important;
-    overflow-y: visible;
-  }
-
-  .canvasWrap {
-    flex: 1
-  }
-
-  .sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex: 1 1 30%;
-    min-width: 0;
-    max-width: 420px;
-    max-height: calc(100dvh - 140px);
-    overflow-y: auto;
-    padding-right: 8px;
-  }
-
-  .blochSvg,
-  .blochSvgCompact {
-    width: 80px;
-    height: 80px;
-  }
-
-  .controlsRow {
-    flex-direction: column;
-    align-items: stretch;
-    height: auto;
-    gap: 12px;
-  }
-
-  .title {
-    font-size: 1.5rem;
-    text-align: center;
-    margin-bottom: 10px;
-  }
-
-  .mainArea {
-    display: flex;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    justify-content: space-between;
-    align-items: flex-start;
-    width: 100%;
-    gap: 2%;
-    min-width: 0;
-    }
-
-  .ionWrapper {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: space-around;
-    gap: 15px;
-  }
-
-  .ionSection {
-    flex: 1 1 45%;
-    min-width: 130px;
-  }
-
-  .welcomeModal,
-  .popupModal,
-  .laserGatesModal,
-  .levelSelectorModal {
-    width: 90%;
-    max-width: 400px;
-    padding: 20px;
-    box-sizing: border-box;
-  }
-
-  .levelSelectorGrid {
-    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-    gap: 8px;
-  }
-}
-
-.draggableGate {
-  cursor: grab;
-}
-
-.draggableGate:active {
-  cursor: grabbing;
-}
