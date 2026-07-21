@@ -21,6 +21,19 @@
   font-size: 38px;
 }
 
+.hintContainer {
+  min-height: 27px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hintButton {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}
+
 .hint {
   color: var(--color-text-dim);
   margin: 0;

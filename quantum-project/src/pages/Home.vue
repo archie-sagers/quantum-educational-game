@@ -46,6 +46,8 @@ const showManual = ref(false)
 const gateInventory = ref<Record<string, number>>({})
 const showCompletionPopup = ref(false)
 const draggedGateIndex = ref<number | null>(null)
+const showHint = ref(false)  
+
 
 const currentPopup = computed(() => {
   if (tempPopup.value) return tempPopup.value
@@ -123,6 +125,7 @@ if (savedLevel !== null) {
 
 watch(currentLevelIndex, (newLevel) => {
   localStorage.setItem('quantum_save_level', newLevel.toString())
+  showHint.value = false
 })
 
 watch(currentStage, (newStage) => {
@@ -646,7 +649,19 @@ onMounted(() => {
         <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
       </div>
 
-      <p :class="styles.hint">{{ level.hint }}</p>
+      <div :class="styles.hintContainer">
+        <button
+          v-if="!showHint"
+          @click="showHint = true"
+          :class="[styles.clearBtn, styles.hintButton]"
+        >
+          Show Hint
+        </button>
+
+        <p v-else :class="styles.hint">
+          {{ level.hint }}
+        </p>
+      </div>
 
 
 
