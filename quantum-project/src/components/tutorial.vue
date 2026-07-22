@@ -16,12 +16,12 @@ export const TUTORIAL_STEPS = [
 import { computed, ref, watch } from 'vue'
 import {calculateQuantumState, getBlochAngle, getBlochLabel, measureAll } from '@/game/quantumgame'
 import type { IonQuantumState, QuantumState } from '@/game/types'
-import { GATE_MANUAL_COPY, type TutorialGateKey } from './manual/gateManual'
 import styles from './tutorial.module.css'
 import sharedStyles from '@/pages/Home.module.css'
 import { TUTORIAL_LEVEL } from '@/game/levels'
 
 type TutorialPhase = 'tour' | 'tutorial-sandbox'
+type TutorialGateKey = 'X' | 'H'
 
 type RectLike = {
   top: number
@@ -47,6 +47,7 @@ const emit = defineEmits<{
   skip: []
   finish: []
   advanceSandbox: []
+  openManualSection: [sectionId: string]
 }>()
 
 const sandboxGates = ref<string[][]>([[]])
@@ -54,7 +55,6 @@ const sandboxMeasured = ref<number[] | null>(null)
 const sandboxStates = ref<IonQuantumState[]>([])
 const sandboxMessage = ref('Try applying a gate to the ion to see what happens to the Bloch sphere.')
 const sandboxResult = ref('—')
-const sandboxGateInfo = ref<TutorialGateKey | null>(null)
 
 const activeSandboxState = computed(() => sandboxStates.value[0]?.state ?? '—')
 const activeSandboxLabel = computed(() => getBlochLabel(activeSandboxState.value))
@@ -129,11 +129,7 @@ function measureSandbox() {
 }
 
 function openGateInfo(gate: TutorialGateKey) {
-  sandboxGateInfo.value = gate
-}
-
-function closeGateInfo() {
-  sandboxGateInfo.value = null
+  emit('openManualSection', gate === 'X' ? 'gate-x' : 'gate-h')
 }
 
 function tutorialCardPosition(width: number, height: number, fixedHeight = false) {
@@ -195,16 +191,10 @@ const popoverStyle = computed(() => {
   return tutorialCardPosition(w, h, true)
 })
 
-const sandboxInfo = computed(() => {
-  if (!sandboxGateInfo.value) return null
-  return GATE_MANUAL_COPY[sandboxGateInfo.value]
-})
-
 watch(
   () => props.visible,
   (visible) => {
     if (visible) {
-      closeGateInfo()
       resetSandbox()
     }
   },
@@ -306,12 +296,5 @@ watch(
       </div>
     </div>
 
-    <div v-if="sandboxInfo" :class="styles.tutorialInfoOverlay" @click="closeGateInfo">
-      <div :class="styles.tutorialInfoModal" @click.stop>
-        <div :class="styles.tutorialInfoTitle">{{ sandboxInfo.title }}</div>
-        <div :class="styles.tutorialInfoText">{{ sandboxInfo.description }}</div>
-        <button :class="[styles.tutorialPrimaryBtn, styles.tutorialInfoCloseBtn]" @click="closeGateInfo">Got it</button>
-      </div>
-    </div>
   </div>
 </template>

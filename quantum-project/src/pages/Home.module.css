@@ -571,6 +571,13 @@
   flex-shrink: 0;
 }
 
+.gateChipBody {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
 .dropHint {
   position: absolute;
   top: 50%;
@@ -605,6 +612,14 @@
   justify-content: center;
   text-align: center;
   position: relative;
+}
+
+.gateItemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
 }
 
 .gateItem:hover {
@@ -645,6 +660,30 @@
 
 .removeBtn:hover {
   background: #ff6644;
+}
+
+.gateInfoBtn {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.gateInfoBtn:hover {
+  box-shadow: 0 0 8px var(--color-primary);
 }
 
 .doneBtn {
@@ -784,6 +823,7 @@
   gap: 24px;
   box-shadow: 0 0 30px rgba(0, 238, 255, 0.4);
   text-align: center;
+  font-family: var(--font-mono);
 }
 
 .welcomeTitle {
@@ -806,7 +846,7 @@
   border: none;
   padding: 12px 32px;
   font-size: 16px;
-  font-family: var(--font-mono);
+  font-family: inherit;
   font-weight: bold;
   border-radius: var(--border-radius);
   transition: var(--transition);

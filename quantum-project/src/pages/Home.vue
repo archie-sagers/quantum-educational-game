@@ -577,6 +577,19 @@ function openManualToSection(sectionId: string) {
   showManual.value = true
 }
 
+function openGateManual(gate: string) {
+  const sectionId = gate === 'X'
+    ? 'gate-x'
+    : gate === 'H'
+      ? 'gate-h'
+      : gate === 'CNOT'
+        ? 'gate-cnot'
+        : null
+  if (!sectionId) return
+
+  openManualToSection(sectionId)
+}
+
 const activeManualLink = computed(() => {
   if (currentStage.value !== 'main') return null;
   return LEVELS[currentLevelIndex.value]?.manualLink;
@@ -966,8 +979,8 @@ onUnmounted(() => {
                   @dragover.prevent
                   @drop.stop="onPlacedGateDrop($event, index)"
                 >
-                <button v-if="!isGateLocked(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
                   <div>{{ gate === 'X' ? 'X-Gate' : gate }}</div>
+                  <button v-if="!isGateLocked(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
                 </div>
               </div>
               <div v-else :class="styles.dropHint">Drag gates here</div>
@@ -994,9 +1007,14 @@ onUnmounted(() => {
                     { [styles.gateItemDisabled as string]: (gateInventory[gate] ?? -1) === 0 }
                   ]"
                 >
-                <div>{{ gate === 'X' ? 'X-Gate' : gate }}</div>
-                <div v-if="gateInventory[gate] !== undefined" :class="styles.gateItemCount">
-                  {{ gateInventory[gate] }}
+                  <button
+                    type="button"
+                    :class="styles.gateInfoBtn"
+                    @click.stop="openGateManual(gate)"
+                  >
+                    i
+                  </button>
+                  <div>{{ gate }}-Gate</div>
                 </div>
               </div>
             </div>
@@ -1153,6 +1171,7 @@ onUnmounted(() => {
       @next="nextTutorialStep"
       @skip="skipTutorial"
       @finish="finishTutorial"
+      @openManualSection="openManualToSection"
     />
 
     <div v-if="showCompletionPopup" :class="styles.welcomeOverlay" style="z-index: 9999;">
@@ -1188,6 +1207,4 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
-
-  </div>
 </template>

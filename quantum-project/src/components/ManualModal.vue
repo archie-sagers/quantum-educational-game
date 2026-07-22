@@ -23,10 +23,7 @@ function goToLevel(index: number) {
 function scrollToSection(id: string) {
   const el = document.getElementById(id)
   if (el && modalRef.value) {
-    modalRef.value.scrollTo({
-      top: el.offsetTop - 32, 
-      behavior: 'smooth'
-    })
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 
