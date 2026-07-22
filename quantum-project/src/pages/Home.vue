@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { measureAll, getBlochAngle, getBlochLabel, checkWinCondition, calculateQuantumState, WELCOME_POPUP, MAIN_WELCOME_POPUP,  Level} from '@/game/quantumgame'
 import { type IonQuantumState } from '@/game/types'
-import { LEVELS } from '@/game/levels'
+import { LEVELS, TUTORIAL_LEVEL } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
 import GameBoard from '@/components/GameBoard.vue'
+import Tutorial, { TUTORIAL_STEPS } from '@/components/tutorial.vue'
 import styles from './Home.module.css'
 import MobileWarning from '@/components/MobileWarning.vue'
 
@@ -48,13 +49,125 @@ const showCompletionPopup = ref(false)
 const draggedGateIndex = ref<number | null>(null)
 const showHint = ref(false)  
 
-
 const currentPopup = computed(() => {
   if (tempPopup.value) return tempPopup.value
   const currentLevel = LEVELS[currentLevelIndex.value]
   if (!currentLevel || !currentLevel.popups) return null
   return currentLevel.popups[popupIndex.value]
 })
+
+// Tutorial
+// ------------------
+const tutorialStep = ref(-1)
+const tutorialActive = ref(false)
+const tutorialTargetRect = ref<DOMRect | null>(null)
+const tutorialPhase = computed(() => (tutorialStep.value < TUTORIAL_STEPS.length ? 'tour' : 'tutorial-sandbox'))
+const tutorialCompleteLabel = computed(() => (tutorialStep.value >= TUTORIAL_STEPS.length ? 'Tutorial Sandbox' : 'Tutorial'))
+
+type TutorialStepKey = (typeof TUTORIAL_STEPS)[number]['key']
+const tutorialStepData = computed(() => (tutorialStep.value >= 0 ? TUTORIAL_STEPS[tutorialStep.value] ?? null : null))
+const tutorialVisible = computed(() => tutorialActive.value)
+
+const goalBoxRef = ref<HTMLElement | null>(null)
+const manualBtnRef = ref<HTMLElement | null>(null)
+const hintContainerRef = ref<HTMLElement | null>(null)
+const levelIndicatorRef = ref<HTMLElement | null>(null)
+const boardWrapRef = ref<HTMLElement | null>(null)
+const resetBtnRef = ref<HTMLElement | null>(null)
+const measureBtnRef = ref<HTMLElement | null>(null)
+const historyRef = ref<HTMLElement | null>(null)
+const blochPanelRef = ref<HTMLElement | null>(null)
+
+const tutorialTargetMap: Record<TutorialStepKey, typeof goalBoxRef> = {
+  goal: goalBoxRef,
+  manual: manualBtnRef,
+  hint: hintContainerRef,
+  level: levelIndicatorRef,
+  walls: boardWrapRef,
+  reset: resetBtnRef,
+  measure: measureBtnRef,
+  history: historyRef,
+  bloch: blochPanelRef,
+}
+
+function updateTutorialTargetRect() {
+  if (!tutorialVisible.value || !tutorialStepData.value) {
+    tutorialTargetRect.value = null
+    return
+  }
+  const target = tutorialTargetMap[tutorialStepData.value.key]?.value
+  tutorialTargetRect.value = target ? target.getBoundingClientRect() : null
+}
+
+async function startTutorial() {
+  if (currentStage.value !== 'main' || currentLevelIndex.value !== 0) {
+    await selectLevel(0)
+  }
+  showManual.value = false
+  showLaserGates.value = false
+  showLevelSelector.value = false
+  showPopup.value = false
+  isMeasured.value = false
+  measuredValues.value = null
+  level = TUTORIAL_LEVEL
+  ionInitialized.value = TUTORIAL_LEVEL.preInitialized
+  initLevelGates()
+  updateStateForTracing()
+  showTutorialWelcome.value = true
+}
+
+async function beginTutorialTour() {
+  showTutorialWelcome.value = false
+  tutorialActive.value = true
+  tutorialStep.value = 0
+  await nextTick()
+  updateTutorialTargetRect()
+}
+
+function skipTutorialWelcome() {
+  showTutorialWelcome.value = false
+  finishTutorial()
+}
+
+async function nextTutorialStep() {
+  if (tutorialStep.value < TUTORIAL_STEPS.length - 1) {
+    tutorialStep.value += 1
+    await nextTick()
+    updateTutorialTargetRect()
+    return
+  }
+
+  tutorialStep.value = TUTORIAL_STEPS.length
+  await nextTick()
+  updateTutorialTargetRect()
+}
+
+function finishTutorial() {
+  showManual.value = false
+  showLaserGates.value = false
+  showLevelSelector.value = false
+  showPopup.value = false
+  tutorialActive.value = false
+  tutorialStep.value = -1
+  localStorage.setItem('quantum_tutorial_completed', 'true')
+  level = LEVELS[0]!
+  currentStage.value = 'main'
+  selectLevel(0)
+}
+
+function skipTutorial() {
+  finishTutorial()
+}
+
+watch([tutorialStep, currentLevelIndex, showHint, showLaserGates, () => history.value.length, ionStates], () => {
+  if (tutorialVisible.value) {
+    nextTick(() => updateTutorialTargetRect())
+  }
+})
+
+function handleWindowResize() {
+  updateTutorialTargetRect()
+}
 
 let level: Level = LEVELS[currentLevelIndex.value]!
 const shownPopupIndices = ref(new Set<number>())
@@ -94,6 +207,11 @@ const currentStage = ref(
 )
 
 function advanceStage() {
+  if (currentStage.value === 'cooling') {
+    void startTutorial()
+    return
+  }
+
   const currentIndex = STAGE_ORDER.indexOf(currentStage.value)
   if (currentIndex < STAGE_ORDER.length - 1) {
     currentStage.value = STAGE_ORDER[currentIndex + 1]!
@@ -106,13 +224,19 @@ function selectMinigame(stage: string) {
 }
 
 const currentStageName = computed(() =>
-  currentStage.value === 'main' ? `Level ${currentLevelIndex.value + 1}` : STAGE_CONFIG[currentStage.value]?.name ?? ''
+  tutorialActive.value
+    ? 'Tutorial'
+    : currentStage.value === 'main'
+      ? `Level ${currentLevelIndex.value + 1}`
+      : STAGE_CONFIG[currentStage.value]?.name ?? ''
 )
 
 const currentStageGoal = computed(() =>
-  currentStage.value === 'main'
-    ? LEVELS[currentLevelIndex.value]?.goal
-    : STAGE_CONFIG[currentStage.value]?.goal ?? ''
+  tutorialActive.value
+    ? TUTORIAL_LEVEL.goal
+    : currentStage.value === 'main'
+      ? LEVELS[currentLevelIndex.value]?.goal
+      : STAGE_CONFIG[currentStage.value]?.goal ?? ''
 )
 
 
@@ -337,6 +461,7 @@ function isGateLocked(localIndex: number) {
 
 const showWelcome = ref(currentStage.value === 'heating')
 const showMainWelcome = ref(currentStage.value === 'main')
+const showTutorialWelcome = ref(false)
 
 // Mobile
 // ----------------
@@ -590,6 +715,11 @@ onMounted(() => {
   updateStateForTracing()
   popupIndex.value = 0
   showPopupByTrigger('onLoad')
+  window.addEventListener('resize', handleWindowResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleWindowResize)
 })
 </script>
 
@@ -602,21 +732,32 @@ onMounted(() => {
       <button
         @click="showLevelSelector = true"
         :disabled="automatedRunning"
-        :class="styles.levelIndicator"
+        :class="[styles.levelIndicator, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'level' }]"
+        ref="levelIndicatorRef"
       >
         {{ currentStageName }}
       </button>
 
       <button
-        @click="handleManualClick"
+        v-if="!tutorialVisible"
+        @click="startTutorial"
         :disabled="automatedRunning"
         :class="styles.manualBtn"
+      >
+        Tutorial
+      </button>
+
+      <button
+        @click="handleManualClick"
+        :disabled="automatedRunning"
+        :class="[styles.manualBtn, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'manual' }]"
+        ref="manualBtnRef"
         :style="activeManualLink"
       >
         {{ activeManualLink ? activeManualLink.label : 'Manual' }}
       </button>
 
-      <div :class="styles.goalBox">
+      <div :class="[styles.goalBox, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'goal' }]" ref="goalBoxRef">
         <div :class="styles.goalLabel">Goal</div>
         <div :class="styles.goalValue">{{ currentStageGoal }}</div>
       </div>
@@ -649,7 +790,7 @@ onMounted(() => {
         <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
       </div>
 
-      <div :class="styles.hintContainer">
+      <div :class="[styles.hintContainer, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'hint' }]" ref="hintContainerRef">
         <button
           v-if="!showHint"
           @click="showHint = true"
@@ -668,7 +809,7 @@ onMounted(() => {
     <!-- Main game area -->
     <div :class="styles.mainArea">
       <!-- Game canvas - using extracted GameBoard component -->
-      <div :class="styles.canvasWrap">
+      <div :class="[styles.canvasWrap, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'walls' }]" ref="boardWrapRef">
         <GameBoard
           ref="gameBoardRef"
           mode="play"
@@ -683,7 +824,7 @@ onMounted(() => {
       <!-- Sidebar: Bloch sphere + measurement info for each ion -->
       <aside :class="styles.sidebar">
 
-        <div :class="styles.ionWrapper">
+        <div :class="[styles.ionWrapper, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'bloch' }]" ref="blochPanelRef">
           <div
             v-for="(ionState, idx) in ionStates"
             :key="idx"
@@ -759,7 +900,8 @@ onMounted(() => {
           <button
             @click="handleMeasure"
             :disabled="!canMeasure || automatedRunning"
-            :class="styles.measureBtn"
+            :class="[styles.measureBtn, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'measure' }]"
+            ref="measureBtnRef"
           >
             Measure
           </button>
@@ -768,7 +910,8 @@ onMounted(() => {
             v-if="level.showResetButton"
             @click="handleReset"
             :disabled="automatedRunning"
-            :class="styles.resetBtn"
+            :class="[styles.resetBtn, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'reset' }]"
+            ref="resetBtnRef"
           >
             Reset Ion (Optical Pumping)
           </button>
@@ -777,9 +920,11 @@ onMounted(() => {
             <span :class="styles.infoKey">Last</span>
             <span :class="[styles.infoVal, resultcolourClass]">{{ result }}</span>
           </div>
-          <div v-if="history.length" :class="styles.history">
+          <div :class="[styles.history, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'history' }]" ref="historyRef">
             <span :class="styles.infoKey">History</span>
-            <span :class="styles.historyBits">{{ history.map((r: number[]) => r.join('')).join(' ') }}</span>
+            <span :class="styles.historyBits">
+              {{ history.length ? history.map((r: number[]) => r.join('')).join(' ') : 'No measurements yet' }}
+            </span>
           </div>
         </div>
 
@@ -969,6 +1114,25 @@ onMounted(() => {
         </div>
       </div>
 
+    <div v-if="showTutorialWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
+      <div :class="styles.welcomeModal">
+        <div :class="styles.welcomeTitle">Welcome to the Tutorial</div>
+        <div :class="styles.welcomeText">
+          Learn the basics of the game and how X and H gates work before jumping into the main puzzles. You can come back to the tutorial at any time by clicking the "Tutorial" button.
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+          <button @click="beginTutorialTour()" :class="styles.welcomeBtn">Start Tutorial</button>
+          <button
+            @click="skipTutorialWelcome()"
+            :class="styles.welcomeBtn"
+            style="background: none; border: 1px solid var(--color-primary); color: var(--color-primary);"
+          >
+            Skip to Level 1
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showMainWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
         <div :class="styles.welcomeModal">
           <div :class="styles.welcomeTitle">{{ MAIN_WELCOME_POPUP.title }}</div>
@@ -976,7 +1140,21 @@ onMounted(() => {
           <button @click="showMainWelcome = false" :class="styles.welcomeBtn">Continue</button>
         </div>
       </div>
-    
+
+    <Tutorial
+      v-if="tutorialVisible"
+      :visible="tutorialVisible"
+      :phase="tutorialPhase"
+      :stepIndex="tutorialStep >= 0 ? tutorialStep : TUTORIAL_STEPS.length - 1"
+      :stepCount="TUTORIAL_STEPS.length"
+      :title="tutorialStepData?.title ?? tutorialCompleteLabel"
+      :text="tutorialStepData?.text ?? 'Experiment with the gates in the sandbox.'"
+      :targetRect="tutorialTargetRect"
+      @next="nextTutorialStep"
+      @skip="skipTutorial"
+      @finish="finishTutorial"
+    />
+
     <div v-if="showCompletionPopup" :class="styles.welcomeOverlay" style="z-index: 9999;">
       <div :class="styles.welcomeModal">
         <div :class="styles.welcomeTitle">Congratulations!</div>

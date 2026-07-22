@@ -90,6 +90,16 @@
   overflow: hidden;
 }
 
+.tutorialHighlight {
+  position: relative;
+  z-index: 1001;
+  box-shadow: 0 0 0 2px var(--color-primary), 0 0 18px rgba(0, 238, 255, 0.42);
+  border-color: var(--color-primary) !important;
+  outline: 1px solid rgba(0, 238, 255, 0.35);
+  opacity: 1 !important;
+  filter: none !important;
+}
+
 .canvasWrap {
   flex: 1;
   min-width: 0;
@@ -248,10 +258,11 @@
   border-top: 1px solid #222;
   overflow-y: auto;
   max-height: 80px;
+  font-size: 16px;
 }
 
 .historyBits {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--color-text-darker);
   word-break: break-all;
   line-height: 1.6;
@@ -603,6 +614,18 @@
 
 .gateItem:active {
   cursor: grabbing;
+}
+
+.gateItemH {
+  border-color: var(--color-secondary) !important;
+  color: var(--color-secondary) !important;
+}
+.gateItemH:hover {
+  box-shadow: 0 0 8px var(--color-secondary) !important;
+}
+.laserGateH {
+  background-color: var(--color-secondary) !important;
+  color: #000 !important;
 }
 
 .removeBtn {

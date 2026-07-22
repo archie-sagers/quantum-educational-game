@@ -418,3 +418,28 @@ export const LEVELS = [
     })
 
 ]
+
+export const TUTORIAL_LEVEL = new Level({
+  name: 'Tutorial - Walls and Gates',
+  cols: 12,
+  rows: 8,
+  sources: [{ col: 0, row: 4, dir: 'right' }],
+  ions: [{ col: 11, row: 4 }],
+  walls: [
+    { col: 3, row: 2 },
+    { col: 3, row: 3 },
+    { col: 3, row: 5 },
+    { col: 8, row: 1 },
+    { col: 8, row: 2 },
+    { col: 8, row: 3 },
+    { col: 8, row: 5 },
+  ],
+  availableGates: ['X', 'H'],
+  goal: '|1⟩',
+  hint: 'See what elements you can use and then use the X and H gates in the sandbox.',
+  winCondition: 'all-1',
+  showResetButton: true,
+  preInitialized: true,
+  gateInventory: { X: 99, H: 99 },
+  popups: [],
+})
