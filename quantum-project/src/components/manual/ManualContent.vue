@@ -45,7 +45,9 @@ defineEmits<{
       autoplay 
       loop 
       muted 
-      playsinline 
+      playsinline
+      width="324"
+      height="266"
       class="manualGif"
     ></video>
     <p><strong>How to Place Mirrors:</strong></p>
@@ -67,7 +69,9 @@ defineEmits<{
       autoplay 
       loop 
       muted 
-      playsinline 
+      playsinline
+      width="360"
+      height="172"
       class="manualGif"
     ></video>
     <p><strong>Reset Button:</strong></p>
@@ -91,7 +95,9 @@ defineEmits<{
       autoplay 
       loop 
       muted 
-      playsinline 
+      playsinline
+      width="436"
+      height="590"
       class="manualGif"
     ></video>
     <p><strong>Opening the Gate Menu:</strong></p>
@@ -113,6 +119,49 @@ defineEmits<{
 
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 2)" class="manualLink">Level 3 - X-Gate</span></p>
 
+    <hr style="border-color: var(--color-primary); opacity: 0.3; margin: 30px 0;">
+
+    <h2 id="bloch-sphere" class="manualH2">The Bloch Sphere</h2>
+    <video 
+      src="/videos/bloch-demo.mp4" 
+      autoplay 
+      loop 
+      muted 
+      playsinline
+      width="260"
+      height="378"
+      class="manualGif"
+    ></video>
+    <p>The circular diagram on the right side of the game shows the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a>, a geometric representation of the state of a single <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a>.</p>
+    <p><strong>Understanding the Bloch Sphere:</strong></p>
+    <ul>
+      <li>The north pole represents |0⟩ (ground state)</li>
+      <li>The south pole represents |1⟩ (excited state)</li>
+      <li>Points on the equator represent <a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a> in the positive or negative state like |+⟩ and |-⟩</li>
+      <li>The arrow shows the current qubit state</li>
+    </ul>
+
+    <h2 id="tips" class="manualH2">Tips for Success</h2>
+    <ol>
+      <li><strong>Use the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a> Visualisation:</strong> The circular diagram on the right shows the current quantum state. Track how it changes as you apply gates.</li>
+      <li><strong>Check the Probability Display:</strong> The P(0) and P(1) values show the <a href="https://www.quera.com/glossary/measurement" target="_blank" class="manualLink">measurement</a> probabilities before you measure.</li>
+      <li><strong>Review the History:</strong> The measurement history panel shows previous results, helping you verify the probability distribution.</li>
+      <li><strong>Experiment:</strong> Try different mirror configurations or gate combinations to see how they affect the quantum state.</li>
+      <li><strong>Reset Between Attempts:</strong> Use the Reset button to return the ion to its initial state when starting over.</li>
+    </ol>
+
+    <h2 id="legend" class="manualH2">Quantum State Legend</h2>
+    <ul>
+      <li><strong>|0⟩</strong> - Ground state (100% probability of measuring 0)</li>
+      <li><strong>|1⟩</strong> - Excited state (100% probability of measuring 1)</li>
+      <li><strong>|+⟩</strong> - Superposition (50% chance of 0 or 1, positive phase)</li>
+      <li><strong>|-⟩</strong> - Superposition (50% chance of 0 or 1, negative phase)</li>
+      <li><strong>?</strong> - Unknown state (ion not initialised)</li>
+      <li><strong>—</strong> - State undefined (beam hasn't hit ion yet)</li>
+    </ul>
+
+    <hr style="border-color: var(--color-primary); opacity: 0.3; margin: 30px 0;">
+
     <h2 id="logic-gates" class="manualH2">Quantum Logic Gates</h2>
 
     <h3 id="gate-x" class="manualH3">X-Gate</h3>
@@ -121,7 +170,9 @@ defineEmits<{
       autoplay 
       loop 
       muted 
-      playsinline 
+      playsinline
+      width="670"
+      height="350"
       class="manualGif"
     ></video>
     <p><strong>What It Does:</strong></p>
@@ -146,7 +197,9 @@ defineEmits<{
       autoplay 
       loop 
       muted 
-      playsinline 
+      playsinline
+      width="670"
+      height="350"
       class="manualGif"
     ></video>
     <p><strong>What It Does:</strong></p>
@@ -171,7 +224,9 @@ defineEmits<{
       autoplay 
       loop 
       muted 
-      playsinline 
+      playsinline
+      width="870"
+      height="584"
       class="manualGif"
     ></video>
     <p><strong>What It Does:</strong></p>
@@ -185,6 +240,16 @@ defineEmits<{
     <h2 id="quantum-mechanics" class="manualH2">Quantum Mechanics</h2>
 
     <h3 id="qm-superposition" class="manualH3">Superposition</h3>
+    <video 
+      src="/videos/superposition-demo.mp4" 
+      autoplay 
+      loop 
+      muted 
+      playsinline
+      width="354"
+      height="502"
+      class="manualGif"
+    ></video>
     <p><strong>What Is It?</strong></p>
     <ul>
       <li><a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">Superposition</a> is when a quantum system exists in multiple states simultaneously</li>
@@ -203,6 +268,7 @@ defineEmits<{
       <li>After another Hadamard: |0⟩ (back to ground state)</li>
     </ul>
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 4)" class="manualLink">Level 5</span> <span @click="$emit('goToLevel', 5)" class="manualLink">Level 6</span></p>
+    
     <h3 id="qm-phase" class="manualH3">Phase</h3>
     <p><strong>What Is It?</strong></p>
     <ul>
@@ -216,7 +282,18 @@ defineEmits<{
       <li>This difference is noticable when applying further gates, as it decides whether the state will interfere constructively or destructively (e.g. go back to |0⟩ or to |1⟩ after a Hadamard gate is applied).</li>
     </ul>
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 6)" class="manualLink">Level 7</span></p>
+    
     <h3 id="qm-entanglement" class="manualH3">Entanglement</h3>
+    <video 
+      src="/videos/entanglement-demo.mp4" 
+      autoplay 
+      loop 
+      muted 
+      playsinline
+      width="354"
+      height="528"
+      class="manualGif"
+    ></video>
     <p><strong>What Is It?</strong></p>
     <ul>
       <li><a href="https://www.quera.com/glossary/entanglement" target="_blank" class="manualLink">Entanglement</a> occurs when two or more <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubits</a> are correlated in a way that cannot be described independently</li>
@@ -229,6 +306,16 @@ defineEmits<{
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 10)" class="manualLink">Level 11</span> <span @click="$emit('goToLevel', 11)" class="manualLink">Level 12</span></p>
 
     <h3 id="qm-bell" class="manualH3">Bell States (Pairs)</h3>
+    <video 
+      src="/videos/bell-pairs-demo.mp4" 
+      autoplay 
+      loop 
+      muted 
+      playsinline 
+      width="348"
+      height="540"
+      class="manualGif"
+    ></video>
     <p><strong>What Are They?</strong></p>
     <ul>
       <li>A <a href="https://www.quera.com/glossary/bell-state" target="_blank" class="manualLink">Bell State</a> represents the simplest example of quantum entanglement, involving exactly two qubits.</li>
@@ -253,6 +340,7 @@ defineEmits<{
       <li>When you observe the ions, you will notice that all ions collapse to match each other every time (e.g. all |0⟩'s or all |1⟩'s).</li>
     </ul>
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 15)" class="manualLink">Level 16</span> <span @click="$emit('goToLevel', 18)" class="manualLink">Level 19</span></p>
+    
     <h3 id="qm-uncomputing" class="manualH3">Uncomputing</h3>
     <p><strong>What Is It?</strong></p>
     <ul>
@@ -269,6 +357,16 @@ defineEmits<{
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 13)" class="manualLink">Level 14</span> <span @click="$emit('goToLevel', 17)" class="manualLink">Level 18</span></p>
 
     <h3 id="qm-anticorrelation" class="manualH3">Anti-correlation</h3>
+    <video 
+      src="/videos/anticorrelation-demo.mp4" 
+      autoplay 
+      loop 
+      muted 
+      playsinline 
+      width="352"
+      height="530"
+      class="manualGif"
+    ></video>
     <p><strong>What Is It?</strong></p>
     <ul>
       <li>Anti-correlation is a measurement outcome of an entangled state where two <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubits</a> always yield opposite results.</li>
@@ -280,47 +378,13 @@ defineEmits<{
       <li>When measuring you will see pairs of measurements like (|0⟩,|1⟩) or (|1⟩,|0⟩) showing up, but never (|0⟩,|0⟩) or (|1⟩,|1⟩).</li>
     </ul>
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 12)" class="manualLink">Level 13</span></p>
+
+    <hr style="border-color: var(--color-primary); opacity: 0.3; margin: 30px 0;">
     
-    <h2 id="bloch-sphere" class="manualH2">The Bloch Sphere</h2>
-    <video 
-      src="/videos/bloch-demo.mp4" 
-      autoplay 
-      loop 
-      muted 
-      playsinline 
-      class="manualGif"
-    ></video>
-    <p>The circular diagram on the right side of the game shows the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a>, a geometric representation of the state of a single <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a>.</p>
-    <p><strong>Understanding the Bloch Sphere:</strong></p>
-    <ul>
-      <li>The north pole represents |0⟩ (ground state)</li>
-      <li>The south pole represents |1⟩ (excited state)</li>
-      <li>Points on the equator represent <a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a> in the positive or negative state like |+⟩ and |-⟩</li>
-      <li>The arrow shows the current qubit state</li>
-    </ul>
-
-    <h2 id="tips" class="manualH2">Tips for Success</h2>
-    <ol>
-      <li><strong>Use the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a> Visualisation:</strong> The circular diagram on the right shows the current quantum state. Track how it changes as you apply gates.</li>
-      <li><strong>Check the Probability Display:</strong> The P(0) and P(1) values show the <a href="https://www.quera.com/glossary/measurement" target="_blank" class="manualLink">measurement</a> probabilities before you measure.</li>
-      <li><strong>Review the History:</strong> The measurement history panel shows previous results, helping you verify the probability distribution.</li>
-      <li><strong>Experiment:</strong> Try different mirror configurations or gate combinations to see how they affect the quantum state.</li>
-      <li><strong>Reset Between Attempts:</strong> Use the Reset button to return the ion to its initial state when starting over.</li>
-    </ol>
-
-    <h2 class="manualH2">What Is a <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped Ion?</a></h2>
+    <h2 id="trapped-ion" class="manualH2">What Is a <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped Ion?</a></h2>
     <p><a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped ions</a> are one of the leading platforms for building quantum computers and their technology is currently being researched at the <a href="https://www.sussex.ac.uk/physics/iqt/" target="_blank" class="manualLink">University of Sussex</a>.</p>
     <p>In this game, you're manipulating a simulated <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">trapped ion</a> using laser pulses to apply <a href="https://www.quera.com/glossary/quantum-gates" target="_blank" class="manualLink">quantum gates</a>.</p>
 
-    <h2 id="legend" class="manualH2">Quantum State Legend</h2>
-    <ul>
-      <li><strong>|0⟩</strong> - Ground state (100% probability of measuring 0)</li>
-      <li><strong>|1⟩</strong> - Excited state (100% probability of measuring 1)</li>
-      <li><strong>|+⟩</strong> - Superposition (50% chance of 0 or 1, positive phase)</li>
-      <li><strong>|-⟩</strong> - Superposition (50% chance of 0 or 1, negative phase)</li>
-      <li><strong>?</strong> - Unknown state (ion not initialised)</li>
-      <li><strong>—</strong> - State undefined (beam hasn't hit ion yet)</li>
-    </ul>
   </div>
 </template>
 
