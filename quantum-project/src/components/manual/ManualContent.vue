@@ -18,7 +18,7 @@ defineEmits<{
     </ul>
 
     <h3 class="manualH3">2. Ionisation</h3>
-    <p><strong>The Science:</strong> Neutral atoms can't be contained by electric fields so charged Ions are created. The neutral atoms are subjected to high-energy electron bombardment. This process strips an electron from Yb atom, creating a positively charged Yb+ ion. The charge allows the ion to be manipulated by electromagnetic fields.</p>
+    <p><strong>The Science:</strong> Neutral atoms can't be contained by electric fields so charged Ions are created. The neutral atoms are subjected to high-energy electron bombardment. This process strips an electron from the Yb atom, creating a positively charged Yb+ ion. The charge allows the ion to be manipulated by electromagnetic fields.</p>
     <ul>
       <li><strong>Further Reading:</strong> <a href="https://www.quera.com/glossary/trapped-ions" target="_blank" class="manualLink">Trapped Ions Overview (QuEra)</a></li>
     </ul>
@@ -30,7 +30,7 @@ defineEmits<{
     </ul>
 
     <h3 class="manualH3">4. Laser Cooling (Doppler & Sideband)</h3>
-    <p><strong>The Science:</strong> When trapped, the ion still vibrates due to thermal energy. <a href="https://www.quera.com/glossary/laser-cooling" target="_blank" class="manualLink">Laser cooling</a> uses the momentum of photons to slow the ion down. First, <strong>Doppler Cooling</strong> uses lasers tuned to the ion's resonant frequency to cool the ion. To ensure the ion is stable for longer, researchers then apply <strong>Sideband Cooling</strong> to calm the ion further.</p>
+    <p><strong>The Science:</strong> When trapped, the ion still vibrates due to thermal energy. Laser cooling uses the momentum of photons to slow the ion down. First, <strong>Doppler Cooling</strong> uses lasers tuned to the ion's resonant frequency to cool the ion. To ensure the ion is stable for longer, researchers then apply <strong>Sideband Cooling</strong> to calm the ion further.</p>
     <ul>
       <li><strong>Further Reading:</strong> Watch this video on Doppler Cooling for more information: <a href="https://www.youtube.com/watch?v=WPwlS8SKlns" target="_blank" class="manualLink">"Laser Cooling | Doppler Effect"</a>.</li>
     </ul>
