@@ -40,8 +40,15 @@ defineEmits<{
     <h2 id="mechanics" class="manualH2">Basic Mechanics</h2>
 
     <h3 class="manualH3">Placing and Removing Mirrors</h3>
+    <video 
+      src="/videos/mirror-demo.mp4" 
+      autoplay 
+      loop 
+      muted 
+      playsinline 
+      class="manualGif"
+    ></video>
     <p><strong>How to Place Mirrors:</strong></p>
-    <img src="/gifs/Mirrors.gif" alt="Demonstration of placing and rotating mirrors" class="manualGif" />
     <ul>
       <li>Left-click on any empty grid cell to place or rotate a mirror</li>
       <li>Each click moves the mirror between forward (/) and backward (\) orientations</li>
@@ -55,6 +62,14 @@ defineEmits<{
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 1)" class="manualLink">Level 2 - Reflection</span></p>
 
     <h3 class="manualH3">Resetting and Measuring the Ion</h3>
+    <video 
+      src="/videos/reset-measure-demo.mp4" 
+      autoplay 
+      loop 
+      muted 
+      playsinline 
+      class="manualGif"
+    ></video>
     <p><strong>Reset Button:</strong></p>
     <ul>
       <li>Levels 1 and 2 require you to click the Reset button to initialise the ion to a known quantum state</li>
@@ -71,6 +86,14 @@ defineEmits<{
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 0)" class="manualLink">Level 1 - Initialisation and Measurement</span></p>
 
     <h3 class="manualH3">Adding Logic Gates to the Laser</h3>
+    <video 
+      src="/videos/laser-gates-demo.mp4" 
+      autoplay 
+      loop 
+      muted 
+      playsinline 
+      class="manualGif"
+    ></video>
     <p><strong>Opening the Gate Menu:</strong></p>
     <ul>
       <li>Click on the laser source (the coloured square at the start of the beam) to open the laser gates menu</li>
@@ -93,6 +116,14 @@ defineEmits<{
     <h2 id="logic-gates" class="manualH2">Quantum Logic Gates</h2>
 
     <h3 id="gate-x" class="manualH3">X-Gate</h3>
+    <video 
+      src="/videos/xgate-demo.mp4" 
+      autoplay 
+      loop 
+      muted 
+      playsinline 
+      class="manualGif"
+    ></video>
     <p><strong>What It Does:</strong></p>
     <ul>
       <li>The <a href="https://www.quera.com/glossary/pauli-x-gate" target="_blank" class="manualLink">X-gate</a> (NOT gate) flips the state of a <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a></li>
@@ -110,6 +141,14 @@ defineEmits<{
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 2)" class="manualLink">Level 3 - X-Gate</span></p>
 
     <h3 id="gate-h" class="manualH3">Hadamard Gate</h3>
+    <video 
+      src="/videos/hgate-demo.mp4" 
+      autoplay 
+      loop 
+      muted 
+      playsinline 
+      class="manualGif"
+    ></video>
     <p><strong>What It Does:</strong></p>
     <ul>
       <li>The <a href="https://www.quera.com/glossary/hadamard-gate" target="_blank" class="manualLink">Hadamard (H) gate</a> creates and removes <a href="https://www.quera.com/glossary/superposition" target="_blank" class="manualLink">superposition</a></li>
@@ -127,6 +166,14 @@ defineEmits<{
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 4)" class="manualLink">Level 5</span> <span @click="$emit('goToLevel', 5)" class="manualLink">Level 6</span></p>
 
     <h3 id="gate-cnot" class="manualH3">C-NOT Gate</h3>
+    <video 
+      src="/videos/cnot-demo.mp4" 
+      autoplay 
+      loop 
+      muted 
+      playsinline 
+      class="manualGif"
+    ></video>
     <p><strong>What It Does:</strong></p>
     <ul>
       <li>The <a href="https://www.quera.com/glossary/controlled-not-gate" target="_blank" class="manualLink">Controlled-NOT (C-NOT) gate</a> is a two-<a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a> gate</li>
@@ -233,7 +280,16 @@ defineEmits<{
       <li>When measuring you will see pairs of measurements like (|0⟩,|1⟩) or (|1⟩,|0⟩) showing up, but never (|0⟩,|0⟩) or (|1⟩,|1⟩).</li>
     </ul>
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 12)" class="manualLink">Level 13</span></p>
+    
     <h2 id="bloch-sphere" class="manualH2">The Bloch Sphere</h2>
+    <video 
+      src="/videos/bloch-demo.mp4" 
+      autoplay 
+      loop 
+      muted 
+      playsinline 
+      class="manualGif"
+    ></video>
     <p>The circular diagram on the right side of the game shows the <a href="https://www.quera.com/glossary/bloch-sphere" target="_blank" class="manualLink">Bloch Sphere</a>, a geometric representation of the state of a single <a href="https://www.quera.com/glossary/qubit" target="_blank" class="manualLink">qubit</a>.</p>
     <p><strong>Understanding the Bloch Sphere:</strong></p>
     <ul>
@@ -333,5 +389,15 @@ defineEmits<{
 .manualContent strong {
   color: var(--color-text);
   font-weight: bold;
+}
+
+.manualGif {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 16px 0;
+  border-radius: 8px;
+  border: 1px solid var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 </style>
