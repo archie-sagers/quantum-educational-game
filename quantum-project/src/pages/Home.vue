@@ -47,7 +47,26 @@ const showManual = ref(false)
 const gateInventory = ref<Record<string, number>>({})
 const showCompletionPopup = ref(false)
 const draggedGateIndex = ref<number | null>(null)
-const showHint = ref(false)  
+const showHint = ref(false)
+const manualGlowActive = ref(false)
+const manualGlowLockedLevels = ref(new Set<number>())
+
+const MANUAL_GLOW_INTERVAL_MS = 15000
+
+let manualGlowInterval: ReturnType<typeof setInterval> | null = null
+
+function pulseManualGlow(force = false) {
+  if (!force && manualGlowLockedLevels.value.has(currentLevelIndex.value)) return
+
+  manualGlowActive.value = false
+  nextTick(() => {
+    manualGlowActive.value = true
+  })
+}
+
+function stopManualGlow() {
+  manualGlowActive.value = false
+}
 
 const currentPopup = computed(() => {
   if (tempPopup.value) return tempPopup.value
@@ -326,6 +345,7 @@ async function selectLevel(index: number) {
   ionInitialized.value = level.preInitialized;
   shownPopupIndices.value.clear();
   lastPopupTrigger = null;
+  stopManualGlow();
 
   gateInventory.value = { ...level.gateInventory };
 
@@ -596,12 +616,19 @@ const activeManualLink = computed(() => {
 })
 
 function handleManualClick() {
+  manualGlowLockedLevels.value.add(currentLevelIndex.value)
+  stopManualGlow()
   if (activeManualLink.value) {
     openManualToSection(activeManualLink.value.sectionId)
   } else {
     targetManualSection.value = null
     showManual.value = true
   }
+}
+
+function handleShowHint() {
+  showHint.value = true
+  pulseManualGlow(true)
 }
 
 // Mirror Controls
@@ -728,10 +755,15 @@ onMounted(() => {
   updateStateForTracing()
   popupIndex.value = 0
   showPopupByTrigger('onLoad')
+  manualGlowInterval = setInterval(() => pulseManualGlow(), MANUAL_GLOW_INTERVAL_MS)
   window.addEventListener('resize', handleWindowResize)
 })
 
 onUnmounted(() => {
+  if (manualGlowInterval !== null) {
+    clearInterval(manualGlowInterval)
+    manualGlowInterval = null
+  }
   window.removeEventListener('resize', handleWindowResize)
 })
 </script>
@@ -762,8 +794,15 @@ onUnmounted(() => {
 
       <button
         @click="handleManualClick"
+        @animationend="manualGlowActive = false"
         :disabled="automatedRunning"
-        :class="[styles.manualBtn, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'manual' }]"
+        :class="[
+          styles.manualBtn,
+          {
+            [styles.manualBtnGlow as string]: manualGlowActive,
+            [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'manual'
+          }
+        ]"
         ref="manualBtnRef"
         :style="activeManualLink"
       >
@@ -806,7 +845,7 @@ onUnmounted(() => {
       <div :class="[styles.hintContainer, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'hint' }]" ref="hintContainerRef">
         <button
           v-if="!showHint"
-          @click="showHint = true"
+          @click="handleShowHint"
           :class="[styles.clearBtn, styles.hintButton]"
         >
           Show Hint
