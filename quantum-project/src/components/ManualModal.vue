@@ -61,7 +61,7 @@ watch(() => props.isOpen, (newVal) => {
       <button @click="$emit('close')" class="manualCloseBtn">✕</button>
       
       <ManualSidebar @scrollToSection="scrollToSection" />
-      <ManualContent @goToLevel="goToLevel" />
+      <ManualContent @goToLevel="goToLevel" @scrollToSection="scrollToSection" />
     </div>
   </div>
 </template>

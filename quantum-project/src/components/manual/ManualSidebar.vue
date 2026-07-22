@@ -8,6 +8,7 @@ defineEmits<{
   <nav class="manualSidebar">
     <div class="indexTitle">Index</div>
     <a class="indexLink" @click="$emit('scrollToSection', 'prep')">Ion Preparation</a>
+    <a class="indexLink" @click="$emit('scrollToSection', 'qubit')">What is a Qubit?</a>
     <a class="indexLink" @click="$emit('scrollToSection', 'mechanics')">Basic Mechanics</a>
     <a class="indexLink" @click="$emit('scrollToSection', 'bloch-sphere')">The Bloch Sphere</a>
     <a class="indexLink" @click="$emit('scrollToSection', 'tips')">Tips for Success</a>
