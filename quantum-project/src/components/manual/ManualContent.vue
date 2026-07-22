@@ -41,6 +41,7 @@ defineEmits<{
 
     <h3 class="manualH3">Placing and Removing Mirrors</h3>
     <p><strong>How to Place Mirrors:</strong></p>
+    <img src="/gifs/Mirrors.gif" alt="Demonstration of placing and rotating mirrors" class="manualGif" />
     <ul>
       <li>Left-click on any empty grid cell to place or rotate a mirror</li>
       <li>Each click moves the mirror between forward (/) and backward (\) orientations</li>
