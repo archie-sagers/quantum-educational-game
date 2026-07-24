@@ -1056,11 +1056,10 @@ onUnmounted(() => {
                   <div>{{ gate }}-Gate</div>
                 </div>
               </div>
+              <button @click="showLaserGates = false" :class="styles.doneBtn">Done</button>
             </div>
           </div>
         </div>
-
-        <button @click="showLaserGates = false" :class="styles.doneBtn">Done</button>
       </div>
     </div>
 
