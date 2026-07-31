@@ -646,6 +646,9 @@ function handleMeasure() {
 
   gameBoardRef.value?.resetPhoton()
 
+  const maxGates = Math.max(1, ...sourceGates.value.map(g => g ? g.length : 0))
+  const dynamicDelayMs = 800 * (1 + (maxGates - 1) * 0.1)
+
   setTimeout(() => {
     if (isMeasured.value) {
       result.value = measuredValues.value ? measuredValues.value.join(',') : '—'
@@ -724,7 +727,7 @@ function handleMeasure() {
         gameBoardRef.value?.triggerFlash();
       }, 500); 
     }
-  }, TRAVEL_MS)
+  }, dynamicDelayMs)
 }
 
 function handleReset() {

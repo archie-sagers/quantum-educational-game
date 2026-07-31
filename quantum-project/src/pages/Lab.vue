@@ -190,6 +190,9 @@ function handleMeasure() {
 
   gameBoardRef.value?.resetPhoton()
 
+  const maxGates = Math.max(1, ...playSourceGates.value.map(g => g ? g.length : 0))
+  const dynamicDelayMs = 800 * (1 + (maxGates - 1) * 0.1)
+
   setTimeout(() => {
     if (isMeasured.value) {
       result.value = measuredValues.value ? measuredValues.value.join(',') : '—'
@@ -218,7 +221,7 @@ function handleMeasure() {
     if (hasWon) {
       showWin.value = true
     }
-  }, 800) // TRAVEL_MS
+  }, dynamicDelayMs) // TRAVEL_MS
 }
 
 function handleReset() {
