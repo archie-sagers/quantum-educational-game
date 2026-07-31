@@ -43,10 +43,12 @@ const defaultConfig = (): LevelConfigLocal => ({
   goal: 'Test',
   winCondition: 'any',
 })
+
 // Checks if a value is a plain object (not null or an array)
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
+
 // normalises an uploaded level (to prevent errors)
 function normaliseLoadedLevel(data: Partial<LevelConfigLocal>): LevelConfigLocal {
   const fallback = defaultConfig()
@@ -107,6 +109,51 @@ const editorLevel = computed(() => {
 const mode = ref<'edit' | 'play'>('edit')
 const levelConfig = reactive<LevelConfigLocal>(defaultConfig())
 const gateOptions = ['X', 'H', 'CNOT']
+
+// Win Condition
+watch(() => levelConfig.ions.length, (newLen) => {
+  let wc = levelConfig.winCondition || 'any';
+  let conditions: string[] = [];
+
+  if (wc === 'any') {
+    conditions = [];
+  } else if (wc.includes(',')) {
+    conditions = wc.split(',');
+  } else if (/^[01]+$/.test(wc)) {
+    conditions = wc.split('');
+  } else {
+    conditions = Array(newLen).fill('any');
+  }
+
+  if (conditions.length > newLen) {
+    conditions = conditions.slice(0, newLen);
+  } else {
+    while (conditions.length < newLen) {
+      conditions.push('any');
+    }
+  }
+  levelConfig.winCondition = conditions.length ? conditions.join(',') : 'any';
+}, { immediate: true });
+
+function getIonWinCondition(index: number): string {
+  const wc = levelConfig.winCondition || 'any';
+  if (wc === 'any') return 'any';
+  const parts = wc.split(',');
+  return parts[index] || 'any';
+}
+
+function setIonWinCondition(index: number, value: string) {
+  let wc = levelConfig.winCondition || 'any';
+  let parts = wc === 'any' ? Array(levelConfig.ions.length).fill('any') : wc.split(',');
+  
+  parts[index] = value;
+  levelConfig.winCondition = parts.join(',');
+}
+
+function handleWinConditionChange(index: number, event: Event) {
+  const val = (event.target as HTMLSelectElement).value;
+  setIonWinCondition(index, val);
+}
 
 // Play Mode
 // -----------------------------------------
@@ -515,30 +562,30 @@ function uploadLevel(e: Event) {
               Goal
               <input v-model="levelConfig.goal" type="text" style="width: 100%; padding: 2px 4px; margin-top: 2px" />
             </label>
-            <label style="display: block">
-              Win Condition
-              <select v-model="levelConfig.winCondition" style="width: 100%; padding: 2px 4px; margin-top: 2px">
-                <option value="any">Any</option>
+            
+            <div style="display: block; margin-top: 6px;">
+              <span style="display: block; margin-bottom: 6px; font-size: 12px; color: #ccc;">Win Condition</span>
+              <div v-if="levelConfig.ions.length === 0" style="padding: 8px; background: rgba(255,255,255,0.05); border: 1px dashed var(--color-border); border-radius: 3px; font-size: 11px; color: var(--color-subtle); text-align: center;">
+                Place an ion to set win conditions
+              </div>
+              <div v-else style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <div v-for="(ion, idx) in levelConfig.ions" :key="idx" style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="font-size: 10px; color: var(--color-subtle); text-transform: uppercase;">Ion {{ String.fromCharCode(65 + idx) }}</span>
+                  <select
+                    :value="getIonWinCondition(idx)"
+                    @change="handleWinConditionChange(idx, $event)"
+                    style="width: 55px; padding: 2px 4px; font-size: 11px;"
+                  >
+                    <option value="any">any</option>
+                    <option value="0">|0⟩</option>
+                    <option value="1">|1⟩</option>
+                    <option value="+">|+⟩</option>
+                    <option value="-">|-⟩</option>
+                  </select>
+                </div>
+              </div>
+            </div>
 
-                <optgroup label="General States (Any Qubit Count)">
-                  <option value="normal">All Normal (|0⟩ or |1⟩)</option>
-                  <option value="all-0">All |0⟩</option>
-                  <option value="all-1">All |1⟩</option>
-                </optgroup>
-
-                <optgroup label="Superposition">
-                  <option value="superposition">All in Superposition (|+⟩ or |-⟩)</option>
-                  <option value="positive-superposition">All |+⟩</option>
-                  <option value="negative-superposition">All |-⟩</option>
-                  <option value="mixed">Mixed (Normal & Superposition)</option>
-                </optgroup>
-
-                <optgroup label="2 Qubit Specific">
-                  <option value="01">|01⟩ State</option>
-                  <option value="10">|10⟩ State</option>
-                </optgroup>
-              </select>
-            </label>
           </section>
 
           <section style="padding: 10px; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: 3px">
