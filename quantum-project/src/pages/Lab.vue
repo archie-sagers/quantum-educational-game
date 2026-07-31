@@ -850,6 +850,19 @@ function uploadLevel(e: Event) {
           </div>
         </div>
       </div>
+      <div v-if="showWelcome" :class="styles.popupOverlay" @click="showWelcome = false" style="z-index: 9999;">
+        <div :class="styles.popupModal" style="text-align: center; max-width: 400px;" @click.stop>
+          <div :class="styles.popupTitle" style="color: var(--color-primary); font-size: 20px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">
+            Lab Mode
+          </div>
+          <div :class="styles.popupText" style="margin-bottom: 24px; font-size: 14px; line-height: 1.5;">
+            Create your own custom levels in edit mode. Press the test level button on the left to play them. Right click to remove elements.
+          </div>
+          <button @click="showWelcome = false" class="lab-btn" style="width: 100%; padding: 8px; border-color: var(--color-primary); box-shadow: 0 0 8px rgba(0, 238, 255, 0.3);">
+            Got it
+          </button>
+        </div>
+      </div>
       </div>
 </template>
 

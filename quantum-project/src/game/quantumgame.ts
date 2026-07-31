@@ -251,9 +251,11 @@ export function checkWinCondition(wc: string, states: IonQuantumState[]): boolea
   if (wc === 'positive-superposition') return states.every(s => s.state === '|+⟩');
   if (wc === 'negative-superposition') return states.every(s => s.state === '|-⟩');
 
-  // 2 Qubit Specific
-  if (wc === '01' || wc === '01') return states.length === 2 && states[0]?.state === '|0⟩' && states[1]?.state === '|1⟩';
-  if (wc === '10') return states.length === 2 && states[0]?.state === '|1⟩' && states[1]?.state === '|0⟩';
+  // Any state with 0 and 1
+  if (/^[01]+$/.test(wc)) {
+    if (states.length !== wc.length) return false;
+    return states.every((s, index) => s.state === `|${wc[index]}⟩`);
+  }
 
   // GHZ State - Valid for 3-6 qubits
   if (wc === 'ghz') {
@@ -263,14 +265,6 @@ export function checkWinCondition(wc: string, states: IonQuantumState[]): boolea
           (firstState === '|0⟩' || firstState === '|1⟩') && 
           states.every(s => s.state === firstState);
   }
-
-  // 3 Qubit Specific
-
-  // 4 Qubit Specific
-
-  // 5 Qubit Specific
-
-  // 6 Qubit Specific
 
   return false;
 }

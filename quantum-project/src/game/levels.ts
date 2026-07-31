@@ -346,7 +346,7 @@ export const LEVELS = [
       walls: [],
       availableGates: ['H', 'CNOT', 'X'],
       goal: '|0⟩ |0⟩ |0⟩',
-      winCondition: 'normal',
+      winCondition: 'all-0',
       hint: 'Apply the exact inverse sequence to the exact same lasers to unravel the GHZ state.',
       showResetButton: true,
       preInitialized: true,
