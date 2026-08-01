@@ -15,6 +15,7 @@ interface LevelConfigLocal {
   sources: Array<{ col: number; row: number; dir?: string }>
   ions: Array<{ col: number; row: number }>
   walls?: Array<{ col: number; row: number; type?: WallType }>
+  mirrors?: Array<{ col: number; row: number; dir: 'fwd' | 'back' }>
   availableGates?: string[]
   prePlacedGates?: string[][]
   lockedGateIndices?: number[]
@@ -34,6 +35,7 @@ const defaultConfig = (): LevelConfigLocal => ({
   sources: [],
   ions: [],
   walls: [],
+  mirrors: [],
   availableGates: ['X', 'H', 'CNOT'],
   prePlacedGates: [],
   lockedGateIndices: [],
@@ -65,6 +67,7 @@ function normaliseLoadedLevel(data: Partial<LevelConfigLocal>): LevelConfigLocal
     sources: Array.isArray(data.sources) ? data.sources : fallback.sources,
     ions: Array.isArray(data.ions) ? data.ions : fallback.ions,
     walls: Array.isArray(data.walls) ? data.walls : fallback.walls,
+    mirrors: Array.isArray(data.mirrors) ? data.mirrors : fallback.mirrors,
     availableGates: Array.isArray(data.availableGates) ? data.availableGates : fallback.availableGates,
     prePlacedGates: Array.isArray(data.prePlacedGates) ? data.prePlacedGates : fallback.prePlacedGates,
     lockedGateIndices: Array.isArray(data.lockedGateIndices) ? data.lockedGateIndices : fallback.lockedGateIndices,
@@ -88,7 +91,7 @@ function clearStatus() {
 
 // User made level
 const editorLevel = computed(() => {
-  return new Level({
+  const lvl = new Level({
     name: levelConfig.name,
     cols: levelConfig.cols,
     rows: levelConfig.rows,
@@ -103,6 +106,15 @@ const editorLevel = computed(() => {
     hint: levelConfig.hint,
     goal: levelConfig.goal,
   });
+
+  levelConfig.mirrors?.forEach(m => {
+    const row = lvl.grid[m.row];
+    if (row) {
+      row[m.col] = m.dir;
+    }
+  });
+
+  return lvl;
 });
 
 // Mode: edit or play
@@ -281,9 +293,7 @@ function onLaserDrop(e: DragEvent) {
 }
 
 function removeLaserGate(index: number) {
-  const activeIdx = activeSourceIndex.value
-
-
+  const activeIdx = activeSourceIndex.value  
   if (isGateLocked(index)) {
     return;
   }
@@ -314,6 +324,7 @@ function isGateLocked(localIndex: number) {
 const paletteItems = [
   { type: 'source', label: 'Laser Source', icon: '■', color: 'var(--color-primary)' },
   { type: 'ion', label: 'Ion', icon: '●', color: 'var(--color-danger)' },
+  { type: 'mirror', label: 'Fixed Mirror', icon: '⤡', color: '#888' },
   { type: 'wall-standard', label: 'Wall (Blocks All)', icon: '✕', color: 'var(--color-danger)' },
   { type: 'wall-cyan', label: 'Wall (Cyan)', icon: '✕', color: 'var(--color-primary)' },
   { type: 'wall-purple', label: 'Wall (Purple)', icon: '✕', color: 'var(--color-secondary)' },
@@ -331,6 +342,7 @@ function handleItemDrop(col: number, row: number, itemType: string) {
     levelConfig.sources = levelConfig.sources.filter(s => !(s.col === col && s.row === row))
     levelConfig.ions = levelConfig.ions.filter(i => !(i.col === col && i.row === row))
     levelConfig.walls = levelConfig.walls?.filter(w => !(w.col === col && w.row === row))
+    levelConfig.mirrors = levelConfig.mirrors?.filter(m => !(m.col === col && m.row === row))
     return
   }
   if (itemType === 'source') {
@@ -343,6 +355,11 @@ function handleItemDrop(col: number, row: number, itemType: string) {
     }
     if (levelConfig.ions.some(i => i.col === col && i.row === row)) return
     levelConfig.ions.push({ col, row })
+  } else if (itemType === 'mirror') {
+    levelConfig.mirrors = levelConfig.mirrors || []
+    if (!levelConfig.mirrors.some(m => m.col === col && m.row === row)) {
+      levelConfig.mirrors.push({ col, row, dir: 'fwd' })
+    }
   } else if (itemType.startsWith('wall-')) {
     if (levelConfig.walls?.some(w => w.col === col && w.row === row)) return
     const wallType = (itemType.split('-')[1] || 'standard') as WallType
@@ -361,6 +378,12 @@ function handleEditCanvasClick(col: number, row: number) {
     const currentDir = source.dir || 'right'
     const nextIdx = (DIRS.indexOf(currentDir) + 1) % DIRS.length
     source.dir = DIRS[nextIdx]
+    return;
+  }
+
+  const mirror = levelConfig.mirrors?.find(m => m.col === col && m.row === row)
+  if (mirror) {
+    mirror.dir = mirror.dir === 'fwd' ? 'back' : 'fwd'
   }
 }
 
@@ -385,7 +408,22 @@ function testLevel() {
       hint: levelConfig.hint,
       goal: levelConfig.goal,
     }
+    
     playLevel.value = new Level(cfg)
+    levelConfig.mirrors?.forEach(m => {
+      const row = playLevel.value!.grid[m.row];
+      if (row) {
+        row[m.col] = m.dir;
+      }
+    })
+
+    // Lock preplaced mirrors in place for the play level
+    const originalIsFixed = playLevel.value.isFixed.bind(playLevel.value)
+    playLevel.value.isFixed = (c: number, r: number) => {
+      if (levelConfig.mirrors?.some(m => m.col === c && m.row === r)) return true;
+      return originalIsFixed(c, r);
+    }
+
     playSourceGates.value = (cfg.prePlacedGates || []).map((g: string[]) => [...g])
     playGateInventory.value = { ...(levelConfig.gateInventory || {}) }
 
