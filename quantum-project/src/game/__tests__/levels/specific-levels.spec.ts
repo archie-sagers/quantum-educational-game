@@ -101,4 +101,25 @@ describe('Specific level behavior', () => {
     expect(wallIsRow4).toBe(true);
     expect(level.requiredGateCount).toEqual([2, 2]);
   });
+
+  it('level 20 Bell Pairs passes only when all ions remain in superposition', () => {
+    const level = LEVELS[19];
+    const bellPairStates = [
+      { ionIndex: 0, state: '|+⟩' as const, p0: '50%', p1: '50%' },
+      { ionIndex: 1, state: '|+⟩' as const, p0: '50%', p1: '50%' },
+      { ionIndex: 2, state: '|+⟩' as const, p0: '50%', p1: '50%' },
+      { ionIndex: 3, state: '|+⟩' as const, p0: '50%', p1: '50%' },
+    ];
+
+    expect(level.winCondition).toBe('superposition');
+    expect(checkWinCondition(level.winCondition, bellPairStates)).toBe(true);
+    expect(
+      checkWinCondition(level.winCondition, [
+        bellPairStates[0],
+        bellPairStates[1],
+        { ionIndex: 2, state: '|0⟩', p0: '100%', p1: '0%' },
+        bellPairStates[3],
+      ]),
+    ).toBe(false);
+  });
 });

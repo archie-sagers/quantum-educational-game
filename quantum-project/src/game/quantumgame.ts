@@ -251,6 +251,12 @@ export function checkWinCondition(wc: string, states: IonQuantumState[]): boolea
   if (wc === 'positive-superposition') return states.every(s => s.state === '|+⟩');
   if (wc === 'negative-superposition') return states.every(s => s.state === '|-⟩');
 
+  if (/^[01]+$/.test(wc)) {
+    if (states.length !== wc.length) return false;
+
+    return states.every((s, index) => s.state === `|${wc[index]}⟩`);
+  }
+
 // Lab Mode Win Conditions
   if (wc.includes(',')) {
     const targets = wc.split(',');
