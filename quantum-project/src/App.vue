@@ -16,7 +16,7 @@ function reloadPage() {
   <nav class="navbar">
     <router-link to="/" class="navLink">Home</router-link>
     <router-link to="/lab" class="navLink">Lab</router-link>
-    <a href="https://discord.gg/g69tKjpwg" target="_blank" rel="noopener noreferrer" class="navLink discordLink" title="Join our Discord">
+    <a href="https://discord.gg/XwGvJazzsS" target="_blank" rel="noopener noreferrer" class="navLink discordLink" title="Join our Discord">
       Discord
     </a>
   </nav>
