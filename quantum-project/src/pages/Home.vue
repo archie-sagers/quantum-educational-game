@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { measureAll, getBlochAngle, getBlochLabel, checkWinCondition, calculateQuantumState, WELCOME_POPUP, MAIN_WELCOME_POPUP,  Level} from '@/game/quantumgame'
 import { type IonQuantumState } from '@/game/types'
-import { LEVELS } from '@/game/levels'
+import { LEVELS, TUTORIAL_LEVEL } from '@/game/levels'
 import ManualModal from '@/components/ManualModal.vue'
 import GameBoard from '@/components/GameBoard.vue'
+import Tutorial, { TUTORIAL_STEPS } from '@/components/tutorial.vue'
 import styles from './Home.module.css'
 import MobileWarning from '@/components/MobileWarning.vue'
 
@@ -44,6 +45,28 @@ const popupIndex = ref(0)
 const tempPopup = ref<{ title: string; text: string } | null>(null)
 const showManual = ref(false)
 const gateInventory = ref<Record<string, number>>({})
+const showCompletionPopup = ref(false)
+const draggedGateIndex = ref<number | null>(null)
+const showHint = ref(false)
+const manualGlowActive = ref(false)
+const manualGlowLockedLevels = ref(new Set<number>())
+
+const MANUAL_GLOW_INTERVAL_MS = 15000
+
+let manualGlowInterval: ReturnType<typeof setInterval> | null = null
+
+function pulseManualGlow(force = false) {
+  if (!force && manualGlowLockedLevels.value.has(currentLevelIndex.value)) return
+
+  manualGlowActive.value = false
+  nextTick(() => {
+    manualGlowActive.value = true
+  })
+}
+
+function stopManualGlow() {
+  manualGlowActive.value = false
+}
 
 const currentPopup = computed(() => {
   if (tempPopup.value) return tempPopup.value
@@ -51,6 +74,119 @@ const currentPopup = computed(() => {
   if (!currentLevel || !currentLevel.popups) return null
   return currentLevel.popups[popupIndex.value]
 })
+
+// Tutorial
+// ------------------
+const tutorialStep = ref(-1)
+const tutorialActive = ref(false)
+const tutorialTargetRect = ref<DOMRect | null>(null)
+const tutorialPhase = computed(() => (tutorialStep.value < TUTORIAL_STEPS.length ? 'tour' : 'tutorial-sandbox'))
+const tutorialCompleteLabel = computed(() => (tutorialStep.value >= TUTORIAL_STEPS.length ? 'Tutorial Sandbox' : 'Tutorial'))
+
+type TutorialStepKey = (typeof TUTORIAL_STEPS)[number]['key']
+const tutorialStepData = computed(() => (tutorialStep.value >= 0 ? TUTORIAL_STEPS[tutorialStep.value] ?? null : null))
+const tutorialVisible = computed(() => tutorialActive.value)
+
+const goalBoxRef = ref<HTMLElement | null>(null)
+const manualBtnRef = ref<HTMLElement | null>(null)
+const hintContainerRef = ref<HTMLElement | null>(null)
+const levelIndicatorRef = ref<HTMLElement | null>(null)
+const boardWrapRef = ref<HTMLElement | null>(null)
+const resetBtnRef = ref<HTMLElement | null>(null)
+const measureBtnRef = ref<HTMLElement | null>(null)
+const historyRef = ref<HTMLElement | null>(null)
+const blochPanelRef = ref<HTMLElement | null>(null)
+
+const tutorialTargetMap: Record<TutorialStepKey, typeof goalBoxRef> = {
+  goal: goalBoxRef,
+  manual: manualBtnRef,
+  hint: hintContainerRef,
+  level: levelIndicatorRef,
+  walls: boardWrapRef,
+  reset: resetBtnRef,
+  measure: measureBtnRef,
+  history: historyRef,
+  bloch: blochPanelRef,
+}
+
+function updateTutorialTargetRect() {
+  if (!tutorialVisible.value || !tutorialStepData.value) {
+    tutorialTargetRect.value = null
+    return
+  }
+  const target = tutorialTargetMap[tutorialStepData.value.key]?.value
+  tutorialTargetRect.value = target ? target.getBoundingClientRect() : null
+}
+
+async function startTutorial() {
+  if (currentStage.value !== 'main' || currentLevelIndex.value !== 0) {
+    await selectLevel(0)
+  }
+  showManual.value = false
+  showLaserGates.value = false
+  showLevelSelector.value = false
+  showPopup.value = false
+  isMeasured.value = false
+  measuredValues.value = null
+  level = TUTORIAL_LEVEL
+  ionInitialized.value = TUTORIAL_LEVEL.preInitialized
+  initLevelGates()
+  updateStateForTracing()
+  showTutorialWelcome.value = true
+}
+
+async function beginTutorialTour() {
+  showTutorialWelcome.value = false
+  tutorialActive.value = true
+  tutorialStep.value = 0
+  await nextTick()
+  updateTutorialTargetRect()
+}
+
+function skipTutorialWelcome() {
+  showTutorialWelcome.value = false
+  finishTutorial()
+}
+
+async function nextTutorialStep() {
+  if (tutorialStep.value < TUTORIAL_STEPS.length - 1) {
+    tutorialStep.value += 1
+    await nextTick()
+    updateTutorialTargetRect()
+    return
+  }
+
+  tutorialStep.value = TUTORIAL_STEPS.length
+  await nextTick()
+  updateTutorialTargetRect()
+}
+
+function finishTutorial() {
+  showManual.value = false
+  showLaserGates.value = false
+  showLevelSelector.value = false
+  showPopup.value = false
+  tutorialActive.value = false
+  tutorialStep.value = -1
+  localStorage.setItem('quantum_tutorial_completed', 'true')
+  level = LEVELS[0]!
+  currentStage.value = 'main'
+  selectLevel(0)
+}
+
+function skipTutorial() {
+  finishTutorial()
+}
+
+watch([tutorialStep, currentLevelIndex, showHint, showLaserGates, () => history.value.length, ionStates], () => {
+  if (tutorialVisible.value) {
+    nextTick(() => updateTutorialTargetRect())
+  }
+})
+
+function handleWindowResize() {
+  updateTutorialTargetRect()
+}
 
 let level: Level = LEVELS[currentLevelIndex.value]!
 const shownPopupIndices = ref(new Set<number>())
@@ -90,6 +226,11 @@ const currentStage = ref(
 )
 
 function advanceStage() {
+  if (currentStage.value === 'cooling') {
+    void startTutorial()
+    return
+  }
+
   const currentIndex = STAGE_ORDER.indexOf(currentStage.value)
   if (currentIndex < STAGE_ORDER.length - 1) {
     currentStage.value = STAGE_ORDER[currentIndex + 1]!
@@ -102,13 +243,19 @@ function selectMinigame(stage: string) {
 }
 
 const currentStageName = computed(() =>
-  currentStage.value === 'main' ? `Level ${currentLevelIndex.value + 1}` : STAGE_CONFIG[currentStage.value]?.name ?? ''
+  tutorialActive.value
+    ? 'Tutorial'
+    : currentStage.value === 'main'
+      ? `Level ${currentLevelIndex.value + 1}`
+      : STAGE_CONFIG[currentStage.value]?.name ?? ''
 )
 
 const currentStageGoal = computed(() =>
-  currentStage.value === 'main'
-    ? LEVELS[currentLevelIndex.value]?.goal
-    : STAGE_CONFIG[currentStage.value]?.goal ?? ''
+  tutorialActive.value
+    ? TUTORIAL_LEVEL.goal
+    : currentStage.value === 'main'
+      ? LEVELS[currentLevelIndex.value]?.goal
+      : STAGE_CONFIG[currentStage.value]?.goal ?? ''
 )
 
 
@@ -121,6 +268,7 @@ if (savedLevel !== null) {
 
 watch(currentLevelIndex, (newLevel) => {
   localStorage.setItem('quantum_save_level', newLevel.toString())
+  showHint.value = false
 })
 
 watch(currentStage, (newStage) => {
@@ -153,6 +301,8 @@ const resultcolourClass = computed(() => {
 function nextLevel() {
   if (currentLevelIndex.value < LEVELS.length - 1) {
     selectLevel(currentLevelIndex.value + 1);
+  } else {
+    showCompletionPopup.value = true;
   }
 }
 
@@ -195,6 +345,7 @@ async function selectLevel(index: number) {
   ionInitialized.value = level.preInitialized;
   shownPopupIndices.value.clear();
   lastPopupTrigger = null;
+  stopManualGlow();
 
   gateInventory.value = { ...level.gateInventory };
 
@@ -234,19 +385,46 @@ function onGateDragStart(e: DragEvent, gateType: string) {
     e.preventDefault()
     return
   }
+  draggedGateIndex.value = null
   e.dataTransfer!.effectAllowed = 'copy'
   e.dataTransfer!.setData('gateType', gateType)
 }
 
-function onLaserDragOver(e: DragEvent) {
-  e.preventDefault()
-  e.dataTransfer!.dropEffect = 'copy'
+function onPlacedGateDragStart(e: DragEvent, index: number, gateType: string) {
+  if (isGateLocked(index)) {
+    e.preventDefault()
+    return
+  }
+  draggedGateIndex.value = index
+  e.dataTransfer!.effectAllowed = 'move'
+  e.dataTransfer!.setData('gateType', gateType)
 }
 
-function onLaserDrop(e: DragEvent) {
+function handleDrop(e: DragEvent, dropIndex?: number) {
   e.preventDefault()
   const gateType = e.dataTransfer!.getData('gateType')
-  if (gateType) {
+  if (!gateType) return
+
+  const idx = activeSourceIndex.value
+  if (!sourceGates.value[idx]) sourceGates.value[idx] = []
+  const list = sourceGates.value[idx]!
+
+  // Protect locked gates
+  const lockedCount = level.prePlacedGates?.[idx]?.length || 0
+  let safeDropIndex = dropIndex !== undefined ? Math.max(dropIndex, lockedCount) : list.length
+
+  if (draggedGateIndex.value !== null) {
+    const oldIndex = draggedGateIndex.value
+    if (oldIndex === safeDropIndex) return 
+
+    const [movedGate] = list.splice(oldIndex, 1)
+    
+    if (oldIndex < safeDropIndex && dropIndex !== undefined) {
+      safeDropIndex--
+    }
+    
+    list.splice(safeDropIndex, 0, movedGate!)
+  } else {
     if (gateInventory.value[gateType] !== undefined) {
       if (gateInventory.value[gateType]! > 0) {
         gateInventory.value[gateType]!--
@@ -254,13 +432,26 @@ function onLaserDrop(e: DragEvent) {
         return
       }
     }
-    const idx = activeSourceIndex.value
-    if (!sourceGates.value[idx]) sourceGates.value[idx] = []
-    sourceGates.value[idx].push(gateType)
-    isMeasured.value = false
-    measuredValues.value = null
-    updateStateForTracing()
+    list.splice(safeDropIndex, 0, gateType)
   }
+
+  draggedGateIndex.value = null
+  isMeasured.value = false
+  measuredValues.value = null
+  updateStateForTracing()
+}
+
+function onLaserDragOver(e: DragEvent) {
+  e.preventDefault()
+  e.dataTransfer!.dropEffect = draggedGateIndex.value !== null ? 'move' : 'copy'
+}
+
+function onLaserDrop(e: DragEvent) {
+  handleDrop(e) 
+}
+
+function onPlacedGateDrop(e: DragEvent, dropIndex: number) {
+  handleDrop(e, dropIndex)
 }
 
 function removeLaserGate(index: number) {
@@ -290,6 +481,7 @@ function isGateLocked(localIndex: number) {
 
 const showWelcome = ref(currentStage.value === 'heating')
 const showMainWelcome = ref(currentStage.value === 'main')
+const showTutorialWelcome = ref(false)
 
 // Mobile
 // ----------------
@@ -336,6 +528,10 @@ function closePopup() {
   lastPopupTrigger = null
 }
 
+function goToLab() {
+  window.location.href = '/lab'
+}
+
 function startAutomatedDemo() {
   automatedRunning.value = true
   ;(async () => {
@@ -349,6 +545,7 @@ function startAutomatedDemo() {
       updateStateForTracing()
 
       gameBoardRef.value?.resetPhoton()
+      gameBoardRef.value?.triggerFlash();
       await new Promise((res) => setTimeout(res, TRAVEL_MS))
 
       const measResults = measureAll()
@@ -400,18 +597,38 @@ function openManualToSection(sectionId: string) {
   showManual.value = true
 }
 
+function openGateManual(gate: string) {
+  const sectionId = gate === 'X'
+    ? 'gate-x'
+    : gate === 'H'
+      ? 'gate-h'
+      : gate === 'CNOT'
+        ? 'gate-cnot'
+        : null
+  if (!sectionId) return
+
+  openManualToSection(sectionId)
+}
+
 const activeManualLink = computed(() => {
   if (currentStage.value !== 'main') return null;
   return LEVELS[currentLevelIndex.value]?.manualLink;
 })
 
 function handleManualClick() {
+  manualGlowLockedLevels.value.add(currentLevelIndex.value)
+  stopManualGlow()
   if (activeManualLink.value) {
     openManualToSection(activeManualLink.value.sectionId)
   } else {
     targetManualSection.value = null
     showManual.value = true
   }
+}
+
+function handleShowHint() {
+  showHint.value = true
+  pulseManualGlow(true)
 }
 
 // Mirror Controls
@@ -421,11 +638,16 @@ function clearMirrors() {
   updateStateForTracing()
 }
 
+// Measurement Logic
+// ------------------
 function handleMeasure() {
   if (!canMeasure.value) return
   canMeasure.value = false
 
   gameBoardRef.value?.resetPhoton()
+
+  const maxGates = Math.max(1, ...sourceGates.value.map(g => g ? g.length : 0))
+  const dynamicDelayMs = 800 * (1 + (maxGates - 1) * 0.1)
 
   setTimeout(() => {
     if (isMeasured.value) {
@@ -446,26 +668,21 @@ function handleMeasure() {
     if (history.value.length > 20) history.value.shift()
 
     canMeasure.value = true
+    let passedGateCountCheck = true
 
     if (level.requiredGateCount !== null) {
       if (Array.isArray(level.requiredGateCount)) {
-        let isValid = true;
         for (let i = 0; i < level.requiredGateCount.length; i++) {
           const count = sourceGates.value[i]?.length || 0;
           if (count !== level.requiredGateCount[i]) {
-            isValid = false;
+            passedGateCountCheck = false;
             break;
           }
-        }
-        if (!isValid) {
-          showWin.value = false;
-          return;
         }
       } else {
         const flatGateCount = sourceGates.value.flat().length;
         if (flatGateCount !== level.requiredGateCount) {
-          showWin.value = false;
-          return;
+          passedGateCountCheck = false;
         }
       }
     }
@@ -474,18 +691,43 @@ function handleMeasure() {
     const states = stateInfo.states ?? []
     const wc = level.winCondition
 
-    if (checkWinCondition(wc, states)) {
+    if (passedGateCountCheck && checkWinCondition(wc, states)) {
       showWin.value = true
+    }
 
-      if (level.automateMeasurement && !automatedRunning.value) {
-        const anySuperposition = states.some(s => s.state === '|+⟩' || s.state === '|-⟩')
-        if (anySuperposition) {
-          const shown = showPopupByTrigger('onAutomatedStart')
-          if (!shown) startAutomatedDemo()
+    if (passedGateCountCheck && checkWinCondition(wc, states) && level.automateMeasurement && !automatedRunning.value) {
+      const allIonsHit = states.every(s => s.state !== '—');
+      
+      let shouldRunDemo = allIonsHit && states.some(s => s.state === '|+⟩' || s.state === '|-⟩');
+
+      // Check for GHZ states
+      if (level.winCondition === 'ghz') {
+        let isGHZ = true;
+        
+        for (let i = 0; i < 20; i++) {
+          const sample = measureAll();
+          if (!sample.every(val => val === sample[0])) {
+            isGHZ = false;
+            break; 
+          }
         }
+        shouldRunDemo = shouldRunDemo && isGHZ;
+      }
+      if (shouldRunDemo) {
+        const shown = showPopupByTrigger('onAutomatedStart')
+        if (!shown) startAutomatedDemo()
       }
     }
-  }, TRAVEL_MS)
+
+    if (!showWin.value && !automatedRunning.value) {
+      setTimeout(() => {
+        isMeasured.value = false;
+        measuredValues.value = null;
+        updateStateForTracing();
+        gameBoardRef.value?.triggerFlash();
+      }, 500); 
+    }
+  }, dynamicDelayMs)
 }
 
 function handleReset() {
@@ -494,6 +736,7 @@ function handleReset() {
   measuredValues.value = null
   result.value = '—'
   updateStateForTracing()
+  gameBoardRef.value?.triggerFlash()
   showPopupByTrigger('onReset')
 }
 
@@ -515,6 +758,16 @@ onMounted(() => {
   updateStateForTracing()
   popupIndex.value = 0
   showPopupByTrigger('onLoad')
+  manualGlowInterval = setInterval(() => pulseManualGlow(), MANUAL_GLOW_INTERVAL_MS)
+  window.addEventListener('resize', handleWindowResize)
+})
+
+onUnmounted(() => {
+  if (manualGlowInterval !== null) {
+    clearInterval(manualGlowInterval)
+    manualGlowInterval = null
+  }
+  window.removeEventListener('resize', handleWindowResize)
 })
 </script>
 
@@ -527,21 +780,39 @@ onMounted(() => {
       <button
         @click="showLevelSelector = true"
         :disabled="automatedRunning"
-        :class="styles.levelIndicator"
+        :class="[styles.levelIndicator, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'level' }]"
+        ref="levelIndicatorRef"
       >
         {{ currentStageName }}
       </button>
 
       <button
-        @click="handleManualClick"
+        v-if="!tutorialVisible"
+        @click="startTutorial"
         :disabled="automatedRunning"
         :class="styles.manualBtn"
+      >
+        Tutorial
+      </button>
+
+      <button
+        @click="handleManualClick"
+        @animationend="manualGlowActive = false"
+        :disabled="automatedRunning"
+        :class="[
+          styles.manualBtn,
+          {
+            [styles.manualBtnGlow as string]: manualGlowActive,
+            [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'manual'
+          }
+        ]"
+        ref="manualBtnRef"
         :style="activeManualLink"
       >
         {{ activeManualLink ? activeManualLink.label : 'Manual' }}
       </button>
 
-      <div :class="styles.goalBox">
+      <div :class="[styles.goalBox, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'goal' }]" ref="goalBoxRef">
         <div :class="styles.goalLabel">Goal</div>
         <div :class="styles.goalValue">{{ currentStageGoal }}</div>
       </div>
@@ -554,7 +825,7 @@ onMounted(() => {
             :disabled="automatedRunning"
             :class="styles.nextBtn"
           >
-            {{ LEVELS.length - 1 > currentLevelIndex ? 'Next Level' : 'Completed!' }}
+            {{ LEVELS.length - 1 > currentLevelIndex ? 'Next Level' : 'Finish!' }}
           </button>
         </div>
       </div>
@@ -569,24 +840,37 @@ onMounted(() => {
 
     <div v-else style="display: contents;">
 
-      <div :class="styles.controls">
+      <div v-if="currentLevelIndex !== 0" :class="styles.controls">
         <p :class="styles.controlsText">Left-click to place/rotate mirror · Right-click to remove</p>
         <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
       </div>
 
-      <p :class="styles.hint">{{ level.hint }}</p>
+      <div :class="[styles.hintContainer, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'hint' }]" ref="hintContainerRef">
+        <button
+          v-if="!showHint"
+          @click="handleShowHint"
+          :class="[styles.clearBtn, styles.hintButton]"
+        >
+          Show Hint
+        </button>
+
+        <p v-else :class="styles.hint">
+          {{ level.hint }}
+        </p>
+      </div>
 
 
 
     <!-- Main game area -->
     <div :class="styles.mainArea">
       <!-- Game canvas - using extracted GameBoard component -->
-      <div :class="styles.canvasWrap">
+      <div :class="[styles.canvasWrap, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'walls' }]" ref="boardWrapRef">
         <GameBoard
           ref="gameBoardRef"
           mode="play"
           :level="level"
           :sourceGates="sourceGates"
+          :disableMirrors="currentLevelIndex === 0"
           @canvas-click="handleGameBoardClick"
           @canvas-mirror-place="updateStateForTracing"
         />
@@ -595,7 +879,7 @@ onMounted(() => {
       <!-- Sidebar: Bloch sphere + measurement info for each ion -->
       <aside :class="styles.sidebar">
 
-        <div :class="styles.ionWrapper">
+        <div :class="[styles.ionWrapper, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'bloch' }]" ref="blochPanelRef">
           <div
             v-for="(ionState, idx) in ionStates"
             :key="idx"
@@ -671,7 +955,8 @@ onMounted(() => {
           <button
             @click="handleMeasure"
             :disabled="!canMeasure || automatedRunning"
-            :class="styles.measureBtn"
+            :class="[styles.measureBtn, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'measure' }]"
+            ref="measureBtnRef"
           >
             Measure
           </button>
@@ -680,18 +965,21 @@ onMounted(() => {
             v-if="level.showResetButton"
             @click="handleReset"
             :disabled="automatedRunning"
-            :class="styles.resetBtn"
+            :class="[styles.resetBtn, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'reset' }]"
+            ref="resetBtnRef"
           >
-            Reset Ion
+            Reset Ion (Optical Pumping)
           </button>
 
           <div :class="styles.infoRow">
             <span :class="styles.infoKey">Last</span>
             <span :class="[styles.infoVal, resultcolourClass]">{{ result }}</span>
           </div>
-          <div v-if="history.length" :class="styles.history">
+          <div :class="[styles.history, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'history' }]" ref="historyRef">
             <span :class="styles.infoKey">History</span>
-            <span :class="styles.historyBits">{{ history.map((r: number[]) => r.join('')).join(' ') }}</span>
+            <span :class="styles.historyBits">
+              {{ history.length ? history.map((r: number[]) => r.join('')).join(' ') : 'No measurements yet' }}
+            </span>
           </div>
         </div>
 
@@ -725,11 +1013,16 @@ onMounted(() => {
                     styles.laserGate,
                     { [styles.laserGateX as string]: gate === 'X' },
                     { [styles.laserGateH as string]: gate === 'H' },
-                    { [styles.laserGateCNOT as string]: gate === 'CNOT' }
+                    { [styles.laserGateCNOT as string]: gate === 'CNOT' },
+                    { [styles.draggableGate as string]: !isGateLocked(index) }
                   ]"
+                  :draggable="!isGateLocked(index)"
+                  @dragstart="onPlacedGateDragStart($event, index, gate)"
+                  @dragover.prevent
+                  @drop.stop="onPlacedGateDrop($event, index)"
                 >
-                <button v-if="!isGateLocked(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
-                  <div>{{ gate }}</div>
+                  <div>{{ gate === 'X' ? 'X-Gate' : gate }}</div>
+                  <button v-if="!isGateLocked(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
                 </div>
               </div>
               <div v-else :class="styles.dropHint">Drag gates here</div>
@@ -756,16 +1049,20 @@ onMounted(() => {
                     { [styles.gateItemDisabled as string]: (gateInventory[gate] ?? -1) === 0 }
                   ]"
                 >
-                <div>{{ gate }}</div>
-                <div v-if="gateInventory[gate] !== undefined" :class="styles.gateItemCount">
-                  {{ gateInventory[gate] }}
+                  <button
+                    type="button"
+                    :class="styles.gateInfoBtn"
+                    @click.stop="openGateManual(gate)"
+                  >
+                    i
+                  </button>
+                  <div>{{ gate }}-Gate</div>
                 </div>
               </div>
+              <button @click="showLaserGates = false" :class="styles.doneBtn">Done</button>
             </div>
           </div>
         </div>
-
-        <button @click="showLaserGates = false" :class="styles.doneBtn">Done</button>
       </div>
     </div>
 
@@ -876,6 +1173,25 @@ onMounted(() => {
         </div>
       </div>
 
+    <div v-if="showTutorialWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
+      <div :class="styles.welcomeModal">
+        <div :class="styles.welcomeTitle">Welcome to the Tutorial</div>
+        <div :class="styles.welcomeText">
+          Learn the basics of the game and how X and H gates work before jumping into the main puzzles. You can come back to the tutorial at any time by clicking the "Tutorial" button.
+        </div>
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+          <button @click="beginTutorialTour()" :class="styles.welcomeBtn">Start Tutorial</button>
+          <button
+            @click="skipTutorialWelcome()"
+            :class="styles.welcomeBtn"
+            style="background: none; border: 1px solid var(--color-primary); color: var(--color-primary);"
+          >
+            Skip to Level 1
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showMainWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
         <div :class="styles.welcomeModal">
           <div :class="styles.welcomeTitle">{{ MAIN_WELCOME_POPUP.title }}</div>
@@ -884,5 +1200,52 @@ onMounted(() => {
         </div>
       </div>
 
-  </div>
+    <Tutorial
+      v-if="tutorialVisible"
+      :visible="tutorialVisible"
+      :phase="tutorialPhase"
+      :stepIndex="tutorialStep >= 0 ? tutorialStep : TUTORIAL_STEPS.length - 1"
+      :stepCount="TUTORIAL_STEPS.length"
+      :title="tutorialStepData?.title ?? tutorialCompleteLabel"
+      :text="tutorialStepData?.text ?? 'Experiment with the gates in the sandbox.'"
+      :targetRect="tutorialTargetRect"
+      @next="nextTutorialStep"
+      @skip="skipTutorial"
+      @finish="finishTutorial"
+      @openManualSection="openManualToSection"
+    />
+
+    <div v-if="showCompletionPopup" :class="styles.welcomeOverlay" style="z-index: 9999;">
+      <div :class="styles.welcomeModal">
+        <div :class="styles.welcomeTitle">Congratulations!</div>
+        <div :class="styles.welcomeText">
+          Congratulations on completing the laser puzzle! Read the manual for more info on quantum computing and check out the lab to create and share your own puzzles.
+        </div>
+        
+        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+          <button 
+            @click="showCompletionPopup = false; showManual = true" 
+            :class="styles.welcomeBtn" 
+            style="flex: 1;"
+          >
+            Manual
+          </button>
+          
+          <button 
+            @click="goToLab" 
+            :class="styles.welcomeBtn" 
+            style="flex: 1; background: purple; color: white;"
+          >
+            Lab
+          </button>
+        </div>
+        
+        <button 
+          @click="showCompletionPopup = false" 
+          style="margin-top: 15px; background: none; border: none; color: gray; cursor: pointer; text-decoration: underline;"
+        >
+          Close
+        </button>
+      </div>
+    </div>
 </template>

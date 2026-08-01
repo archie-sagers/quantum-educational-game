@@ -16,6 +16,9 @@ function reloadPage() {
   <nav class="navbar">
     <router-link to="/" class="navLink">Home</router-link>
     <router-link to="/lab" class="navLink">Lab</router-link>
+    <a href="https://discord.gg/g69tKjpwg" target="_blank" rel="noopener noreferrer" class="navLink discordLink" title="Join our Discord">
+      Discord
+    </a>
   </nav>
 
   <main v-if="!appError" class="appShell">
@@ -116,6 +119,7 @@ body, html, #app {
   position: absolute;
   top: var(--space-lg);
   left: var(--space-lg);
+  right: var(--space-lg);
   display: flex;
   gap: var(--space-md);
 }
@@ -137,5 +141,9 @@ body, html, #app {
 .navLink:hover {
   background: var(--color-bg-dark);
   box-shadow: 0 0 8px var(--color-primary);
+}
+
+.discordLink {
+  margin-left: auto; 
 }
 </style>

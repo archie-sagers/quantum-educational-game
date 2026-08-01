@@ -13,6 +13,7 @@ const props = defineProps<{
   level: Level
   sourceGates: string[][]
   fillParent?: boolean
+  disableMirrors?: boolean
 }>()
 
 const emits = defineEmits<{
@@ -23,12 +24,18 @@ const emits = defineEmits<{
   (e: 'mouse-move', col: number, row: number): void
 }>()
 
-
 const canvas = ref<HTMLCanvasElement | null>(null)
 let ctx: CanvasRenderingContext2D | null = null
 let animationFrameId: number | null = null
 
-let photon = { progress: 1, segCount: 0 }
+let globalProgress = 1 // Start at 1 so the photon isn't animating upon initial load
+
+// Flash effect for reset
+let flashAlpha = 0
+
+function triggerFlash() {
+  flashAlpha = 0.2 
+}
 
 // Setup canvas and context
 function setupCanvas() {
@@ -54,7 +61,6 @@ function handleResize() {
   clearTimeout(resizeTimeout)
   resizeTimeout = window.setTimeout(setupCanvas, 150)
 }
-
 
 // Draw Functions
 // -----------------------------
@@ -100,7 +106,7 @@ function draw() {
     if (numColours === 1) offsets = [0]
     else if (numColours === 2) offsets = [-3, 3]
     else if (numColours === 3) offsets = [-5, 0, 5]
-    else offsets = s.colours.map((_, i) => -3 + ((i * 6) / (numColours - 1)))
+    else offsets = s.colours.map((_: string, i: number) => -3 + ((i * 6) / (numColours - 1)))
 
     for (let i = 0; i < s.colours.length; i++) {
       const offset = offsets[i] || 0
@@ -128,27 +134,25 @@ function draw() {
   }
   ctx.shadowBlur = 0
 
-  // Photon dots - render parallel photons for each colour
-  photon.progress += 1 / ((TRAVEL_MS / 1000) * FPS)
-  if (photon.progress < 1 && segs.length > 0) {
-    const t = photon.progress * photon.segCount
-    const idx = Math.min(Math.floor(t), segs.length - 1)
-    const seg = segs[idx]!
-    const f = t - Math.floor(t)
-
-    // Calculate perpendicular offset for photon
-    const dx = seg.x2 - seg.x1
-    const dy = seg.y2 - seg.y1
-    const len = Math.sqrt(dx * dx + dy * dy)
-    const perpX = len > 0 ? -dy / len : 0
-    const perpY = len > 0 ? dx / len : 0
-
-    const numColours = seg.colours.length
-    let offsets: number[] = []
-    if (numColours === 1) offsets = [0]
-    else if (numColours === 2) offsets = [-3, 3]
-    else if (numColours === 3) offsets = [-5, 0, 5]
-    else offsets = seg.colours.map((_, i) => -3 + ((i * 6) / (numColours - 1)))
+  // Photon dots
+  globalProgress += 1 / ((TRAVEL_MS / 1000) * FPS)
+  
+  if (globalProgress < 3 && segs.length > 0) { 
+    const paths: any[][] = []
+    for (const seg of segs) {
+      let added = false
+      for (const p of paths) {
+        const lastSeg = p[p.length - 1]
+        if (Math.abs(seg.x1 - lastSeg.x2) < 1 && Math.abs(seg.y1 - lastSeg.y2) < 1) {
+          p.push(seg)
+          added = true
+          break
+        }
+      }
+      if (!added) {
+        paths.push([seg])
+      }
+    }
 
     const colourMap: Record<string, string> = {
       cyan: colours.cyan,
@@ -157,18 +161,51 @@ function draw() {
       green: colours.green,
     }
 
-    for (let i = 0; i < seg.colours.length; i++) {
-      const offset = offsets[i] || 0
-      const px = seg.x1 + (seg.x2 - seg.x1) * f + perpX * offset
-      const py = seg.y1 + (seg.y2 - seg.y1) * f + perpY * offset
+    const GATE_DELAY = 0.1
 
-      const colourKey = seg.colours[i] || 'cyan'
-      ctx.fillStyle = colourMap[colourKey] || colours.cyan
-      ctx.shadowColor = String(ctx.fillStyle)
-      ctx.shadowBlur = BOARD_STYLE.PHOTON_GLOW_BLUR
-      ctx.beginPath()
-      ctx.arc(px, py, BOARD_STYLE.PHOTON_RADIUS, 0, Math.PI * 2)
-      ctx.fill()
+    for (const path of paths) {
+      if (path.length === 0) continue
+      const baseColours = path[0].colours
+
+      for (let cIdx = 0; cIdx < baseColours.length; cIdx++) {
+        const p = globalProgress - (cIdx * GATE_DELAY)
+        
+        if (p >= 0 && p <= 1) {
+          const t = p * path.length
+          const idx = Math.min(Math.floor(t), path.length - 1)
+          const seg = path[idx]
+          
+          let f = t - Math.floor(t)
+          if (t >= path.length) f = 1
+
+          const dx = seg.x2 - seg.x1
+          const dy = seg.y2 - seg.y1
+          const len = Math.sqrt(dx * dx + dy * dy)
+          const perpX = len > 0 ? -dy / len : 0
+          const perpY = len > 0 ? dx / len : 0
+
+          const numColours = seg.colours.length
+          let offsets: number[] = []
+          if (numColours === 1) offsets = [0]
+          else if (numColours === 2) offsets = [-3, 3]
+          else if (numColours === 3) offsets = [-5, 0, 5]
+          else offsets = seg.colours.map((_: string, i: number) => -3 + ((i * 6) / (numColours - 1)))
+
+          const colourKey = baseColours[cIdx] || 'cyan'
+          const myColorIdx = Math.min(cIdx, numColours - 1)
+          const offset = offsets[myColorIdx] || 0
+
+          const px = seg.x1 + dx * f + perpX * offset
+          const py = seg.y1 + dy * f + perpY * offset
+
+          ctx.fillStyle = colourMap[colourKey] || colours.cyan
+          ctx.shadowColor = String(ctx.fillStyle)
+          ctx.shadowBlur = BOARD_STYLE.PHOTON_GLOW_BLUR
+          ctx.beginPath()
+          ctx.arc(px, py, BOARD_STYLE.PHOTON_RADIUS, 0, Math.PI * 2)
+          ctx.fill()
+        }
+      }
     }
     ctx.shadowBlur = 0
   }
@@ -198,7 +235,8 @@ function draw() {
     ctx.font = `${BOARD_STYLE.LABEL_FONT_PX}px monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText('LASER', sx + CELL / 2, sy + CELL / 2)
+    const labelText = props.level.sources.length > 1 ? `LASER ${sIdx + 1}` : 'LASER'
+    ctx.fillText(labelText, sx + CELL / 2, sy + CELL / 2)
   }
 
   // Walls
@@ -261,6 +299,12 @@ function draw() {
       ctx.stroke()
     }
   }
+  // Flash overlay for reset
+  if (flashAlpha > 0) {
+    ctx.fillStyle = `rgba(0, 150, 255, ${flashAlpha})`;
+    ctx.fillRect(0, 0, canvas.value!.width, canvas.value!.height);
+    flashAlpha -= 0.015;
+  }
 
   animationFrameId = requestAnimationFrame(draw)
 }
@@ -306,6 +350,7 @@ function handleCanvasClick(e: MouseEvent) {
 
   if (props.mode === 'play') {
     // In play mode, handle mirror placement
+    if (props.disableMirrors) return;
     if (!props.level.isFixed(col, row)) {
       // Three click cycle for mirrors
       const current = props.level.grid[row]![col]
@@ -407,26 +452,17 @@ watch(
       cancelAnimationFrame(animationFrameId)
       animationFrameId = null
     }
-    photon = { progress: 1, segCount: 0 }
+    globalProgress = 1
     setupCanvas()
     draw()
   }
 )
 
-// Watch for source gates changes to update photon animation
-watch(
-  () => props.sourceGates,
-  () => {
-    photon.segCount = props.level.trace(props.sourceGates).segs.length
-  },
-  { deep: true }
-)
-
 function resetPhoton() {
-  photon = { progress: 0, segCount: props.level.trace(props.sourceGates).segs.length }
+  globalProgress = 0
 }
 
-defineExpose({ resetPhoton })
+defineExpose({ resetPhoton, triggerFlash })
 </script>
 
 <template>

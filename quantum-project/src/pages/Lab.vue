@@ -15,6 +15,7 @@ interface LevelConfigLocal {
   sources: Array<{ col: number; row: number; dir?: string }>
   ions: Array<{ col: number; row: number }>
   walls?: Array<{ col: number; row: number; type?: WallType }>
+  mirrors?: Array<{ col: number; row: number; dir: 'fwd' | 'back' }>
   availableGates?: string[]
   prePlacedGates?: string[][]
   lockedGateIndices?: number[]
@@ -25,6 +26,8 @@ interface LevelConfigLocal {
   winCondition?: string
 }
 
+const showWelcome = ref(true)
+
 const defaultConfig = (): LevelConfigLocal => ({
   name: 'Custom Level',
   cols: 10,
@@ -32,6 +35,7 @@ const defaultConfig = (): LevelConfigLocal => ({
   sources: [],
   ions: [],
   walls: [],
+  mirrors: [],
   availableGates: ['X', 'H', 'CNOT'],
   prePlacedGates: [],
   lockedGateIndices: [],
@@ -41,10 +45,12 @@ const defaultConfig = (): LevelConfigLocal => ({
   goal: 'Test',
   winCondition: 'any',
 })
+
 // Checks if a value is a plain object (not null or an array)
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
+
 // normalises an uploaded level (to prevent errors)
 function normaliseLoadedLevel(data: Partial<LevelConfigLocal>): LevelConfigLocal {
   const fallback = defaultConfig()
@@ -61,6 +67,7 @@ function normaliseLoadedLevel(data: Partial<LevelConfigLocal>): LevelConfigLocal
     sources: Array.isArray(data.sources) ? data.sources : fallback.sources,
     ions: Array.isArray(data.ions) ? data.ions : fallback.ions,
     walls: Array.isArray(data.walls) ? data.walls : fallback.walls,
+    mirrors: Array.isArray(data.mirrors) ? data.mirrors : fallback.mirrors,
     availableGates: Array.isArray(data.availableGates) ? data.availableGates : fallback.availableGates,
     prePlacedGates: Array.isArray(data.prePlacedGates) ? data.prePlacedGates : fallback.prePlacedGates,
     lockedGateIndices: Array.isArray(data.lockedGateIndices) ? data.lockedGateIndices : fallback.lockedGateIndices,
@@ -84,7 +91,7 @@ function clearStatus() {
 
 // User made level
 const editorLevel = computed(() => {
-  return new Level({
+  const lvl = new Level({
     name: levelConfig.name,
     cols: levelConfig.cols,
     rows: levelConfig.rows,
@@ -99,12 +106,66 @@ const editorLevel = computed(() => {
     hint: levelConfig.hint,
     goal: levelConfig.goal,
   });
+
+  levelConfig.mirrors?.forEach(m => {
+    const row = lvl.grid[m.row];
+    if (row) {
+      row[m.col] = m.dir;
+    }
+  });
+
+  return lvl;
 });
 
 // Mode: edit or play
 const mode = ref<'edit' | 'play'>('edit')
 const levelConfig = reactive<LevelConfigLocal>(defaultConfig())
 const gateOptions = ['X', 'H', 'CNOT']
+
+// Win Condition
+watch(() => levelConfig.ions.length, (newLen) => {
+  let wc = levelConfig.winCondition || 'any';
+  let conditions: string[] = [];
+
+  if (wc === 'any') {
+    conditions = [];
+  } else if (wc.includes(',')) {
+    conditions = wc.split(',');
+  } else if (/^[01]+$/.test(wc)) {
+    conditions = wc.split('');
+  } else {
+    conditions = Array(newLen).fill('any');
+  }
+
+  if (conditions.length > newLen) {
+    conditions = conditions.slice(0, newLen);
+  } else {
+    while (conditions.length < newLen) {
+      conditions.push('any');
+    }
+  }
+  levelConfig.winCondition = conditions.length ? conditions.join(',') : 'any';
+}, { immediate: true });
+
+function getIonWinCondition(index: number): string {
+  const wc = levelConfig.winCondition || 'any';
+  if (wc === 'any') return 'any';
+  const parts = wc.split(',');
+  return parts[index] || 'any';
+}
+
+function setIonWinCondition(index: number, value: string) {
+  let wc = levelConfig.winCondition || 'any';
+  let parts = wc === 'any' ? Array(levelConfig.ions.length).fill('any') : wc.split(',');
+  
+  parts[index] = value;
+  levelConfig.winCondition = parts.join(',');
+}
+
+function handleWinConditionChange(index: number, event: Event) {
+  const val = (event.target as HTMLSelectElement).value;
+  setIonWinCondition(index, val);
+}
 
 // Play Mode
 // -----------------------------------------
@@ -141,6 +202,9 @@ function handleMeasure() {
 
   gameBoardRef.value?.resetPhoton()
 
+  const maxGates = Math.max(1, ...playSourceGates.value.map(g => g ? g.length : 0))
+  const dynamicDelayMs = 800 * (1 + (maxGates - 1) * 0.1)
+
   setTimeout(() => {
     if (isMeasured.value) {
       result.value = measuredValues.value ? measuredValues.value.join(',') : '—'
@@ -169,7 +233,7 @@ function handleMeasure() {
     if (hasWon) {
       showWin.value = true
     }
-  }, 800) // TRAVEL_MS
+  }, dynamicDelayMs) // TRAVEL_MS
 }
 
 function handleReset() {
@@ -229,9 +293,7 @@ function onLaserDrop(e: DragEvent) {
 }
 
 function removeLaserGate(index: number) {
-  const activeIdx = activeSourceIndex.value
-
-
+  const activeIdx = activeSourceIndex.value  
   if (isGateLocked(index)) {
     return;
   }
@@ -262,6 +324,7 @@ function isGateLocked(localIndex: number) {
 const paletteItems = [
   { type: 'source', label: 'Laser Source', icon: '■', color: 'var(--color-primary)' },
   { type: 'ion', label: 'Ion', icon: '●', color: 'var(--color-danger)' },
+  { type: 'mirror', label: 'Fixed Mirror', icon: '⤡', color: '#888' },
   { type: 'wall-standard', label: 'Wall (Blocks All)', icon: '✕', color: 'var(--color-danger)' },
   { type: 'wall-cyan', label: 'Wall (Cyan)', icon: '✕', color: 'var(--color-primary)' },
   { type: 'wall-purple', label: 'Wall (Purple)', icon: '✕', color: 'var(--color-secondary)' },
@@ -279,14 +342,24 @@ function handleItemDrop(col: number, row: number, itemType: string) {
     levelConfig.sources = levelConfig.sources.filter(s => !(s.col === col && s.row === row))
     levelConfig.ions = levelConfig.ions.filter(i => !(i.col === col && i.row === row))
     levelConfig.walls = levelConfig.walls?.filter(w => !(w.col === col && w.row === row))
+    levelConfig.mirrors = levelConfig.mirrors?.filter(m => !(m.col === col && m.row === row))
     return
   }
   if (itemType === 'source') {
     if (levelConfig.sources.some(s => s.col === col && s.row === row)) return
     levelConfig.sources.push({ col, row, dir: 'right' })
   } else if (itemType === 'ion') {
+    if (levelConfig.ions.length >= 6) {
+      setStatus('Limit reached: Maximum 6 ions allowed', 'error')
+      return
+    }
     if (levelConfig.ions.some(i => i.col === col && i.row === row)) return
     levelConfig.ions.push({ col, row })
+  } else if (itemType === 'mirror') {
+    levelConfig.mirrors = levelConfig.mirrors || []
+    if (!levelConfig.mirrors.some(m => m.col === col && m.row === row)) {
+      levelConfig.mirrors.push({ col, row, dir: 'fwd' })
+    }
   } else if (itemType.startsWith('wall-')) {
     if (levelConfig.walls?.some(w => w.col === col && w.row === row)) return
     const wallType = (itemType.split('-')[1] || 'standard') as WallType
@@ -305,6 +378,12 @@ function handleEditCanvasClick(col: number, row: number) {
     const currentDir = source.dir || 'right'
     const nextIdx = (DIRS.indexOf(currentDir) + 1) % DIRS.length
     source.dir = DIRS[nextIdx]
+    return;
+  }
+
+  const mirror = levelConfig.mirrors?.find(m => m.col === col && m.row === row)
+  if (mirror) {
+    mirror.dir = mirror.dir === 'fwd' ? 'back' : 'fwd'
   }
 }
 
@@ -329,7 +408,22 @@ function testLevel() {
       hint: levelConfig.hint,
       goal: levelConfig.goal,
     }
+    
     playLevel.value = new Level(cfg)
+    levelConfig.mirrors?.forEach(m => {
+      const row = playLevel.value!.grid[m.row];
+      if (row) {
+        row[m.col] = m.dir;
+      }
+    })
+
+    // Lock preplaced mirrors in place for the play level
+    const originalIsFixed = playLevel.value.isFixed.bind(playLevel.value)
+    playLevel.value.isFixed = (c: number, r: number) => {
+      if (levelConfig.mirrors?.some(m => m.col === c && m.row === r)) return true;
+      return originalIsFixed(c, r);
+    }
+
     playSourceGates.value = (cfg.prePlacedGates || []).map((g: string[]) => [...g])
     playGateInventory.value = { ...(levelConfig.gateInventory || {}) }
 
@@ -509,30 +603,30 @@ function uploadLevel(e: Event) {
               Goal
               <input v-model="levelConfig.goal" type="text" style="width: 100%; padding: 2px 4px; margin-top: 2px" />
             </label>
-            <label style="display: block">
-              Win Condition
-              <select v-model="levelConfig.winCondition" style="width: 100%; padding: 2px 4px; margin-top: 2px">
-                <option value="any">Any</option>
+            
+            <div style="display: block; margin-top: 6px;">
+              <span style="display: block; margin-bottom: 6px; font-size: 12px; color: #ccc;">Win Condition</span>
+              <div v-if="levelConfig.ions.length === 0" style="padding: 8px; background: rgba(255,255,255,0.05); border: 1px dashed var(--color-border); border-radius: 3px; font-size: 11px; color: var(--color-subtle); text-align: center;">
+                Place an ion to set win conditions
+              </div>
+              <div v-else style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <div v-for="(ion, idx) in levelConfig.ions" :key="idx" style="display: flex; flex-direction: column; gap: 4px;">
+                  <span style="font-size: 10px; color: var(--color-subtle); text-transform: uppercase;">Ion {{ String.fromCharCode(65 + idx) }}</span>
+                  <select
+                    :value="getIonWinCondition(idx)"
+                    @change="handleWinConditionChange(idx, $event)"
+                    style="width: 55px; padding: 2px 4px; font-size: 11px;"
+                  >
+                    <option value="any">any</option>
+                    <option value="0">|0⟩</option>
+                    <option value="1">|1⟩</option>
+                    <option value="+">|+⟩</option>
+                    <option value="-">|-⟩</option>
+                  </select>
+                </div>
+              </div>
+            </div>
 
-                <optgroup label="General States (Any Qubit Count)">
-                  <option value="normal">All Normal (|0⟩ or |1⟩)</option>
-                  <option value="all-0">All |0⟩</option>
-                  <option value="all-1">All |1⟩</option>
-                </optgroup>
-
-                <optgroup label="Superposition">
-                  <option value="superposition">All in Superposition (|+⟩ or |-⟩)</option>
-                  <option value="positive-superposition">All |+⟩</option>
-                  <option value="negative-superposition">All |-⟩</option>
-                  <option value="mixed">Mixed (Normal & Superposition)</option>
-                </optgroup>
-
-                <optgroup label="2 Qubit Specific">
-                  <option value="01">|01⟩ State</option>
-                  <option value="10">|10⟩ State</option>
-                </optgroup>
-              </select>
-            </label>
           </section>
 
           <section style="padding: 10px; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: 3px">
@@ -624,19 +718,20 @@ function uploadLevel(e: Event) {
             v-for="item in paletteItems"
             :key="item.type"
             draggable="true"
-            @dragstart="onPaletteItemDragStart($event, item)"
+            @dragstart="item.type === 'ion' && levelConfig.ions.length >= 6 ? $event.preventDefault() : onPaletteItemDragStart($event, item)"
               :style="{
               padding: '10px 8px',
               background: item.color,
               color: 'var(--color-bg)',
               border: '1px solid var(--color-border)',
               borderRadius: '3px',
-              cursor: 'grab',
+              cursor: (item.type === 'ion' && levelConfig.ions.length >= 6) ? 'not-allowed' : 'grab',
               fontSize: '11px',
               fontWeight: 'bold',
               textAlign: 'center',
               userSelect: 'none',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
+              boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
+              opacity: (item.type === 'ion' && levelConfig.ions.length >= 6) ? 0.3 : 1,
             }"
           >
             {{ item.icon }} {{ item.label }}
@@ -841,6 +936,19 @@ function uploadLevel(e: Event) {
               Back to Edit
             </button>
           </div>
+        </div>
+      </div>
+      <div v-if="showWelcome" :class="styles.popupOverlay" @click="showWelcome = false" style="z-index: 9999;">
+        <div :class="styles.popupModal" style="text-align: center; max-width: 400px;" @click.stop>
+          <div :class="styles.popupTitle" style="color: var(--color-primary); font-size: 20px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">
+            Lab Mode
+          </div>
+          <div :class="styles.popupText" style="margin-bottom: 24px; font-size: 14px; line-height: 1.5;">
+            Create your own custom levels in edit mode. Press the test level button on the left to play them. Right click to remove elements.
+          </div>
+          <button @click="showWelcome = false" class="lab-btn" style="width: 100%; padding: 8px; border-color: var(--color-primary); box-shadow: 0 0 8px rgba(0, 238, 255, 0.3);">
+            Got it
+          </button>
         </div>
       </div>
       </div>

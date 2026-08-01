@@ -1,0 +1,312 @@
+.gateItemH {
+  border-color: var(--color-secondary) !important;
+  color: var(--color-secondary) !important;
+}
+
+.gateItemH:hover {
+  box-shadow: 0 0 8px var(--color-secondary) !important;
+}
+
+.laserGateH {
+  background-color: var(--color-secondary) !important;
+  color: #000 !important;
+}
+
+.tutorialLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.tutorialDimmer {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  pointer-events: none;
+}
+
+.tutorialPopover {
+  position: fixed;
+  z-index: 1002;
+  background: var(--color-bg-light);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-glow);
+  padding: 16px;
+  width: min(620px, calc(100vw - 24px));
+  pointer-events: auto;
+  font-family: var(--font-mono);
+}
+
+.tutorialSandboxPopover {
+  padding: 18px;
+}
+
+.tutorialTourContent,
+.tutorialSandboxContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tutorialSandboxContent {
+  max-height: calc(100vh - 120px);
+  height: 100%;
+  overflow: hidden;
+}
+
+.tutorialSandboxHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tutorialProgress {
+  color: var(--color-text-darker);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tutorialTitle,
+.tutorialInfoTitle,
+.tutorialBlochTitle,
+.tutorialGateName {
+  color: var(--color-primary);
+  font-weight: bold;
+  letter-spacing: 0.08em;
+}
+
+.tutorialTitle {
+  font-size: 20px;
+}
+
+.tutorialText,
+.tutorialStateSummary,
+.tutorialStateMessage,
+.tutorialStateResult,
+.tutorialInfoText {
+  color: var(--color-text);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.tutorialActions,
+.tutorialSandboxActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.tutorialPrimaryBtn,
+.tutorialSecondaryBtn,
+.tutorialGateAction,
+.tutorialInfoBtn {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  transition: var(--transition);
+}
+
+.tutorialPrimaryBtn,
+.tutorialGateAction {
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  color: #000;
+  font-weight: bold;
+  padding: 10px 16px;
+}
+
+.tutorialGateActionX {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #000;
+}
+
+.tutorialGateActionH {
+  background: var(--color-secondary);
+  border-color: var(--color-secondary);
+  color: #000;
+}
+
+.tutorialPrimaryBtn:hover,
+.tutorialGateAction:hover {
+  box-shadow: 0 0 12px var(--color-primary);
+}
+
+.tutorialSecondaryBtn {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-dim);
+  padding: 10px 16px;
+}
+
+.tutorialSecondaryBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.tutorialSandboxGrid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(260px, 320px);
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.tutorialBlochCard,
+.tutorialControlsCard,
+.tutorialInfoModal {
+  background: rgba(12, 12, 12, 0.96);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.tutorialBlochCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tutorialBlochSvg {
+  width: 220px;
+  height: 220px;
+}
+
+.tutorialStateLabel {
+  color: var(--color-primary);
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.tutorialStateSummary {
+  text-align: center;
+}
+
+.tutorialStateMessage {
+  color: var(--color-secondary);
+  border: 1px solid rgba(136, 51, 255, 0.35);
+  background: rgba(136, 51, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+
+.tutorialStateResult {
+  color: var(--color-text-dim);
+}
+
+.tutorialControlsCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tutorialGateRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.tutorialGateCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: rgba(20, 20, 20, 0.85);
+  min-width: 0;
+  position: relative;
+}
+
+.tutorialGateX {
+  border-color: var(--color-danger);
+}
+
+.tutorialGateH {
+  border-color: var(--color-secondary);
+}
+
+.tutorialGateTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tutorialGateName {
+  font-size: 16px;
+}
+
+.tutorialInfoBtn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.tutorialInfoBtn:hover {
+  box-shadow: 0 0 8px var(--color-primary);
+}
+
+.tutorialGateAction {
+  width: 100%;
+}
+
+.tutorialSandboxActionsBottom {
+  justify-content: space-between;
+}
+
+.tutorialInfoOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1003;
+  background: rgba(0, 0, 0, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  pointer-events: auto;
+}
+
+.tutorialInfoModal {
+  max-width: 420px;
+  width: min(100%, 420px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: var(--font-mono);
+}
+
+.tutorialInfoCloseBtn {
+  align-self: flex-end;
+}
+
+@media (max-width: 760px) {
+  .tutorialSandboxGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .tutorialPopover {
+    width: calc(100vw - 24px) !important;
+  }
+
+  .tutorialSandboxActionsBottom {
+    justify-content: flex-end;
+  }
+}

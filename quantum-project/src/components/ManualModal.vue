@@ -23,10 +23,7 @@ function goToLevel(index: number) {
 function scrollToSection(id: string) {
   const el = document.getElementById(id)
   if (el && modalRef.value) {
-    modalRef.value.scrollTo({
-      top: el.offsetTop - 32, 
-      behavior: 'smooth'
-    })
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 
@@ -61,7 +58,7 @@ watch(() => props.isOpen, (newVal) => {
       <button @click="$emit('close')" class="manualCloseBtn">✕</button>
       
       <ManualSidebar @scrollToSection="scrollToSection" />
-      <ManualContent @goToLevel="goToLevel" />
+      <ManualContent @goToLevel="goToLevel" @scrollToSection="scrollToSection" />
     </div>
   </div>
 </template>

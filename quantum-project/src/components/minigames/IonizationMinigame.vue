@@ -215,10 +215,10 @@ onUnmounted(() => {
     </div>
 
     <div class="sidebar">
-      <h3>Ionization</h3>
+      <h3>Ionisation</h3>
 
       <div class="score-display">
-        Ytterbium atoms ionized
+        Ytterbium atoms ionised
         <div class="score-numbers">
           <span :class="{ 'complete-text': score >= TARGET_SCORE }">{{ score }}</span>
           / {{ TARGET_SCORE }}
@@ -226,7 +226,7 @@ onUnmounted(() => {
       </div>
 
       <div class="instructions">
-        <p>Target un-ionized Yb atoms.</p>
+        <p>Target un-ionised Yb atoms.</p>
         <p><strong>Click</strong> to fire high energy electrons.</p>
       </div>
     </div>
@@ -234,8 +234,8 @@ onUnmounted(() => {
     <!-- Welcome Modal -->
     <div v-if="showWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
       <div :class="styles.welcomeModal">
-        <div :class="styles.welcomeTitle">Ionization Stage</div>
-        <div :class="styles.welcomeText">Point and click to fire electrons at the Yb atoms and Ionize them.</div>
+        <div :class="styles.welcomeTitle">Ionisation Stage</div>
+        <div :class="styles.welcomeText">Point and click to fire electrons at the Yb atoms and Ionise them.</div>
         <button :class="styles.welcomeBtn" @click="showWelcome = false">Begin</button>
       </div>
     </div>

@@ -42,9 +42,12 @@ describe('LEVELS integrity', () => {
   it('keeps pre-placed and locked gate indices correct', () => {
     for (const level of LEVELS) {
       const prePlaced = level.prePlacedGates ?? [];
-      const flat = prePlaced.flat();
+      const flat = prePlaced.flat(Infinity);
 
       for (const lockedIndex of level.lockedGateIndices) {
+        if (lockedIndex >= flat.length) {
+          console.error(`Error in level:`, level); 
+        }
         expect(lockedIndex).toBeGreaterThanOrEqual(0);
         expect(lockedIndex).toBeLessThan(flat.length);
       }

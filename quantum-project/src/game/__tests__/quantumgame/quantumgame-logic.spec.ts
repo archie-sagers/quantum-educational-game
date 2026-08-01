@@ -96,6 +96,24 @@ describe('quantumgame logic', () => {
     expect(result.states[1]?.state).toBe('|1⟩');
   });
 
+  it('accepts only correlated GHZ states for the GHZ win condition', () => {
+    const ghzStates = [
+      { ionIndex: 0, state: '|0⟩' as const, p0: '100%', p1: '0%' },
+      { ionIndex: 1, state: '|0⟩' as const, p0: '100%', p1: '0%' },
+      { ionIndex: 2, state: '|0⟩' as const, p0: '100%', p1: '0%' },
+    ];
+
+    expect(checkWinCondition('ghz', ghzStates)).toBe(true);
+    expect(
+      checkWinCondition('ghz', [
+        ghzStates[0],
+        { ionIndex: 1, state: '|1⟩', p0: '0%', p1: '100%' },
+        ghzStates[2],
+      ]),
+    ).toBe(false);
+    expect(checkWinCondition('ghz', ghzStates.slice(0, 2))).toBe(false);
+  });
+
   it('check lastQuantumSystem is working', () => {
     const level = new Level({
       name: 'Measure cache',
