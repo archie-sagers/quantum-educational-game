@@ -8,20 +8,22 @@ const emits = defineEmits<{
   (e: 'complete'): void
 }>()
 
+// UI & Progression State
+// ------------------
 const showWelcome = ref(true)
 const finished = ref(false)
 const stage = ref<'doppler' | 'sideband' | 'done'>('doppler')
 
-// Dials for both Doppler and Sideband cooling
-// same shape used for both dials, sideband is harder
+// Function to create a dial state
+// Both cooling phases share this data structure but use different difficulty parameters
 function makeDial(zoneWidth: number, wobbleSpeed: number, wobbleAmp: number, fillMs: number) {
   return reactive({
     value: 0,
     targetCenter: 50,
-    zoneWidth,
-    wobbleSpeed,
-    wobbleAmp,
-    fillMs,
+    zoneWidth, // Width of the target zone (percentage)
+    wobbleSpeed, // How fast the target oscillates (lower is faster)
+    wobbleAmp, // Amplitude of the primary oscillation
+    fillMs, // How many milliseconds it takes to reach 100% progress
     progress: 0,
     locked: false,
   })
@@ -29,11 +31,14 @@ function makeDial(zoneWidth: number, wobbleSpeed: number, wobbleAmp: number, fil
 
 export type Dial = ReturnType<typeof makeDial>
 
+// Sideband is harder
 const dopplerDial = makeDial(30, 1500, 30, 8000)
-const sidebandDial = makeDial(20, 1100, 24, 8000) // narrower zone + faster wobble, slightly harder
+const sidebandDial = makeDial(20, 1100, 24, 8000) 
 
 const sidebandVisible = computed(() => stage.value !== 'doppler')
 
+// Simulation & Game Loop State
+// ------------------
 const ionShake = reactive({ x: 0, y: 0 })
 const laserLocked = ref(false)
 
@@ -43,15 +48,20 @@ let nextPhotonId = 0
 let rafId: number | null = null
 let lastTime = performance.now()
 
-// vibration goes 1 to 0.3 during doppler, then 0.3 to 0 during sideband
+// Calculates the vibration amplitude based on cooling stage
 const vibration = computed(() => {
+  // doppler cooling reduces vibration from 1.0 to 0.3
   if (stage.value === 'doppler') return 1 - (dopplerDial.progress / 100) * 0.7
+  // sideband cooling reduces vibration from 0.3 to 0.0
   if (stage.value === 'sideband') return 0.3 - (sidebandDial.progress / 100) * 0.3
   return 0
 })
 
+// Updates a dial's target position and calculates user progress
 function updateDial(dial: Dial, dt: number, time: number, onDone: () => void) {
   dial.targetCenter = 50 + Math.sin(time / dial.wobbleSpeed) * dial.wobbleAmp + Math.cos(time / 380) * 4
+  
+  // Calculate bounds to see if the user's slider value overlaps target zone
   const min = Math.max(0, dial.targetCenter - dial.zoneWidth / 2)
   const max = Math.min(100, dial.targetCenter + dial.zoneWidth / 2)
   const inZone = dial.value >= min && dial.value <= max
@@ -63,16 +73,20 @@ function updateDial(dial: Dial, dt: number, time: number, onDone: () => void) {
       onDone()
     }
   } else if (dial.progress > 0) {
+    // Slowly drain progress when outside the zone
     dial.progress = Math.max(0, dial.progress - (dt / 2000) * 100)
   }
 
-  return inZone
+  return inZone // Return whether the user is currently in the target zone
 }
 
+// Main render/game loop
+// ------------------
 function tick(time: number) {
   const dt = time - lastTime
   lastTime = time
 
+  // Run game logic if overlays are closed
   if (!showWelcome.value && !finished.value) {
     let inZone = false
 
@@ -87,10 +101,11 @@ function tick(time: number) {
 
     laserLocked.value = inZone
 
+    // If dial in zone, emit visual photon particles
     if (inZone && Math.random() < 0.25) {
       photons.value.push({
         id: nextPhotonId++,
-        x: 85, // Centered on the ion (right: 15%)
+        x: 85, // Centered on the ion in the UI (right: 15%)
         y: 50,
         vx: (Math.random() - 0.5) * 90,
         vy: (Math.random() - 0.5) * 90,
@@ -104,13 +119,14 @@ function tick(time: number) {
     p.y += (p.vy * dt) / 1000
     p.opacity -= dt / 600
   }
+  
+  // Remove invisible photons
   photons.value = photons.value.filter(p => p.opacity > 0)
 
-  // ion jitters based on current vibration amount
+  // Apply random jitter to the ion based on vibration levels
   const amp = vibration.value
   ionShake.x = (Math.random() - 0.5) * 14 * amp
   ionShake.y = (Math.random() - 0.5) * 14 * amp
-
   // NOTE - may need to move this shake logic to a canvas render loop if it causes performance issues
 
   rafId = requestAnimationFrame(tick)
@@ -120,11 +136,13 @@ function proceed() {
   emits('complete')
 }
 
+// Start the game loop when mounted
 onMounted(() => {
   lastTime = performance.now()
   rafId = requestAnimationFrame(tick)
 })
 
+// Clean up loop to prevent running in the background
 onUnmounted(() => {
   if (rafId) cancelAnimationFrame(rafId)
 })
