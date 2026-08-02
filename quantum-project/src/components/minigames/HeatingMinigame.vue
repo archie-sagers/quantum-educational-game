@@ -7,29 +7,46 @@ const emits = defineEmits<{
   (e: 'complete'): void
 }>()
 
+// UI & Progression State
+// ------------------
 const showWelcome = ref(true)
 const welcomeStep = ref(1)
+const isComplete = ref(false)
+
+// Game Logic
+// ------------------
 const temperature = ref(0)
 const targetCenter = ref(50)
 const progress = ref(0)
 const isOverheating = ref(false)
-const isComplete = ref(false)
 
+// Particle System
+// Stores bubbles representing vaporisation
+// ------------------
 const bubbles = ref<Array<{ id: number; x: number; y: number; speed: number; size: number; opacity: number }>>([])
-let rafId: number | null = null
-let lastTime = performance.now()
 let nextId = 0
 
+// Game Loop
+// ------------------
+let rafId: number | null = null
+let lastTime = performance.now()
+
+// Tuning Constants
+// ------------------
 const ZONE_WIDTH = 30
 const FILL_DURATION = 8000
 const WOBBLE_SPEED = 1500;
 const FADE_RATE = 3000;
 const BUBBLE_SPAWN_CHANCE = 0.1;
 
+// Calculate upper and lower bounds of the target zone
 const targetMin = computed(() => Math.max(0, targetCenter.value - ZONE_WIDTH / 2))
 const targetMax = computed(() => Math.min(100, targetCenter.value + ZONE_WIDTH / 2))
 
+// Main Game Loop
+// ------------------
 function tick(time: number) {
+  // Pause simulation if popup is open or level is complete
   if (showWelcome.value || isComplete.value) {
     lastTime = time
     rafId = requestAnimationFrame(tick)
@@ -39,21 +56,26 @@ function tick(time: number) {
   const dt = time - lastTime
   lastTime = time
 
+  // Move Target Zone
   targetCenter.value = 50 + Math.sin(time / WOBBLE_SPEED) * 30 + Math.cos(time / 400) * 5
 
+  // Check User Input
   const temp = temperature.value
-  isOverheating.value = temp > targetMax.value
+  isOverheating.value = temp > targetMax.value // Visual warning
 
   if (temp >= targetMin.value && temp <= targetMax.value) {
+    // Fill progress if inside zone
     progress.value = Math.min(100, progress.value + (dt / FILL_DURATION) * 100)
     if (progress.value >= 100) {
       finish()
       return
     }
   } else if (progress.value > 0) {
+    // Draining progress if they move out of zone
     progress.value = Math.max(0, progress.value - (dt / 2000) * 100)
   }
 
+  // Spawn Bubbles
   if (temp >= targetMin.value && Math.random() < BUBBLE_SPAWN_CHANCE * (temp / 50)) {
     bubbles.value.push({
       id: nextId++,
@@ -65,10 +87,12 @@ function tick(time: number) {
     })
   }
 
+  // Physics for bubbles
   for (const b of bubbles.value) {
-    b.y -= (b.speed * dt) / 1000
-    b.opacity -= dt / FADE_RATE
+    b.y -= (b.speed * dt) / 1000 // Move up
+    b.opacity -= dt / FADE_RATE  // Fade out
   }
+  // Remove invisible bubbles
   bubbles.value = bubbles.value.filter(b => b.opacity > 0)
 
   rafId = requestAnimationFrame(tick)
@@ -82,11 +106,13 @@ function proceed() {
   emits('complete')
 }
 
+// Start game loop on mount
 onMounted(() => {
   lastTime = performance.now()
   rafId = requestAnimationFrame(tick)
 })
 
+// Prevent the loop from running in the background if finished
 onUnmounted(() => {
   if (rafId) cancelAnimationFrame(rafId)
 })
@@ -138,6 +164,7 @@ onUnmounted(() => {
             :style="{ bottom: targetCenter + '%', height: ZONE_WIDTH + '%' }"
           />
         </div>
+        <!-- User input -->
         <input
           type="range"
           v-model.number="temperature"
