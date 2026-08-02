@@ -12,6 +12,7 @@ const showWelcome = ref(true)
 const finished = ref(false)
 const stage = ref<'doppler' | 'sideband' | 'done'>('doppler')
 
+// Dials for both Doppler and Sideband cooling
 // same shape used for both dials, sideband is harder
 function makeDial(zoneWidth: number, wobbleSpeed: number, wobbleAmp: number, fillMs: number) {
   return reactive({
@@ -110,7 +111,7 @@ function tick(time: number) {
   ionShake.x = (Math.random() - 0.5) * 14 * amp
   ionShake.y = (Math.random() - 0.5) * 14 * amp
 
-  // NOTE - I may need to move this shake logic to a canvas render loop if it causes performance issues
+  // NOTE - may need to move this shake logic to a canvas render loop if it causes performance issues
 
   rafId = requestAnimationFrame(tick)
 }
@@ -224,108 +225,3 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.grid-bg {
-  background-image:
-    linear-gradient(rgba(0, 238, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 238, 255, 0.06) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-.laser-emitter {
-  position: absolute;
-  left: 8%;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 50px;
-  height: 50px;
-  background: var(--color-danger);
-  color: #000;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: bold;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 5;
-  transition: background 0.3s;
-}
-
-.laser-emitter.locked {
-  background: var(--color-primary);
-}
-
-.beam {
-  position: absolute;
-  left: calc(8% + 32px);
-  right: 15%;
-  top: 50%;
-  height: 2px;
-  transform: translateY(-50%);
-  background: var(--color-danger);
-  box-shadow: 0 0 8px var(--color-danger);
-  opacity: 0.7;
-  transition: background 0.3s, box-shadow 0.3s;
-  z-index: 3;
-}
-
-.beam.locked {
-  background: var(--color-primary);
-  box-shadow: 0 0 8px var(--color-primary);
-  opacity: 1;
-}
-
-.ion {
-  position: absolute;
-  right: 15%;
-  top: 50%;
-  width: 50px;
-  height: 50px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
-}
-
-.ion-label {
-  width: 40px;
-  height: 40px;
-  background: radial-gradient(circle at 30% 30%, var(--color-secondary), var(--color-bg));
-  border: 2px solid var(--color-secondary-light);
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: bold;
-  font-size: 14px;
-  color: var(--color-text);
-  box-shadow: 0 0 15px var(--color-secondary);
-  position: relative;
-  z-index: 2;
-  transition: all 1.5s ease-in-out;
-}
-
-.ion.stable .ion-label {
-  background: radial-gradient(circle at 30% 30%, var(--color-primary), var(--color-bg));
-  border-color: var(--color-primary-light);
-  box-shadow: 0 0 20px var(--color-primary);
-}
-
-.photon {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-primary-light);
-  box-shadow: 0 0 6px var(--color-primary);
-  pointer-events: none;
-  z-index: 4;
-}
-
-.dials {
-  display: flex;
-  gap: 24px;
-  margin-top: 20px;
-}
-</style>
