@@ -395,4 +395,4 @@ defineEmits<{
   </div>
 </template>
 
-<style scoped src="./ManualStyles.css"></style>
+<style scoped src="./manual.css"></style>
