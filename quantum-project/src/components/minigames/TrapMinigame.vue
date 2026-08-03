@@ -8,15 +8,24 @@ const emits = defineEmits<{
   (e: 'complete'): void
 }>()
 
+// UI & State
+// ----------
 const showWelcome = ref(true)
 const isComplete = ref(false)
-const isTopBottomActive = ref(true)
 const viewportRef = ref<HTMLElement | null>(null)
 
-const WIN_TIME_MS = 8000
-const SPRING_CONSTANT = 0.0007
-const TRAP_BOUNDS = { min: 25, max: 75 }
+// Game Logic State 
+// ----------
+const isTopBottomActive = ref(true)
+const draggedIon = ref<Ion | null>(null)
 
+// Physics Constants
+// ----------
+const WIN_TIME_MS = 8000 // How long the player must hold the ion in the trap
+const SPRING_CONSTANT = 0.0007 // Strength of the electric field pushing/pulling the ion
+const TRAP_BOUNDS = { min: 25, max: 75 } // The area in the center that constitutes the trap
+
+// Initialise ions on the left and right sides of the screen
 const ions = ref<Ion[]>([
   { id: 1, x: 10, y: 25, vx: 0, vy: 0, isDragging: false, inTrap: false, timeInTrap: 0 },
   { id: 2, x: 10, y: 50, vx: 0, vy: 0, isDragging: false, inTrap: false, timeInTrap: 0 },
@@ -26,15 +35,17 @@ const ions = ref<Ion[]>([
   { id: 6, x: 90, y: 75, vx: 0, vy: 0, isDragging: false, inTrap: false, timeInTrap: 0 },
 ])
 
-const draggedIon = ref<Ion | null>(null)
 let rafId: number | null = null
 let lastTime = performance.now()
 
+// Flips the electric field polarity. 
 function toggleModulation() {
   if (showWelcome.value || isComplete.value) return
   isTopBottomActive.value = !isTopBottomActive.value
 }
 
+// Drag & Drop Handling
+// ----------
 function startDrag(ion: Ion, e: MouseEvent) {
   if (showWelcome.value || isComplete.value) return
   draggedIon.value = ion
@@ -49,12 +60,15 @@ function handleMove(e: MouseEvent) {
   dragMove(e)
 }
 
+// Translates pixel mouse coordinates into viewport percentages (0-100%)
 function dragMove(e: MouseEvent) {
   if (!viewportRef.value || !draggedIon.value) return
+  
   const rect = viewportRef.value.getBoundingClientRect()
   const nx = ((e.clientX - rect.left) / rect.width) * 100
   const ny = ((e.clientY - rect.top) / rect.height) * 100
 
+  // Clamp the ion to edges of viewport (so it can't be dragged off screen)
   draggedIon.value.x = Math.max(0, Math.min(100, nx))
   draggedIon.value.y = Math.max(0, Math.min(100, ny))
 }
@@ -63,7 +77,7 @@ function onMouseUp() {
   if (!draggedIon.value) return
   const ion = draggedIon.value
 
-  // Check if the ion is dropped inside the trap bounds
+  // Check if the player let go of the ion inside the trap zone
   const droppedInTrap =
     ion.x >= TRAP_BOUNDS.min && ion.x <= TRAP_BOUNDS.max &&
     ion.y >= TRAP_BOUNDS.min && ion.y <= TRAP_BOUNDS.max
@@ -75,6 +89,8 @@ function onMouseUp() {
   draggedIon.value = null
 }
 
+// Main Physics Loop
+// ----------
 function loop(time: number) {
   if (showWelcome.value || isComplete.value) {
     lastTime = time
@@ -89,25 +105,28 @@ function loop(time: number) {
     if (ion.isDragging) continue
 
     if (ion.inTrap) {
+      // Calculate distance from the centre
       const dx = ion.x - 50
       const dy = ion.y - 50
 
+      // PAUL TRAP PHYSICS
+      // Pushes the ion towards the center on one axis, but away on the other axis
       if (isTopBottomActive.value) {
-        ion.vx += dx * SPRING_CONSTANT * dt
-        ion.vy -= dy * SPRING_CONSTANT * dt
+        ion.vx += dx * SPRING_CONSTANT * dt // Repulsive on X axis
+        ion.vy -= dy * SPRING_CONSTANT * dt // Attractive on Y axis
       } else {
-        ion.vx -= dx * SPRING_CONSTANT * dt
-        ion.vy += dy * SPRING_CONSTANT * dt
+        ion.vx -= dx * SPRING_CONSTANT * dt // Attractive on X axis
+        ion.vy += dy * SPRING_CONSTANT * dt // Repulsive on Y axis
       }
 
       ion.x += (ion.vx * dt) / 100
       ion.y += (ion.vy * dt) / 100
-      // console.log(ion.x, ion.y)
 
-      // Apply damping to the velocity
+      // Apply damping
       ion.vx *= 0.98
       ion.vy *= 0.98
 
+      // Check if ion fell out of the trap
       const escaped =
         ion.x < TRAP_BOUNDS.min || ion.x > TRAP_BOUNDS.max ||
         ion.y < TRAP_BOUNDS.min || ion.y > TRAP_BOUNDS.max
@@ -115,18 +134,24 @@ function loop(time: number) {
       if (escaped) {
         ion.inTrap = false
         ion.timeInTrap = 0
+        // Push outward when it escapes
         ion.vx = dx * 0.2
         ion.vy = dy * 0.2
       } else {
+        // Increment win timer if still trapped
         ion.timeInTrap += dt
         if (ion.timeInTrap >= WIN_TIME_MS && !isComplete.value) winTrap()
       }
     } else {
+      // Not in trap physics
       ion.x += (ion.vx * dt) / 100
       ion.y += (ion.vy * dt) / 100
+      
+      // Slow when drifting outside the trap
       ion.vx *= 0.9
       ion.vy *= 0.9
 
+      // Collision detection with the viewport walls
       if (ion.x < 5 || ion.x > 95) ion.vx *= -1
       if (ion.y < 5 || ion.y > 95) ion.vy *= -1
       ion.x = Math.max(5, Math.min(95, ion.x))
