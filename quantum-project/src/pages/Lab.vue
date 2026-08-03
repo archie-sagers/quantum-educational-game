@@ -7,6 +7,7 @@ import { Level, measureAll, checkWinCondition, calculateQuantumState } from '@/g
 import { type IonQuantumState, type WallType } from '@/game/types'
 import MobileWarning from '@/components/MobileWarning.vue'
 import BlochSpherePanel from '@/components/ui/BlochSpherePanel.vue'
+import LaserGatesModal from '@/components/ui/LaserGatesModal.vue'
 
 // Level config interface
 interface LevelConfigLocal {
@@ -812,65 +813,20 @@ function uploadLevel(e: Event) {
       </aside>
       </div>
 
-      <div v-if="showLaserGates && playLevel" :class="styles.laserGatesOverlay" @click="showLaserGates = false">
-        <div :class="styles.laserGatesModal" @click.stop>
-          <div :class="styles.laserGatesTitle">Laser Gates</div>
-
-          <div :class="styles.gateContainer">
-            <div :class="styles.appliedSection">
-              <div :class="styles.sectionLabel">Applied to Laser</div>
-              <div
-                @dragover="onLaserDragOver"
-                @drop="onLaserDrop"
-                :class="styles.laserDropZone"
-              >
-                <div v-if="activeGates.length > 0" :class="styles.gateStack">
-                  <div
-                    v-for="(gate, index) in activeGates"
-                    :key="`laser-gate-${index}`"
-                    :class="[
-                      styles.laserGate,
-                      { [styles.laserGateX as string]: gate === 'X' },
-                      { [styles.laserGateH as string]: gate === 'H' },
-                      { [styles.laserGateCNOT as string]: gate === 'CNOT' }
-                    ]"
-                  >
-                  <button v-if="!isGateLocked(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
-                    <div>{{ gate }}</div>
-                  </div>
-                </div>
-                <div v-else :class="styles.dropHint">Drag gates here</div>
-              </div>
-            </div>
-
-            <div :class="styles.divider"></div>
-
-            <div :class="styles.gatesSection">
-              <div :class="styles.sectionLabel">Available Gates</div>
-              <div :class="styles.gateGrid">
-                <div
-                    v-for="(gate, index) in playLevel.availableGates"
-                    :key="`gate-${index}`"
-                    draggable="true"
-                    @dragstart="onGateDragStart($event, gate)"
-                    :class="[styles.gateItem,
-                      { [styles.gateItemX as string]: gate === 'X' },
-                      { [styles.gateItemH as string]: gate === 'H' },
-                      { [styles.gateItemCNOT as string]: gate === 'CNOT' },
-                      { [styles.gateItemDisabled as string]: (playGateInventory[gate] ?? -1) === 0 }
-                    ]"
-                  >
-                  <div>{{ gate }}</div>
-                  <div v-if="playGateInventory[gate] !== undefined" :class="styles.gateItemCount">
-                    {{ playGateInventory[gate] }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <button @click="showLaserGates = false" :class="styles.doneBtn">Done</button>
-        </div>
-      </div>
+      <LaserGatesModal
+        v-if="showLaserGates && playLevel"
+        :activeGates="activeGates"
+        :displayedGateProgress="null" 
+        :availableGates="playLevel.availableGates"
+        :gateInventory="playGateInventory"
+        :isGateLocked="isGateLocked"
+        @close="showLaserGates = false"
+        @gateDragStart="onGateDragStart"
+        @laserDragOver="onLaserDragOver"
+        @laserDrop="onLaserDrop"
+        @removeGate="removeLaserGate"
+      />
+      
         <div v-if="showWin && mode === 'play'" :class="styles.popupOverlay" @click="showWin = false">
         <div :class="styles.popupModal" style="text-align: center; border-color: #0f8; box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);" @click.stop>
           <div :class="styles.popupTitle" style="color: #0f8; font-size: 20px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">

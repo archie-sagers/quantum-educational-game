@@ -11,7 +11,7 @@ const props = defineProps<{
   compact: boolean
 }>()
 
-// Converts ion index to a letter label (1 = A, etc)
+// Converts ion index to a letter label
 const label = String.fromCharCode(65 + props.ionIndex)
 
 // Converts degrees to radians

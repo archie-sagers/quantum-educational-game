@@ -9,6 +9,7 @@ import Tutorial, { TUTORIAL_STEPS } from '@/components/tutorial.vue'
 import styles from './Home.module.css'
 import MobileWarning from '@/components/MobileWarning.vue'
 import BlochSpherePanel from '@/components/ui/BlochSpherePanel.vue'
+import LaserGatesModal from '@/components/ui/LaserGatesModal.vue'
 
 // Minigame Imports
 import HeatingMinigame from '@/components/minigames/HeatingMinigame.vue'
@@ -924,85 +925,24 @@ onUnmounted(() => {
 
       </aside>
     </div>
-    <!-- End main-area -->
 
-    <!-- Laser Gates modal -->
-    <div v-if="showLaserGates" :class="styles.laserGatesOverlay" @click="showLaserGates = false">
-      <div :class="styles.laserGatesModal" @click.stop>
-        <div :class="styles.laserGatesTitle">Laser Gates</div>
-
-        <div :class="styles.gateContainer">
-          <!-- Applied gates -->
-          <div :class="styles.appliedSection">
-            <div :class="styles.sectionLabel">Applied to Laser
-                <span v-if="displayedGateProgress !== null" :class="styles.gateCount">
-                  {{ displayedGateProgress }}
-              </span>
-            </div>
-            <div
-              @dragover="onLaserDragOver"
-              @drop="onLaserDrop"
-              :class="styles.laserDropZone"
-            >
-              <div v-if="activeGates.length > 0" :class="styles.gateStack">
-                <div
-                  v-for="(gate, index) in activeGates"
-                  :key="`laser-gate-${index}`"
-                  :class="[
-                    styles.laserGate,
-                    { [styles.laserGateX as string]: gate === 'X' },
-                    { [styles.laserGateH as string]: gate === 'H' },
-                    { [styles.laserGateCNOT as string]: gate === 'CNOT' },
-                    { [styles.draggableGate as string]: !isGateLocked(index) }
-                  ]"
-                  :draggable="!isGateLocked(index)"
-                  @dragstart="onPlacedGateDragStart($event, index, gate)"
-                  @dragover.prevent
-                  @drop.stop="onPlacedGateDrop($event, index)"
-                >
-                  <div>{{ gate === 'X' ? 'X-Gate' : gate }}</div>
-                  <button v-if="!isGateLocked(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
-                </div>
-              </div>
-              <div v-else :class="styles.dropHint">Drag gates here</div>
-            </div>
-          </div>
-
-          <!-- Divider -->
-          <div :class="styles.divider"></div>
-
-          <!-- Available gates -->
-          <div :class="styles.gatesSection">
-            <div :class="styles.sectionLabel">Available Gates</div>
-            <div :class="styles.gateGrid">
-              <div
-                  v-for="(gate, index) in level.availableGates"
-                  :key="`gate-${index}`"
-                  draggable="true"
-                  @dragstart="onGateDragStart($event, gate)"
-                  @click="addGateToActive(gate)"
-                  :class="[styles.gateItem,
-                    { [styles.gateItemX as string]: gate === 'X' },
-                    { [styles.gateItemH as string]: gate === 'H' },
-                    { [styles.gateItemCNOT as string]: gate === 'CNOT' },
-                    { [styles.gateItemDisabled as string]: (gateInventory[gate] ?? -1) === 0 }
-                  ]"
-                >
-                  <button
-                    type="button"
-                    :class="styles.gateInfoBtn"
-                    @click.stop="openGateManual(gate)"
-                  >
-                    i
-                  </button>
-                  <div>{{ gate }}-Gate</div>
-                </div>
-              </div>
-              <button @click="showLaserGates = false" :class="styles.doneBtn">Done</button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <LaserGatesModal
+      v-if="showLaserGates"
+      :activeGates="activeGates"
+      :displayedGateProgress="displayedGateProgress"
+      :availableGates="level.availableGates"
+      :gateInventory="gateInventory"
+      :isGateLocked="isGateLocked"
+      @close="showLaserGates = false"
+      @gateDragStart="onGateDragStart"
+      @placedGateDragStart="onPlacedGateDragStart"
+      @laserDragOver="onLaserDragOver"
+      @laserDrop="onLaserDrop"
+      @placedGateDrop="onPlacedGateDrop"
+      @removeGate="removeLaserGate"
+      @addGate="addGateToActive"
+      @openGateManual="openGateManual"
+    />
     </div>
 
     <!-- Tutorial popup modal -->
