@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
-import ManualSidebar from './manual/ManualSidebar.vue'
-import ManualContent from './manual/ManualContent.vue'
+import ManualSidebar from './ManualSidebar.vue'
+import ManualContent from './ManualContent.vue'
 
 const props = defineProps<{
   isOpen: boolean
