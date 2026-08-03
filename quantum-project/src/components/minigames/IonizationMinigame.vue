@@ -7,51 +7,71 @@ const emit = defineEmits<{
   (e: 'complete'): void
 }>()
 
+// UI & Game State
+// --------------
 const showWelcome = ref(true)
-const score = ref(0)
 const isComplete = ref(false)
+
+// Game/Score
+// --------------
+const score = ref(0)
+const targetAtom = ref<{ x: number; y: number } | null>(null) // Used for final camera zoom
+
+// Entity
+// --------------
 const gunAngleRad = ref(-Math.PI / 2)
 const viewportRef = ref<HTMLElement | null>(null)
-const targetAtom = ref<{ x: number; y: number } | null>(null)
 const atoms = ref<Array<{ id: number; x: number; y: number; speed: number; isIonized: boolean }>>([])
 const pulses = ref<Array<{ id: number; x: number; y: number; vx: number; vy: number; angle: number }>>([])
 const electrons = ref<Array<{ id: number; x: number; y: number; vx: number; vy: number; opacity: number }>>([])
 
+// Engine State
+// --------------
 let rafId: number | null = null
 let lastTime = performance.now()
 let nextId = 0
 
+// Gameplay
+// --------------
 const TARGET_SCORE = 15
-const ATOM_SPAWN_RATE = 0.0005
-// TODO: add difficulty scaling as score increases
-const PULSE_SPEED = 60
-const HIT_RADIUS = 6
+const ATOM_SPAWN_RATE = 0.0005 // Probability per millisecond
+const PULSE_SPEED = 60 // Speed of fired electrons
+const HIT_RADIUS = 6 // Distance threshold for a successful hit
 const GUN_LENGTH_PX = 60
-const GUN_PIVOT_OFFSET_BOTTOM_PX = 10
+const GUN_PIVOT_OFFSET_BOTTOM_PX = 10 // How far from the bottom the gun rotates
 
-// Gun tracking
+// Tracks mouse position and calculates angle for electron gun
 function updateAim(e: MouseEvent) {
   if (isComplete.value || !viewportRef.value) return
 
   const rect = viewportRef.value.getBoundingClientRect()
+  
+  // Find exact coordinates of gun's pivot point
   const gunX = rect.left + rect.width / 2
   const gunY = rect.bottom - GUN_PIVOT_OFFSET_BOTTOM_PX
 
   const dx = e.clientX - gunX
   const dy = e.clientY - gunY
 
+  // Calculate angle
+  // If mouse goes below bottom of the screen (angle > 0), point straight left or straight right
   let angle = Math.atan2(dy, dx)
   if (angle > 0) angle = angle > Math.PI / 2 ? Math.PI : 0
 
   gunAngleRad.value = angle
 }
 
+// Fires an electron pulse from the tip of the gun.
 function fire() {
   if (isComplete.value || !viewportRef.value) return
 
   const rect = viewportRef.value.getBoundingClientRect()
 
+  // Convert pixel offsets to percentages 
+  // Matches the CSS positioning system
   const pivotYPercent = 100 - (GUN_PIVOT_OFFSET_BOTTOM_PX / rect.height) * 100
+  
+  // Polar coordinates (angle, length) to Cartesian (x, y)
   const tipXPercent = 50 + (Math.cos(gunAngleRad.value) * GUN_LENGTH_PX / rect.width) * 100
   const tipYPercent = pivotYPercent + (Math.sin(gunAngleRad.value) * GUN_LENGTH_PX / rect.height) * 100
 
@@ -65,7 +85,11 @@ function fire() {
   })
 }
 
+// Main game loop
+// Handles spawning, movement, and collision detection
+// --------------
 function tick(time: number) {
+  // Pause simulation while popup is open or game is won
   if (showWelcome.value || isComplete.value) {
     lastTime = time
     rafId = requestAnimationFrame(tick)
@@ -75,24 +99,25 @@ function tick(time: number) {
   const dt = time - lastTime
   lastTime = time
 
-  // Spawn Atoms
+  // Spawn new atoms
   if (Math.random() < ATOM_SPAWN_RATE * dt) {
     atoms.value.push({
       id: nextId++,
-      x: -10,
+      x: -10, // Spawn off-screen left
       y: 20 + Math.random() * 60,
       speed: 10 + Math.random() * 15,
       isIonized: false
     })
   }
 
-  // Move Atoms
+  // Move atoms across the screen
   for (const atom of atoms.value) {
     atom.x += (atom.speed * dt) / 1000
   }
+  // Remove atoms that drift off the right edge
   atoms.value = atoms.value.filter(a => a.x < 110)
 
-  // Electrons
+  // Move visual electron debris and fade out
   for (const electron of electrons.value) {
     electron.x += (electron.vx * dt) / 1000
     electron.y += (electron.vy * dt) / 1000
@@ -108,18 +133,22 @@ function tick(time: number) {
 
     let pulseHit = false
 
+    // Check collision against all atoms
     for (const atom of atoms.value) {
-      if (atom.isIonized) continue
+      if (atom.isIonized) continue // Ignore already hit atoms
 
+      // Find distance between pulse and atom
       const dx = atom.x - pulse.x
       const dy = atom.y - pulse.y
       const dist = Math.sqrt(dx * dx + dy * dy)
 
       if (dist < HIT_RADIUS) {
+        // Hit
         atom.isIonized = true
         pulseHit = true
         score.value++
 
+        // Spawn visual electron
         electrons.value.push({
           id: nextId++,
           x: atom.x,
@@ -136,6 +165,7 @@ function tick(time: number) {
       }
     }
 
+    // Clean up pulses that hit something or flew off-screen
     if (pulseHit || pulse.y < -10 || pulse.x < -10 || pulse.x > 110) {
       pulses.value.splice(i, 1)
     }
@@ -144,20 +174,27 @@ function tick(time: number) {
   rafId = requestAnimationFrame(tick)
 }
 
+// End-of-level sequence. 
+// Centers camera on the last ionised atom
 function triggerWin(finalAtom: { x: number; y: number }) {
   isComplete.value = true
+  
+  // Save for CSS custom properties to calculate origin of zoom
   targetAtom.value = { x: finalAtom.x, y: finalAtom.y }
 
   if (rafId) cancelAnimationFrame(rafId)
 
+  // Wait for zoom to finish before saying level is complete
   setTimeout(() => emit('complete'), 2500)
 }
 
+// Start game loop
 onMounted(() => {
   lastTime = performance.now()
   rafId = requestAnimationFrame(tick)
 })
 
+// Stop game loop on unmount
 onUnmounted(() => {
   if (rafId) cancelAnimationFrame(rafId)
 })
@@ -173,6 +210,7 @@ onUnmounted(() => {
       :style="targetAtom ? { '--zoom-x': targetAtom.x + '%', '--zoom-y': targetAtom.y + '%' } : {}"
     >
 
+      <!-- Neutral and Ionised Atoms -->
       <div
         v-for="atom in atoms"
         :key="atom.id"
@@ -183,6 +221,7 @@ onUnmounted(() => {
         {{ atom.isIonized ? 'Yb+' : 'Yb' }}
       </div>
 
+      <!-- Fired Electron Pulses -->
       <div
         v-for="pulse in pulses"
         :key="pulse.id"
@@ -194,6 +233,7 @@ onUnmounted(() => {
         }"
       />
 
+      <!-- Knocked-off electrons -->
       <div
         v-for="electron in electrons"
         :key="electron.id"
@@ -207,6 +247,7 @@ onUnmounted(() => {
         e⁻
       </div>
 
+      <!-- Gun -->
       <div
         class="gun"
         :style="{ transform: `rotate(${gunAngleRad}rad)` }"
