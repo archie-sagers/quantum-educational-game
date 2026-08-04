@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { measureAll, checkWinCondition, calculateQuantumState, WELCOME_POPUP, MAIN_WELCOME_POPUP,  Level} from '@/game/quantumgame'
-import { type IonQuantumState, type TutorialStepKey } from '@/game/types'
+import { type IonQuantumState } from '@/game/types'
 import { LEVELS, TUTORIAL_LEVEL } from '@/game/levels'
 
 import styles from './Home.module.css'
@@ -9,6 +9,7 @@ import styles from './Home.module.css'
 import ManualModal from '@/components/manual/ManualModal.vue'
 import GameBoard from '@/components/GameBoard.vue'
 import Tutorial, { TUTORIAL_STEPS } from '@/components/tutorial/tutorial.vue'
+import { useTutorial } from '@/components/tutorial/usetutorial'
 import MobileWarning from '@/components/mobile/MobileWarning.vue'
 import LaserGatesModal from '@/components/ui/LaserGatesModal.vue'
 import MeasurementSidebar from '@/components/ui/MeasurementSidebar.vue'
@@ -91,16 +92,6 @@ const currentPopup = computed(() => {
   return currentLevel.popups[popupIndex.value]
 })
 
-// Tutorial
-// ------------------
-const tutorialStep = ref(-1)
-const tutorialActive = ref(false)
-const tutorialTargetRect = ref<DOMRect | null>(null)
-const tutorialPhase = computed(() => (tutorialStep.value < TUTORIAL_STEPS.length ? 'tour' : 'tutorial-sandbox'))
-const tutorialCompleteLabel = computed(() => (tutorialStep.value >= TUTORIAL_STEPS.length ? 'Tutorial Sandbox' : 'Tutorial'))
-const tutorialStepData = computed(() => (tutorialStep.value >= 0 ? TUTORIAL_STEPS[tutorialStep.value] ?? null : null))
-const tutorialVisible = computed(() => tutorialActive.value)
-
 const goalBoxRef = ref<HTMLElement | null>(null)
 const manualBtnRef = ref<HTMLElement | null>(null)
 const hintContainerRef = ref<HTMLElement | null>(null)
@@ -111,7 +102,11 @@ const measureBtnRef = ref<HTMLElement | null>(null)
 const historyRef = ref<HTMLElement | null>(null)
 const blochPanelRef = ref<HTMLElement | null>(null)
 
-const tutorialTargetMap: Record<TutorialStepKey, typeof goalBoxRef> = {
+let level: Level = LEVELS[currentLevelIndex.value]!
+const shownPopupIndices = ref(new Set<number>())
+let lastPopupTrigger: string | null = null
+
+const tutorialTargetRefs = {
   goal: goalBoxRef,
   manual: manualBtnRef,
   hint: hintContainerRef,
@@ -123,91 +118,44 @@ const tutorialTargetMap: Record<TutorialStepKey, typeof goalBoxRef> = {
   bloch: blochPanelRef,
 }
 
-const checkTutorialStep = (key: 'bloch' | 'measure' | 'reset' | 'history') => {
-  return tutorialVisible.value && tutorialStepData.value?.key === key
-}
-
-function updateTutorialTargetRect() {
-  if (!tutorialVisible.value || !tutorialStepData.value) {
-    tutorialTargetRect.value = null
-    return
-  }
-  const target = tutorialTargetMap[tutorialStepData.value.key]?.value
-  tutorialTargetRect.value = target ? target.getBoundingClientRect() : null
-}
-
-async function startTutorial() {
-  if (currentStage.value !== 'main' || currentLevelIndex.value !== 0) {
-    await selectLevel(0)
-  }
-  showManual.value = false
-  showLaserGates.value = false
-  showLevelSelector.value = false
-  showPopup.value = false
-  isMeasured.value = false
-  measuredValues.value = null
-  level = TUTORIAL_LEVEL
-  ionInitialized.value = TUTORIAL_LEVEL.preInitialized
-  updateStateForTracing()
-  showTutorialWelcome.value = true
-}
-
-async function beginTutorialTour() {
-  showTutorialWelcome.value = false
-  tutorialActive.value = true
-  tutorialStep.value = 0
-  await nextTick()
-  updateTutorialTargetRect()
-}
-
-function skipTutorialWelcome() {
-  showTutorialWelcome.value = false
-  finishTutorial()
-}
-
-async function nextTutorialStep() {
-  if (tutorialStep.value < TUTORIAL_STEPS.length - 1) {
-    tutorialStep.value += 1
-    await nextTick()
-    updateTutorialTargetRect()
-    return
-  }
-
-  tutorialStep.value = TUTORIAL_STEPS.length
-  await nextTick()
-  updateTutorialTargetRect()
-}
-
-function finishTutorial() {
-  showManual.value = false
-  showLaserGates.value = false
-  showLevelSelector.value = false
-  showPopup.value = false
-  tutorialActive.value = false
-  tutorialStep.value = -1
-  localStorage.setItem('quantum_tutorial_completed', 'true')
-  level = LEVELS[0]!
-  currentStage.value = 'main'
-  selectLevel(0)
-}
-
-function skipTutorial() {
-  finishTutorial()
-}
-
-watch([tutorialStep, currentLevelIndex, showHint, showLaserGates, () => history.value.length, ionStates], () => {
-  if (tutorialVisible.value) {
-    nextTick(() => updateTutorialTargetRect())
-  }
+const {
+  tutorialStep,
+  tutorialVisible,
+  tutorialPhase,
+  tutorialCompleteLabel,
+  tutorialStepData,
+  tutorialTargetRect,
+  showTutorialWelcome,
+  startTutorial,
+  beginTutorialTour,
+  nextTutorialStep,
+  finishTutorial,
+  skipTutorial,
+  skipTutorialWelcome,
+  isTutorialStep: checkTutorialStep,
+} = useTutorial({
+  currentLevelIndex,
+  showHint,
+  showManual,
+  showLaserGates,
+  showLevelSelector,
+  showPopup,
+  isMeasured,
+  measuredValues,
+  history,
+  ionStates,
+  selectLevel,
+  updateStateForTracing,
+  configureTutorialLevel: () => {
+    level = TUTORIAL_LEVEL
+    ionInitialized.value = TUTORIAL_LEVEL.preInitialized
+  },
+  configureMainLevel: () => {
+    level = LEVELS[0]!
+    currentStage.value = 'main'
+  },
+  targetRefs: tutorialTargetRefs,
 })
-
-function handleWindowResize() {
-  updateTutorialTargetRect()
-}
-
-let level: Level = LEVELS[currentLevelIndex.value]!
-const shownPopupIndices = ref(new Set<number>())
-let lastPopupTrigger: string | null = null
 
 // MINIGAMES
 // ------------------
@@ -260,7 +208,7 @@ function selectMinigame(stage: string) {
 }
 
 const currentStageName = computed(() =>
-  tutorialActive.value
+  tutorialVisible.value
     ? 'Tutorial'
     : currentStage.value === 'main'
       ? `Level ${currentLevelIndex.value + 1}`
@@ -268,7 +216,7 @@ const currentStageName = computed(() =>
 )
 
 const currentStageGoal = computed(() =>
-  tutorialActive.value
+  tutorialVisible.value
     ? TUTORIAL_LEVEL.goal
     : currentStage.value === 'main'
       ? LEVELS[currentLevelIndex.value]?.goal
@@ -415,7 +363,6 @@ function addGateToActive(gateType: string) {
 
 const showWelcome = ref(currentStage.value === 'heating')
 const showMainWelcome = ref(currentStage.value === 'main')
-const showTutorialWelcome = ref(false)
 
 function closeWelcome() {
   showWelcome.value = false
@@ -660,7 +607,6 @@ onMounted(() => {
   popupIndex.value = 0
   showPopupByTrigger('onLoad')
   manualGlowInterval = setInterval(() => pulseManualGlow(), MANUAL_GLOW_INTERVAL_MS)
-  window.addEventListener('resize', handleWindowResize)
 })
 
 onUnmounted(() => {
@@ -668,7 +614,6 @@ onUnmounted(() => {
     clearInterval(manualGlowInterval)
     manualGlowInterval = null
   }
-  window.removeEventListener('resize', handleWindowResize)
 })
 </script>
 
