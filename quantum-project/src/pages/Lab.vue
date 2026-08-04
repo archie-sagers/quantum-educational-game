@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import { reactive, ref, computed, watch } from 'vue'
 defineOptions({ name: 'LabPage' })
-import styles from './Home.module.css'
-import GameBoard from '@/components/GameBoard.vue'
-import { Level, measureAll, checkWinCondition, calculateQuantumState } from '@/game/quantumgame'
+
+import { Level, checkWinCondition, calculateQuantumState } from '@/game/quantumgame'
 import { type IonQuantumState, type WallType } from '@/game/types'
+
+import GameBoard from '@/components/GameBoard.vue'
 import MobileWarning from '@/components/mobile/MobileWarning.vue'
 import MeasurementSidebar from '@/components/ui/MeasurementSidebar.vue'
 import LaserGatesModal from '@/components/ui/LaserGatesModal.vue'
+
 import { useGateInventory } from '@/components/gamelogic/usegateinventory'
+import { useMeasurement } from '@/components/gamelogic/usemeasurement'
+
+import styles from './Home.module.css'
 
 // Level config interface
 interface LevelConfigLocal {
@@ -175,17 +180,22 @@ function handleWinConditionChange(index: number, event: Event) {
 const gameBoardRef = ref<InstanceType<typeof GameBoard> | null>(null)
 const playLevel = ref<Level | null>(null)
 const ionStates = ref<IonQuantumState[]>([])
-const canMeasure = ref(false)
-const isMeasured = ref(false)
-const measuredValues = ref<number[] | null>(null)
-const result = ref('—')
-const history = ref<number[][]>([])
-const showWin = ref(false)
 const showLaserGates = ref(false)
 const blochPanelRef = ref<HTMLElement | null>(null)
 const measureBtnRef = ref<HTMLElement | null>(null)
 const resetBtnRef = ref<HTMLElement | null>(null)
 const historyRef = ref<HTMLElement | null>(null)
+
+const measurement = useMeasurement()
+const {
+  result,
+  history,
+  showWin,
+  canMeasure,
+  isMeasured,
+  measuredValues,
+} = measurement
+const resultcolourClass = measurement.resultColourClass(styles)
 
 const gateInv = useGateInventory()
 const {
@@ -194,11 +204,6 @@ const {
   activeSourceIndex,
   activeGates,
 } = gateInv
-
-const resultcolourClass = computed(() => {
-  if (result.value === '1') return styles.infoValOrange;
-  return styles.infoValCyan;
-})
 
 function updatePlayState() {
   if (!playLevel.value) return
@@ -213,14 +218,11 @@ function handleMeasure() {
 
   gameBoardRef.value?.resetPhoton()
 
-  const maxGates = Math.max(1, ...playSourceGates.value.map(g => g ? g.length : 0))
-  const dynamicDelayMs = 800 * (1 + (maxGates - 1) * 0.1)
+  const dynamicDelayMs = measurement.computeDynamicDelay(playSourceGates.value)
 
   setTimeout(() => {
     if (isMeasured.value) {
-      result.value = measuredValues.value ? measuredValues.value.join(',') : '—'
-      history.value.push(measuredValues.value!)
-      if (history.value.length > 20) history.value.shift()
+      measurement.repeatLastMeasurement()
       canMeasure.value = true
       return
     }
@@ -230,14 +232,8 @@ function handleMeasure() {
     const wc = playLevel.value?.winCondition || 'any';
     const hasWon = checkWinCondition(wc, uncollapsedStates);
 
-    const measResults = measureAll()
-    measuredValues.value = measResults
-    isMeasured.value = true
+    measurement.collapseMeasurement()
     updatePlayState()
-
-    result.value = measResults.join(',')
-    history.value.push(measResults)
-    if (history.value.length > 20) history.value.shift()
 
     canMeasure.value = true
 
@@ -248,9 +244,7 @@ function handleMeasure() {
 }
 
 function handleReset() {
-  isMeasured.value = false
-  measuredValues.value = null
-  result.value = '—'
+  measurement.resetMeasurementState()
   showWin.value = false
   updatePlayState()
 }

@@ -3,14 +3,18 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { measureAll, checkWinCondition, calculateQuantumState, WELCOME_POPUP, MAIN_WELCOME_POPUP,  Level} from '@/game/quantumgame'
 import { type IonQuantumState } from '@/game/types'
 import { LEVELS, TUTORIAL_LEVEL } from '@/game/levels'
+
+import styles from './Home.module.css'
+
 import ManualModal from '@/components/manual/ManualModal.vue'
 import GameBoard from '@/components/GameBoard.vue'
 import Tutorial, { TUTORIAL_STEPS } from '@/components/tutorial/tutorial.vue'
-import styles from './Home.module.css'
 import MobileWarning from '@/components/mobile/MobileWarning.vue'
 import LaserGatesModal from '@/components/ui/LaserGatesModal.vue'
 import MeasurementSidebar from '@/components/ui/MeasurementSidebar.vue'
+
 import { useGateInventory } from '@/components/gamelogic/usegateinventory'
+import { useMeasurement } from '@/components/gamelogic/usemeasurement'
 
 // Minigame Imports
 import HeatingMinigame from '@/components/minigames/HeatingMinigame.vue'
@@ -30,14 +34,8 @@ const TRAVEL_MS = 800
 const gameBoardRef = ref<InstanceType<typeof GameBoard> | null>(null)
 const currentLevelIndex = ref(0)
 const ionStates = ref<IonQuantumState[]>([])
-const result = ref('—')
-const history = ref<number[][]>([])
-const showWin = ref(false)
-const canMeasure = ref(false)
 const showLevelSelector = ref(false)
 const showLaserGates = ref(false)
-const isMeasured = ref(false)
-const measuredValues = ref<number[] | null>(null)
 const ionInitialized = ref(false)
 const automatedRunning = ref(false)
 const automatedDone = ref(false)
@@ -49,6 +47,17 @@ const showCompletionPopup = ref(false)
 const showHint = ref(false)
 const manualGlowActive = ref(false)
 const manualGlowLockedLevels = ref(new Set<number>())
+
+const measurement = useMeasurement(TRAVEL_MS)
+const {
+  result,
+  history,
+  showWin,
+  canMeasure,
+  isMeasured,
+  measuredValues,
+} = measurement
+const resultcolourClass = measurement.resultColourClass(styles)
 
 const gateInv = useGateInventory()
 const {
@@ -298,12 +307,6 @@ const displayedGateProgress = computed(() => {
   }
 })
 
-const resultcolourClass = computed(() => {
-  if (result.value === '1') return styles.infoValOrange;
-  return styles.infoValCyan;
-})
-
-
 // Level Progression
 // ------------------
 function nextLevel() {
@@ -464,15 +467,9 @@ function startAutomatedDemo() {
       gameBoardRef.value?.triggerFlash();
       await new Promise((res) => setTimeout(res, TRAVEL_MS))
 
-      const measResults = measureAll()
+      const measResults = measurement.collapseMeasurement(50)
       results.push(measResults)
-
-      measuredValues.value = measResults
-      isMeasured.value = true
       updateStateForTracing()
-      result.value = measResults.join(',')
-      history.value.push(measResults)
-      if (history.value.length > 50) history.value.shift()
 
       await new Promise((res) => setTimeout(res, 50))
     }
@@ -562,26 +559,17 @@ function handleMeasure() {
 
   gameBoardRef.value?.resetPhoton()
 
-  const maxGates = Math.max(1, ...sourceGates.value.map(g => g ? g.length : 0))
-  const dynamicDelayMs = 800 * (1 + (maxGates - 1) * 0.1)
+  const dynamicDelayMs = measurement.computeDynamicDelay(sourceGates.value)
 
   setTimeout(() => {
     if (isMeasured.value) {
-      result.value = measuredValues.value ? measuredValues.value.join(',') : '—'
-      history.value.push(measuredValues.value!)
-      if (history.value.length > 20) history.value.shift()
+      measurement.repeatLastMeasurement()
       canMeasure.value = true
       return
     }
 
-    const measResults = measureAll()
-    measuredValues.value = measResults
-    isMeasured.value = true
-
+    measurement.collapseMeasurement()
     updateStateForTracing()
-    result.value = measResults.join(',')
-    history.value.push(measResults)
-    if (history.value.length > 20) history.value.shift()
 
     canMeasure.value = true
     let passedGateCountCheck = true
@@ -648,9 +636,7 @@ function handleMeasure() {
 
 function handleReset() {
   ionInitialized.value = true
-  isMeasured.value = false
-  measuredValues.value = null
-  result.value = '—'
+  measurement.resetMeasurementState()
   updateStateForTracing()
   gameBoardRef.value?.triggerFlash()
   showPopupByTrigger('onReset')
