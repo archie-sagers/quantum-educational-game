@@ -8,8 +8,8 @@ import GameBoard from '@/components/GameBoard.vue'
 import Tutorial, { TUTORIAL_STEPS } from '@/components/tutorial.vue'
 import styles from './Home.module.css'
 import MobileWarning from '@/components/MobileWarning.vue'
-import BlochSpherePanel from '@/components/ui/BlochSpherePanel.vue'
 import LaserGatesModal from '@/components/ui/LaserGatesModal.vue'
+import MeasurementSidebar from '@/components/ui/MeasurementSidebar.vue'
 
 // Minigame Imports
 import HeatingMinigame from '@/components/minigames/HeatingMinigame.vue'
@@ -109,6 +109,10 @@ const tutorialTargetMap: Record<TutorialStepKey, typeof goalBoxRef> = {
   measure: measureBtnRef,
   history: historyRef,
   bloch: blochPanelRef,
+}
+
+const checkTutorialStep = (key: 'bloch' | 'measure' | 'reset' | 'history') => {
+  return tutorialVisible.value && tutorialStepData.value?.key === key
 }
 
 function updateTutorialTargetRect() {
@@ -878,52 +882,23 @@ onUnmounted(() => {
         />
       </div>
 
-      <!-- Sidebar: Bloch sphere + measurement info for each ion -->
-      <aside :class="styles.sidebar">
-
-        <div :class="[styles.ionWrapper, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'bloch' }]" ref="blochPanelRef">
-          <BlochSpherePanel
-            v-for="(ionState, idx) in ionStates"
-            :key="idx"
-            :ionState="ionState"
-            :ionIndex="idx"
-            :compact="ionStates.length >= 3"
-          />
-        </div>
-
-        <div :class="styles.sharedControls">
-          <button
-            @click="handleMeasure"
-            :disabled="!canMeasure || automatedRunning"
-            :class="[styles.measureBtn, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'measure' }]"
-            ref="measureBtnRef"
-          >
-            Measure
-          </button>
-
-          <button
-            v-if="level.showResetButton"
-            @click="handleReset"
-            :disabled="automatedRunning"
-            :class="[styles.resetBtn, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'reset' }]"
-            ref="resetBtnRef"
-          >
-            Reset Ion (Optical Pumping)
-          </button>
-
-          <div :class="styles.infoRow">
-            <span :class="styles.infoKey">Last</span>
-            <span :class="[styles.infoVal, resultcolourClass]">{{ result }}</span>
-          </div>
-          <div :class="[styles.history, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'history' }]" ref="historyRef">
-            <span :class="styles.infoKey">History</span>
-            <span :class="styles.historyBits">
-              {{ history.length ? history.map((r: number[]) => r.join('')).join(' ') : 'No measurements yet' }}
-            </span>
-          </div>
-        </div>
-
-      </aside>
+      <MeasurementSidebar
+        :ionStates="ionStates"
+        :canMeasure="canMeasure"
+        :automatedRunning="automatedRunning"
+        :showResetButton="level.showResetButton"
+        :result="result"
+        :isOrangeResult="result === '1'"
+        :history="history"
+        :tutorialVisible="tutorialVisible"
+        :isTutorialStep="checkTutorialStep"
+        :blochPanelRef="(el) => blochPanelRef = el"
+        :measureBtnRef="(el) => measureBtnRef = el"
+        :resetBtnRef="(el) => resetBtnRef = el"
+        :historyRef="(el) => historyRef = el"
+        @measure="handleMeasure"
+        @reset="handleReset"
+      />
     </div>
 
     <LaserGatesModal

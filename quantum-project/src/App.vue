@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { onErrorCaptured } from 'vue'
+import { useRoute } from 'vue-router'
 import { appError, clearAppError, reportAppError } from './stores/appError'
+
+const route = useRoute()
 
 onErrorCaptured((error, instance, info) => {
   reportAppError(error, info)
@@ -16,7 +19,7 @@ function reloadPage() {
   <nav class="navbar">
     <router-link to="/" class="navLink">Home</router-link>
     <router-link to="/lab" class="navLink">Lab</router-link>
-    <a href="https://discord.gg/XwGvJazzsS" target="_blank" rel="noopener noreferrer" class="navLink discordLink" title="Join our Discord">
+    <a v-if="route.path !== '/lab'" href="https://discord.gg/XwGvJazzsS" target="_blank" rel="noopener noreferrer" class="navLink discordLink" title="Join our Discord">
       Discord
     </a>
   </nav>

@@ -6,7 +6,7 @@ import GameBoard from '@/components/GameBoard.vue'
 import { Level, measureAll, checkWinCondition, calculateQuantumState } from '@/game/quantumgame'
 import { type IonQuantumState, type WallType } from '@/game/types'
 import MobileWarning from '@/components/MobileWarning.vue'
-import BlochSpherePanel from '@/components/ui/BlochSpherePanel.vue'
+import MeasurementSidebar from '@/components/ui/MeasurementSidebar.vue'
 import LaserGatesModal from '@/components/ui/LaserGatesModal.vue'
 
 // Level config interface
@@ -185,6 +185,10 @@ const showLaserGates = ref(false)
 const activeSourceIndex = ref<number>(0)
 const playGateInventory = ref<Record<string, number>>({})
 const activeGates = computed(() => playSourceGates.value[activeSourceIndex.value] ?? [])
+const blochPanelRef = ref<HTMLElement | null>(null)
+const measureBtnRef = ref<HTMLElement | null>(null)
+const resetBtnRef = ref<HTMLElement | null>(null)
+const historyRef = ref<HTMLElement | null>(null)
 
 const resultcolourClass = computed(() => {
   if (result.value === '1') return styles.infoValOrange;
@@ -763,54 +767,25 @@ function uploadLevel(e: Event) {
         />
       </div>
 
-  <aside v-if="mode === 'play'" :class="styles.sidebar" style="flex: 0 0 400px; background: var(--color-bg-light); border-left: 1px solid var(--color-border); display: flex; flex-direction: column; padding: 0; overflow: hidden;">
-
-        <div style="flex: 0 0 auto; padding: 30px 20px 10px;">
-          <h3 style="margin: 0; font-size: 12px; color: var(--color-subtle); text-transform: uppercase;">Test Results</h3>
-        </div>
-
-          <div :class="styles.ionWrapper" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; padding: 10px; flex: 0 1 auto; min-height: min-content;">
-  
-            <BlochSpherePanel
-              v-for="(ionState, idx) in ionStates"
-              :key="idx"
-              :ionState="ionState"
-              :ionIndex="idx"
-              :compact="ionStates.length >= 3"
-            />
-
-          </div>
-
-        <div :class="styles.sharedControls" style="flex: 0 0 auto; padding: 20px; border-top: 1px solid #1a1a1a;">
-          <button
-            @click="handleMeasure"
-            :disabled="!canMeasure"
-            :class="styles.measureBtn"
-            style="width: 100%; margin-bottom: 10px;"
-          >
-            Measure
-          </button>
-
-          <button
-            v-if="ionStates.length > 0"
-            @click="handleReset"
-            :class="styles.resetBtn"
-            style="width: 100%; margin-bottom: 20px;"
-          >
-            Reset Ion
-          </button>
-
-          <div :class="styles.infoRow">
-            <span :class="styles.infoKey">Last</span>
-            <span :class="[styles.infoVal, resultcolourClass]">{{ result }}</span>
-          </div>
-          <div v-if="history.length" :class="styles.history" style="margin-top: 10px;">
-            <span :class="styles.infoKey">History</span>
-            <span :class="styles.historyBits">{{ history.map((r: number[]) => r.join('')).join(' ') }}</span>
-          </div>
-        </div>
-
-      </aside>
+      <MeasurementSidebar
+        v-if="mode === 'play'"
+        class="lab-sidebar-override"
+        :ionStates="ionStates"
+        :canMeasure="canMeasure"
+        :automatedRunning="false"
+        :showResetButton="ionStates.length > 0"
+        :result="result"
+        :isOrangeResult="result === '1'"
+        :history="history"
+        :tutorialVisible="false"
+        :isTutorialStep="() => false"
+        :blochPanelRef="(el) => blochPanelRef = el"
+        :measureBtnRef="(el) => measureBtnRef = el"
+        :resetBtnRef="(el) => resetBtnRef = el"
+        :historyRef="(el) => historyRef = el"
+        @measure="handleMeasure"
+        @reset="handleReset"
+      />
       </div>
 
       <LaserGatesModal
@@ -826,7 +801,7 @@ function uploadLevel(e: Event) {
         @laserDrop="onLaserDrop"
         @removeGate="removeLaserGate"
       />
-      
+
         <div v-if="showWin && mode === 'play'" :class="styles.popupOverlay" @click="showWin = false">
         <div :class="styles.popupModal" style="text-align: center; border-color: #0f8; box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);" @click.stop>
           <div :class="styles.popupTitle" style="color: #0f8; font-size: 20px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">
@@ -910,5 +885,32 @@ section h3 {
 label {
   font-size: 12px;
   color: #ccc;
+}
+
+/* Override styles for the MeasurementSidebar component to fit the lab mode layout*/
+:deep(.lab-sidebar-override) {
+  flex: 0 0 320px !important;
+  background: var(--color-bg-light) !important;
+  border-left: 1px solid var(--color-border) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+:deep(.lab-sidebar-override > div:first-child) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 15px !important;
+  padding: 10px !important;
+  flex: 0 1 auto !important;
+  min-height: min-content !important;
+  overflow-y: auto !important;
+}
+
+:deep(.lab-sidebar-override > div:nth-child(2)) {
+  flex: 0 0 auto !important;
+  padding: 20px !important;
+  border-top: 1px solid #1a1a1a !important;
 }
 </style>
