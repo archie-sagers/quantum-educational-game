@@ -3,7 +3,7 @@ import { reactive, ref, computed, watch } from 'vue'
 defineOptions({ name: 'LabPage' })
 
 import { Level, checkWinCondition, calculateQuantumState } from '@/game/quantumgame'
-import { type IonQuantumState, type WallType } from '@/game/types'
+import { type IonQuantumState, type WallType, type LevelConfigLocal } from '@/game/types'
 
 import GameBoard from '@/components/GameBoard.vue'
 import MobileWarning from '@/components/mobile/MobileWarning.vue'
@@ -14,25 +14,6 @@ import { useGateInventory } from '@/components/gamelogic/usegateinventory'
 import { useMeasurement } from '@/components/gamelogic/usemeasurement'
 
 import styles from './Home.module.css'
-
-// Level config interface
-interface LevelConfigLocal {
-  name: string
-  cols: number
-  rows: number
-  sources: Array<{ col: number; row: number; dir?: string }>
-  ions: Array<{ col: number; row: number }>
-  walls?: Array<{ col: number; row: number; type?: WallType }>
-  mirrors?: Array<{ col: number; row: number; dir: 'fwd' | 'back' }>
-  availableGates?: string[]
-  prePlacedGates?: string[][]
-  lockedGateIndices?: number[]
-  gateInventory?: Record<string, number>
-  lockedTo?: Record<string, string>
-  hint?: string
-  goal?: string
-  winCondition?: string
-}
 
 const showWelcome = ref(true)
 
