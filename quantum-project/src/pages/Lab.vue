@@ -5,7 +5,7 @@ import styles from './Home.module.css'
 import GameBoard from '@/components/GameBoard.vue'
 import { Level, measureAll, checkWinCondition, calculateQuantumState } from '@/game/quantumgame'
 import { type IonQuantumState, type WallType } from '@/game/types'
-import MobileWarning from '@/components/MobileWarning.vue'
+import MobileWarning from '@/components/mobile/MobileWarning.vue'
 import MeasurementSidebar from '@/components/ui/MeasurementSidebar.vue'
 import LaserGatesModal from '@/components/ui/LaserGatesModal.vue'
 
