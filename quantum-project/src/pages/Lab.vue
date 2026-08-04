@@ -8,6 +8,7 @@ import { type IonQuantumState, type WallType } from '@/game/types'
 import MobileWarning from '@/components/mobile/MobileWarning.vue'
 import MeasurementSidebar from '@/components/ui/MeasurementSidebar.vue'
 import LaserGatesModal from '@/components/ui/LaserGatesModal.vue'
+import { useGateInventory } from '@/components/gamelogic/usegateinventory'
 
 // Level config interface
 interface LevelConfigLocal {
@@ -173,7 +174,6 @@ function handleWinConditionChange(index: number, event: Event) {
 // -----------------------------------------
 const gameBoardRef = ref<InstanceType<typeof GameBoard> | null>(null)
 const playLevel = ref<Level | null>(null)
-const playSourceGates = ref<string[][]>([])
 const ionStates = ref<IonQuantumState[]>([])
 const canMeasure = ref(false)
 const isMeasured = ref(false)
@@ -182,13 +182,18 @@ const result = ref('—')
 const history = ref<number[][]>([])
 const showWin = ref(false)
 const showLaserGates = ref(false)
-const activeSourceIndex = ref<number>(0)
-const playGateInventory = ref<Record<string, number>>({})
-const activeGates = computed(() => playSourceGates.value[activeSourceIndex.value] ?? [])
 const blochPanelRef = ref<HTMLElement | null>(null)
 const measureBtnRef = ref<HTMLElement | null>(null)
 const resetBtnRef = ref<HTMLElement | null>(null)
 const historyRef = ref<HTMLElement | null>(null)
+
+const gateInv = useGateInventory()
+const {
+  sourceGates: playSourceGates,
+  gateInventory: playGateInventory,
+  activeSourceIndex,
+  activeGates,
+} = gateInv
 
 const resultcolourClass = computed(() => {
   if (result.value === '1') return styles.infoValOrange;
@@ -253,7 +258,7 @@ function handleReset() {
 // Laser Gate Handlers
 function handleGameBoardClick(col: number, row: number) {
   if (mode.value !== 'play' || !playLevel.value) return;
-  const clickedSourceIdx = playLevel.value.sources.findIndex(s => s.col === col && s.row === row);
+  const clickedSourceIdx = gateInv.findSourceIndexAt(playLevel.value, col, row);
 
   if (clickedSourceIdx !== -1 && playLevel.value.availableGates.length > 0) {
     activeSourceIndex.value = clickedSourceIdx;
@@ -262,36 +267,17 @@ function handleGameBoardClick(col: number, row: number) {
 }
 
 function onGateDragStart(e: DragEvent, gateType: string) {
-  const available = playGateInventory.value[gateType] ?? -1
-  if (available === 0) {
-    e.preventDefault()
-    return
-  }
-  e.dataTransfer!.effectAllowed = 'copy'
-  e.dataTransfer!.setData('gateType', gateType)
+  gateInv.onGateDragStart(e, gateType)
 }
 
 function onLaserDragOver(e: DragEvent) {
-  e.preventDefault()
-  e.dataTransfer!.dropEffect = 'copy'
+  gateInv.onLaserDragOver(e)
 }
 
 function onLaserDrop(e: DragEvent) {
-  e.preventDefault()
-  const gateType = e.dataTransfer!.getData('gateType')
-  if (gateType) {
-    if (playGateInventory.value[gateType] !== undefined) {
-      if (playGateInventory.value[gateType]! > 0) {
-        playGateInventory.value[gateType]!--
-      } else {
-        return
-      }
-    }
-    const idx = activeSourceIndex.value
-    if (!playSourceGates.value[idx]) playSourceGates.value[idx] = []
-    playSourceGates.value[idx].push(gateType)
-
-    // Reset measurement state when a gate is added
+  if (!playLevel.value) return
+  const changed = gateInv.onLaserDrop(e, playLevel.value)
+  if (changed) {
     isMeasured.value = false
     measuredValues.value = null
     updatePlayState()
@@ -299,30 +285,18 @@ function onLaserDrop(e: DragEvent) {
 }
 
 function removeLaserGate(index: number) {
-  const activeIdx = activeSourceIndex.value  
-  if (isGateLocked(index)) {
-    return;
+  if (!playLevel.value) return
+  const changed = gateInv.removeLaserGate(playLevel.value, index)
+  if (changed) {
+    isMeasured.value = false
+    measuredValues.value = null
+    updatePlayState()
   }
-
-  const gate = playSourceGates.value[activeIdx]?.[index];
-  if (!gate) return;
-
-  playSourceGates.value[activeIdx]!.splice(index, 1);
-
-  if (playGateInventory.value[gate] !== undefined) {
-    playGateInventory.value[gate]!++
-  }
-
-  // Reset measurement state when a gate is removed
-  isMeasured.value = false
-  measuredValues.value = null
-  updatePlayState()
 }
 
 function isGateLocked(localIndex: number) {
-  const activeIdx = activeSourceIndex.value;
-  const prePlacedCount = playLevel.value?.prePlacedGates?.[activeIdx]?.length || 0;
-  return localIndex < prePlacedCount;
+  if (!playLevel.value) return false
+  return gateInv.isGateLocked(playLevel.value, localIndex)
 }
 
 // Edit Mode
@@ -430,18 +404,8 @@ function testLevel() {
       return originalIsFixed(c, r);
     }
 
-    playSourceGates.value = (cfg.prePlacedGates || []).map((g: string[]) => [...g])
-    playGateInventory.value = { ...(levelConfig.gateInventory || {}) }
-
-    const flatLocked = playSourceGates.value.flat()
-    for (const idx of cfg.lockedGateIndices ?? []) {
-      if (idx < flatLocked.length) {
-        const gate = flatLocked[idx]
-        if (gate && playGateInventory.value[gate] !== undefined && playGateInventory.value[gate] > 0) {
-          playGateInventory.value[gate]--
-        }
-      }
-    }
+    gateInv.setSourceGatesFromLevel(playLevel.value)
+    gateInv.resetGateInventory(levelConfig.gateInventory || {}, cfg.lockedGateIndices ?? [], true)
 
     // Reset Play state
     isMeasured.value = false

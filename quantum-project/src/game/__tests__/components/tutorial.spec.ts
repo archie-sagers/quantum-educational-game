@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 
-import Tutorial, { TUTORIAL_STEPS } from '@/components/tutorial.vue';
+import Tutorial, { TUTORIAL_STEPS } from '@/components/tutorial/tutorial.vue';
 
 describe('Tutorial component', () => {
   it('opens the matching manual section from the gate info buttons', async () => {

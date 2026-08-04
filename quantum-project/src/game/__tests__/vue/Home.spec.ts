@@ -4,8 +4,9 @@ import { defineComponent } from 'vue';
 import { mount } from '@vue/test-utils';
 
 import styles from '@/pages/Home.module.css';
+import Home from '@/pages/Home.vue'
 
-vi.mock('@/components/ManualModal.vue', () => ({
+vi.mock('@/components/manual/ManualModal.vue', () => ({
   default: defineComponent({
     name: 'ManualModalMock',
     template: '<div />',
@@ -19,14 +20,14 @@ vi.mock('@/components/GameBoard.vue', () => ({
   }),
 }));
 
-vi.mock('@/components/MobileWarning.vue', () => ({
+vi.mock('@/components/mobile/MobileWarning.vue', () => ({
   default: defineComponent({
     name: 'MobileWarningMock',
     template: '<div />',
   }),
 }));
 
-vi.mock('@/components/tutorial.vue', () => ({
+vi.mock('@/components/tutorial/tutorial.vue', () => ({
   default: defineComponent({
     name: 'TutorialMock',
     template: '<div />',
@@ -73,15 +74,11 @@ describe('Home page manual glow', () => {
     localStorage.setItem('quantum_save_stage', 'main');
     localStorage.setItem('quantum_save_level', '0');
 
-    const { default: Home } = await import('@/pages/Home.vue');
-
     const wrapper = mount(Home, {
       global: {
         stubs: {
-          GameBoard: GameBoardStub,
-          ManualModal: true,
-          MobileWarning: true,
-          Tutorial: true,
+          ManualModal: true, 
+          Tutorial: true
         },
       },
     });

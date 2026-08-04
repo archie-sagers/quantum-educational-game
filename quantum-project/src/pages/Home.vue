@@ -10,6 +10,7 @@ import styles from './Home.module.css'
 import MobileWarning from '@/components/mobile/MobileWarning.vue'
 import LaserGatesModal from '@/components/ui/LaserGatesModal.vue'
 import MeasurementSidebar from '@/components/ui/MeasurementSidebar.vue'
+import { useGateInventory } from '@/components/gamelogic/usegateinventory'
 
 // Minigame Imports
 import HeatingMinigame from '@/components/minigames/HeatingMinigame.vue'
@@ -35,8 +36,6 @@ const showWin = ref(false)
 const canMeasure = ref(false)
 const showLevelSelector = ref(false)
 const showLaserGates = ref(false)
-const sourceGates = ref<string[][]>([])
-const activeSourceIndex = ref<number>(0)
 const isMeasured = ref(false)
 const measuredValues = ref<number[] | null>(null)
 const ionInitialized = ref(false)
@@ -46,12 +45,18 @@ const showPopup = ref(false)
 const popupIndex = ref(0)
 const tempPopup = ref<{ title: string; text: string } | null>(null)
 const showManual = ref(false)
-const gateInventory = ref<Record<string, number>>({})
 const showCompletionPopup = ref(false)
-const draggedGateIndex = ref<number | null>(null)
 const showHint = ref(false)
 const manualGlowActive = ref(false)
 const manualGlowLockedLevels = ref(new Set<number>())
+
+const gateInv = useGateInventory()
+const {
+  sourceGates,
+  gateInventory,
+  activeSourceIndex,
+  activeGates,
+} = gateInv
 
 const MANUAL_GLOW_INTERVAL_MS = 15000
 
@@ -136,7 +141,6 @@ async function startTutorial() {
   measuredValues.value = null
   level = TUTORIAL_LEVEL
   ionInitialized.value = TUTORIAL_LEVEL.preInitialized
-  initLevelGates()
   updateStateForTracing()
   showTutorialWelcome.value = true
 }
@@ -294,8 +298,6 @@ const displayedGateProgress = computed(() => {
   }
 })
 
-const activeGates = computed(() => sourceGates.value[activeSourceIndex.value] ?? [])
-
 const resultcolourClass = computed(() => {
   if (result.value === '1') return styles.infoValOrange;
   return styles.infoValCyan;
@@ -334,12 +336,6 @@ function updateStateForTracing() {
   canMeasure.value = result.canMeasure;
 }
 
-function initLevelGates() {
-  sourceGates.value = level.sources.map((_, i) => {
-    return level.prePlacedGates && level.prePlacedGates[i] ? [...level.prePlacedGates[i]!] : [];
-  });
-}
-
 async function selectLevel(index: number) {
   currentStage.value = 'main';
   showLevelSelector.value = false;
@@ -353,20 +349,9 @@ async function selectLevel(index: number) {
   lastPopupTrigger = null;
   stopManualGlow();
 
-  gateInventory.value = { ...level.gateInventory };
-
   await nextTick();
-  initLevelGates();
-
-  const flatLocked = sourceGates.value.flat();
-  for (const idx of level.lockedGateIndices) {
-    if (idx < flatLocked.length) {
-      const gate = flatLocked[idx]!;
-      if (gateInventory.value[gate] !== undefined) {
-        gateInventory.value[gate]--;
-      }
-    }
-  }
+  gateInv.setSourceGatesFromLevel(level);
+  gateInv.resetGateInventory(level.gateInventory, level.lockedGateIndices);
 
   updateStateForTracing();
   result.value = '—';
@@ -385,127 +370,52 @@ function openLaserGates() {
   }
 }
 
+function isGateLocked(localIndex: number) {
+  return gateInv.isGateLocked(level, localIndex)
+}
+
 function onGateDragStart(e: DragEvent, gateType: string) {
-  const available = gateInventory.value[gateType] ?? -1
-  if (available === 0) {
-    e.preventDefault()
-    return
-  }
-  draggedGateIndex.value = null
-  e.dataTransfer!.effectAllowed = 'copy'
-  e.dataTransfer!.setData('gateType', gateType)
+  gateInv.onGateDragStart(e, gateType)
 }
 
 function onPlacedGateDragStart(e: DragEvent, index: number, gateType: string) {
-  if (isGateLocked(index)) {
-    e.preventDefault()
-    return
-  }
-  draggedGateIndex.value = index
-  e.dataTransfer!.effectAllowed = 'move'
-  e.dataTransfer!.setData('gateType', gateType)
+  gateInv.onPlacedGateDragStart(e, level, index, gateType)
 }
 
-function handleDrop(e: DragEvent, dropIndex?: number) {
-  e.preventDefault()
-  const gateType = e.dataTransfer!.getData('gateType')
-  if (!gateType) return
+function onLaserDragOver(e: DragEvent) {
+  gateInv.onLaserDragOver(e)
+}
 
-  const idx = activeSourceIndex.value
-  if (!sourceGates.value[idx]) sourceGates.value[idx] = []
-  const list = sourceGates.value[idx]!
-
-  // Protect locked gates
-  const lockedCount = level.prePlacedGates?.[idx]?.length || 0
-  let safeDropIndex = dropIndex !== undefined ? Math.max(dropIndex, lockedCount) : list.length
-
-  if (draggedGateIndex.value !== null) {
-    const oldIndex = draggedGateIndex.value
-    if (oldIndex === safeDropIndex) return 
-
-    const [movedGate] = list.splice(oldIndex, 1)
-    
-    if (oldIndex < safeDropIndex && dropIndex !== undefined) {
-      safeDropIndex--
-    }
-    
-    list.splice(safeDropIndex, 0, movedGate!)
-  } else {
-    if (gateInventory.value[gateType] !== undefined) {
-      if (gateInventory.value[gateType]! > 0) {
-        gateInventory.value[gateType]!--
-      } else {
-        return
-      }
-    }
-    list.splice(safeDropIndex, 0, gateType)
-  }
-
-  draggedGateIndex.value = null
+function afterGateChange(changed: boolean) {
+  if (!changed) return
   isMeasured.value = false
   measuredValues.value = null
   updateStateForTracing()
 }
 
-function onLaserDragOver(e: DragEvent) {
-  e.preventDefault()
-  e.dataTransfer!.dropEffect = draggedGateIndex.value !== null ? 'move' : 'copy'
-}
-
 function onLaserDrop(e: DragEvent) {
-  handleDrop(e) 
+  afterGateChange(gateInv.onLaserDrop(e, level))
 }
 
 function onPlacedGateDrop(e: DragEvent, dropIndex: number) {
-  handleDrop(e, dropIndex)
+  afterGateChange(gateInv.onPlacedGateDrop(e, level, dropIndex))
 }
 
 function removeLaserGate(index: number) {
-  const activeIdx = activeSourceIndex.value;
-
-  if (isGateLocked(index)) {
-    return;
-  }
-
-  const gate = sourceGates.value[activeIdx]![index]!;
-  sourceGates.value[activeIdx]!.splice(index, 1);
-
-  if (gateInventory.value[gate] !== undefined) {
-    gateInventory.value[gate]!++;
-  }
-
-  isMeasured.value = false;
-  measuredValues.value = null;
-  updateStateForTracing();
+  afterGateChange(gateInv.removeLaserGate(level, index))
 }
 
-function isGateLocked(localIndex: number) {
-  const activeIdx = activeSourceIndex.value;
-  const prePlacedCount = level.prePlacedGates?.[activeIdx]?.length || 0;
-  return localIndex < prePlacedCount;
+function addGateToActive(gateType: string) {
+  afterGateChange(gateInv.addGateToActive(gateType))
 }
+
+// Popup Control
+// ------------------
 
 const showWelcome = ref(currentStage.value === 'heating')
 const showMainWelcome = ref(currentStage.value === 'main')
 const showTutorialWelcome = ref(false)
 
-// Mobile
-// ----------------
-function addGateToActive(gateType: string) {
-  const available = gateInventory.value[gateType] ?? -1
-  if (available === 0) return
-  if (gateInventory.value[gateType] !== undefined) {
-    gateInventory.value[gateType]!--
-  }
-  const idx = activeSourceIndex.value
-  if (!sourceGates.value[idx]) sourceGates.value[idx] = []
-  sourceGates.value[idx].push(gateType)
-  isMeasured.value = false
-  measuredValues.value = null
-  updateStateForTracing()
-}
-// Popup Control
-// ------------------
 function closeWelcome() {
   showWelcome.value = false
 }
@@ -747,7 +657,7 @@ function handleReset() {
 }
 
 function handleGameBoardClick(col: number, row: number) {
-  const clickedSourceIdx = level.sources.findIndex(s => s.col === col && s.row === row)
+  const clickedSourceIdx = gateInv.findSourceIndexAt(level, col, row)
   if (clickedSourceIdx !== -1 && level.availableGates.length > 0) {
     activeSourceIndex.value = clickedSourceIdx
     openLaserGates()
@@ -760,7 +670,8 @@ function handleGameBoardClick(col: number, row: number) {
 onMounted(() => {
   level = LEVELS[currentLevelIndex.value]!
   ionInitialized.value = level.preInitialized
-  initLevelGates()
+  gateInv.setSourceGatesFromLevel(level)
+  gateInv.resetGateInventory(level.gateInventory, level.lockedGateIndices)
   updateStateForTracing()
   popupIndex.value = 0
   showPopupByTrigger('onLoad')
