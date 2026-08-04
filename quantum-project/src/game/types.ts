@@ -71,3 +71,7 @@ export interface Ion {
   inTrap: boolean;
   timeInTrap: number;
 }
+
+// Tutorial Types
+// ----------------------------------
+export type TutorialStepKey = 'goal' | 'manual' | 'hint' | 'level' | 'walls' | 'reset' | 'measure' | 'history' | 'bloch';

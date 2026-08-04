@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { measureAll, checkWinCondition, calculateQuantumState, WELCOME_POPUP, MAIN_WELCOME_POPUP,  Level} from '@/game/quantumgame'
-import { type IonQuantumState } from '@/game/types'
+import { type IonQuantumState, type TutorialStepKey } from '@/game/types'
 import { LEVELS, TUTORIAL_LEVEL } from '@/game/levels'
 
 import styles from './Home.module.css'
@@ -98,8 +98,6 @@ const tutorialActive = ref(false)
 const tutorialTargetRect = ref<DOMRect | null>(null)
 const tutorialPhase = computed(() => (tutorialStep.value < TUTORIAL_STEPS.length ? 'tour' : 'tutorial-sandbox'))
 const tutorialCompleteLabel = computed(() => (tutorialStep.value >= TUTORIAL_STEPS.length ? 'Tutorial Sandbox' : 'Tutorial'))
-
-type TutorialStepKey = (typeof TUTORIAL_STEPS)[number]['key']
 const tutorialStepData = computed(() => (tutorialStep.value >= 0 ? TUTORIAL_STEPS[tutorialStep.value] ?? null : null))
 const tutorialVisible = computed(() => tutorialActive.value)
 
