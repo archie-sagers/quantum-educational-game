@@ -48,12 +48,13 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
+  height: 90%;
 }
 
 .tutorialSandboxContent {
-  max-height: calc(100vh - 120px);
-  height: 100%;
-  overflow: hidden;
+  height: 90%;
+  overflow: auto;
 }
 
 .tutorialSandboxHeader {
@@ -166,17 +167,13 @@
 }
 
 .tutorialBlochCard {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
-  height: 100%;
-  overflow: hidden;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .tutorialBlochSvg {
-  width: 220px;
-  height: 220px;
+  width: min(220px, 28vh);
+  height: min(220px, 28vh);
 }
 
 .tutorialStateLabel {
@@ -202,12 +199,9 @@
 }
 
 .tutorialControlsCard {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  min-height: 0;
   min-width: 0;
-  height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .tutorialGateRow {
