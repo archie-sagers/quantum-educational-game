@@ -97,7 +97,7 @@
 
 .score-numbers span.complete-text {
   color: var(--color-secondary);
-  text-shadow: 0 0 15px rgba(162, 0, 255, 0.8);
+  text-shadow: var(--shadow-glow);
 }
 
 /* Heating Game */
@@ -228,13 +228,13 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  box-shadow: 0 0 20px rgba(0, 238, 255, 0.3);
+  box-shadow: var(--shadow-glow);
   text-align: center;
 }
 
 .popup.success {
   border-color: var(--color-success);
-  box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+  box-shadow: var(--shadow-glow-success);
 }
 
 .popup h2 {
@@ -259,7 +259,7 @@
 .primary-btn {
   cursor: pointer;
   background: var(--color-primary);
-  color: #000;
+  color: black;
   border: none;
   padding: 12px 32px;
   font-size: 18px;
@@ -281,8 +281,8 @@
 }
 
 .popup.success .primary-btn:hover {
-  background: #3f3;
-  box-shadow: 0 0 16px var(--color-success);
+  background: var(--color-success-bg-hover);
+  box-shadow: var(--shadow-glow-success);
 }
 
 /* 1 - Heating Minigame Styles */
@@ -323,7 +323,7 @@
   font-weight: bold;
   color: var(--color-text);
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  box-shadow: 0 0 30px rgba(255, 170, 0, 0.2);
+  box-shadow: var(--shadow-md);
   z-index: 10;
 }
 
@@ -377,14 +377,14 @@
   color: var(--color-text-dim);
   transform: translate(-50%, -50%);
   transition: all 0.2s ease-out;
-  box-shadow: 0 0 10px rgba(0,0,0,0.8);
+  box-shadow: var(--shadow-sm);
 }
 
 .atom.ionized {
   background: radial-gradient(circle at 30% 30%, var(--color-secondary), var(--color-secondary));
   border-color: var(--color-secondary);
   color: var(--color-text);
-  box-shadow: 0 0 20px rgba(162, 0, 255, 0.6);
+  box-shadow: var(--shadow-glow);
 }
 
 .pulse {
@@ -407,7 +407,7 @@
   align-items: center;
   font-size: 12px;
   font-weight: bold;
-  color: white;
+  color: black;
   transform: translate(-50%, -50%);
   box-shadow: 0 0 10px var(--color-danger-light);
 }
@@ -563,7 +563,7 @@
   width: 50px;
   height: 50px;
   background: var(--color-danger);
-  color: #000;
+  color: black;
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: bold;

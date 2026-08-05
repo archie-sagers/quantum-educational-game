@@ -39,7 +39,7 @@ const accentStyle = computed(() => {
   if (props.accent !== 'success') return {}
   return {
     borderColor: 'var(--color-success)',
-    boxShadow: '0 0 20px rgba(0, 255, 0, 0.2)',
+    boxShadow: 'var(--shadow-glow-success)',
   }
 })
 

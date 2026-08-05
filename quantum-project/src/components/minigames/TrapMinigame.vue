@@ -238,7 +238,7 @@ onUnmounted(() => {
     </div>
 
     <div v-if="isComplete" :class="styles.popupOverlay">
-      <div :class="styles.popupModal" style="border-color: var(--color-success); box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);">
+      <div :class="styles.popupModal" style="border-color: var(--color-success); box-shadow: var(--shadow-glow-success);">
         <div :class="styles.popupTitle" style="color: var(--color-success);">Trap Stabilised</div>
         <div :class="styles.popupText">The ion is now contained in the Paul trap using modulating magnetic fields. We need to cool it and prepare it for storing information.</div>
         <button :class="styles.nextBtn" @click="proceed" style="align-self: flex-end;">Proceed to Cooling</button>

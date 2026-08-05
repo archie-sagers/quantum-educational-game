@@ -194,7 +194,7 @@ onUnmounted(() => {
     </div>
 
     <div v-if="isComplete" :class="styles.popupOverlay">
-      <div :class="styles.popupModal" style="border-color: var(--color-success); box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);">
+      <div :class="styles.popupModal" style="border-color: var(--color-success); box-shadow: var(--shadow-glow-success);">
         <div :class="styles.popupTitle" style="color: var(--color-success);">Vaporisation Complete</div>
         <div :class="styles.popupText">The Ytterbium atoms have been successfully vaporised. We are now ready to ionise them.</div>
         <button :class="styles.nextBtn" @click="proceed" style="align-self: flex-end;">Proceed to Ionisation</button>

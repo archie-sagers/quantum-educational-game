@@ -929,7 +929,7 @@ onUnmounted(() => {
           <button 
             @click="goToLab" 
             :class="styles.welcomeBtn" 
-            style="flex: 1; background: purple; color: white;"
+            style="flex: 1; background: var(--color-secondary); color: black;"
           >
             Lab
           </button>
@@ -937,7 +937,7 @@ onUnmounted(() => {
         
         <button 
           @click="showCompletionPopup = false" 
-          style="margin-top: 15px; background: none; border: none; color: gray; cursor: pointer; text-decoration: underline;"
+          style="margin-top: 15px; background: none; border: none; color: var(--color-subtle); cursor: pointer; text-decoration: underline;"
         >
           Close
         </button>

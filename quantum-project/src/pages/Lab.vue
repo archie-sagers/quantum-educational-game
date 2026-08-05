@@ -279,7 +279,7 @@ function isGateLocked(localIndex: number) {
 const paletteItems = [
   { type: 'source', label: 'Laser Source', icon: '■', color: 'var(--color-primary)' },
   { type: 'ion', label: 'Ion', icon: '●', color: 'var(--color-danger)' },
-  { type: 'mirror', label: 'Fixed Mirror', icon: '⤡', color: '#888' },
+  { type: 'mirror', label: 'Fixed Mirror', icon: '⤡', color: 'var(--color-subtle)' },
   { type: 'wall-standard', label: 'Wall (Blocks All)', icon: '✕', color: 'var(--color-danger)' },
   { type: 'wall-cyan', label: 'Wall (Cyan)', icon: '✕', color: 'var(--color-primary)' },
   { type: 'wall-purple', label: 'Wall (Purple)', icon: '✕', color: 'var(--color-secondary)' },
@@ -526,7 +526,7 @@ function uploadLevel(e: Event) {
             lineHeight: '1.4',
             color: statusTone === 'success' ? 'var(--color-success)' : 'var(--color-danger)',
             borderColor: statusTone === 'success' ? 'var(--color-success)' : 'var(--color-danger)',
-            background: statusTone === 'success' ? 'rgba(0, 160, 110, 0.1)' : 'rgba(220, 70, 70, 0.12)'
+            background: statusTone === 'success' ? 'var(--color-success-bg-soft)' : 'var(--color-danger-bg-soft)'
           }"
         >
           {{ statusMessage }}
@@ -550,7 +550,7 @@ function uploadLevel(e: Event) {
             </label>
             
             <div style="display: block; margin-top: 6px;">
-              <span style="display: block; margin-bottom: 6px; font-size: 12px; color: #ccc;">Win Condition</span>
+              <span style="display: block; margin-bottom: 6px; font-size: 12px; color: var(--color-text-soft);">Win Condition</span>
               <div v-if="levelConfig.ions.length === 0" style="padding: 8px; background: rgba(255,255,255,0.05); border: 1px dashed var(--color-border); border-radius: 3px; font-size: 11px; color: var(--color-subtle); text-align: center;">
                 Place an ion to set win conditions
               </div>
@@ -602,7 +602,7 @@ function uploadLevel(e: Event) {
                 </label>
 
                 <div v-if="levelConfig.availableGates?.includes(g) && levelConfig.gateInventory && levelConfig.lockedTo" style="padding-left: 20px; display: flex; align-items: center; gap: 6px;">
-                  <span style="font-size: 11px; color: #888;">Count:</span>
+                  <span style="font-size: 11px; color: var(--color-subtle);">Count:</span>
                     <input
                       type="number"
                       v-model.number="levelConfig.gateInventory[g]"
@@ -675,7 +675,7 @@ function uploadLevel(e: Event) {
               fontWeight: 'bold',
               textAlign: 'center',
               userSelect: 'none',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
+              boxShadow: 'var(--shadow-sm)',
               opacity: (item.type === 'ion' && levelConfig.ions.length >= 6) ? 0.3 : 1,
             }"
           >
@@ -742,8 +742,8 @@ function uploadLevel(e: Event) {
       />
 
         <div v-if="showWin && mode === 'play'" :class="styles.popupOverlay" @click="showWin = false">
-        <div :class="styles.popupModal" style="text-align: center; border-color: #0f8; box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);" @click.stop>
-          <div :class="styles.popupTitle" style="color: #0f8; font-size: 20px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">
+        <div :class="styles.popupModal" style="text-align: center; border-color: var(--color-success); box-shadow: var(--shadow-glow-success);" @click.stop>
+          <div :class="styles.popupTitle" style="color: var(--color-success); font-size: 20px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">
             Level Passed!
           </div>
           <div :class="styles.popupText" style="margin-bottom: 24px; font-size: 14px;">
@@ -753,7 +753,7 @@ function uploadLevel(e: Event) {
             <button @click="showWin = false" class="lab-btn" style="flex: 1;">
               Continue Testing
             </button>
-            <button @click="backToEdit(); showWin = false" class="lab-btn" style="flex: 1; border-color: #0ef; box-shadow: 0 0 8px rgba(0, 238, 255, 0.3);">
+            <button @click="backToEdit(); showWin = false" class="lab-btn" style="flex: 1; border-color: var(--color-primary); box-shadow: var(--shadow-glow);">
               Back to Edit
             </button>
           </div>
@@ -767,7 +767,7 @@ function uploadLevel(e: Event) {
           <div :class="styles.popupText" style="margin-bottom: 24px; font-size: 14px; line-height: 1.5;">
             Create your own custom levels in edit mode. Press the test level button on the left to play them. Right click to remove elements.
           </div>
-          <button @click="showWelcome = false" class="lab-btn" style="width: 100%; padding: 8px; border-color: var(--color-primary); box-shadow: 0 0 8px rgba(0, 238, 255, 0.3);">
+          <button @click="showWelcome = false" class="lab-btn" style="width: 100%; padding: 8px; border-color: var(--color-primary); box-shadow: var(--shadow-glow);">
             Got it
           </button>
         </div>
@@ -777,7 +777,7 @@ function uploadLevel(e: Event) {
 
 <style scoped>
 .active {
-  outline: 2px solid #0ef;
+  outline: 2px solid var(--color-primary);
 }
 
 input[type='number'],
@@ -808,8 +808,8 @@ select:focus {
 }
 
 .lab-button:hover:not(:disabled) {
-  background: #2a2a2a;
-  border-color: #555;
+  background: var(--color-panel-hover);
+  border-color: var(--color-border-muted);
 }
 
 .lab-button:disabled {
@@ -823,7 +823,7 @@ section h3 {
 
 label {
   font-size: 12px;
-  color: #ccc;
+  color: var(--color-text-soft);
 }
 
 /* Override styles for the MeasurementSidebar component to fit the lab mode layout*/
@@ -850,6 +850,6 @@ label {
 :deep(.lab-sidebar-override > div:nth-child(2)) {
   flex: 0 0 auto !important;
   padding: 20px !important;
-  border-top: 1px solid #1a1a1a !important;
+  border-top: 1px solid var(--color-bg-dark) !important;
 }
 </style>

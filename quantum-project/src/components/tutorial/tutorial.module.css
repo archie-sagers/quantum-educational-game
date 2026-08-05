@@ -9,7 +9,7 @@
 
 .laserGateH {
   background-color: var(--color-secondary) !important;
-  color: #000 !important;
+  color: black !important;
 }
 
 .tutorialLayer {
@@ -22,7 +22,7 @@
 .tutorialDimmer {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.72);
+  background: var(--color-overlay);
   pointer-events: none;
 }
 
@@ -115,7 +115,7 @@
 .tutorialGateAction {
   background: var(--color-primary);
   border: 1px solid var(--color-primary);
-  color: #000;
+  color: black;
   font-weight: bold;
   padding: 10px 16px;
 }
@@ -123,13 +123,13 @@
 .tutorialGateActionX {
   background: var(--color-danger);
   border-color: var(--color-danger);
-  color: #000;
+  color: black;
 }
 
 .tutorialGateActionH {
   background: var(--color-secondary);
   border-color: var(--color-secondary);
-  color: #000;
+  color: black;
 }
 
 .tutorialPrimaryBtn:hover,
@@ -160,7 +160,7 @@
 .tutorialBlochCard,
 .tutorialControlsCard,
 .tutorialInfoModal {
-  background: rgba(12, 12, 12, 0.96);
+  background: var(--color-panel);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 14px;
@@ -188,8 +188,8 @@
 
 .tutorialStateMessage {
   color: var(--color-secondary);
-  border: 1px solid rgba(136, 51, 255, 0.35);
-  background: rgba(136, 51, 255, 0.08);
+  border: 1px solid var(--color-secondary);
+  background: var(--color-secondary-bg);
   border-radius: var(--radius-sm);
   padding: 10px;
 }
@@ -217,7 +217,7 @@
   padding: 10px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
-  background: rgba(20, 20, 20, 0.85);
+  background: var(--color-panel-hover);
   min-width: 0;
   position: relative;
 }
