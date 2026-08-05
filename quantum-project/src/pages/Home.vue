@@ -7,6 +7,7 @@ import { LEVELS, TUTORIAL_LEVEL } from '@/game/levels'
 import styles from './Home.module.css'
 
 import ManualModal from '@/components/manual/ManualModal.vue'
+import OverlayModal from '@/components/ui/OverlayModal.vue'
 import GameBoard from '@/components/GameBoard.vue'
 import Tutorial, { TUTORIAL_STEPS } from '@/components/tutorial/tutorial.vue'
 import { useTutorial } from '@/components/tutorial/usetutorial'
