@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import styles from '@/pages/Home.module.css'
+import OverlayModal from '@/components/ui/OverlayModal.vue' 
 
 const STORAGE_KEY = 'quantum_mobile_warning_dismissed'
 const showMobileWarning = ref(false)
@@ -24,13 +24,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="showMobileWarning" :class="styles.welcomeOverlay" style="z-index: 10000;">
-    <div :class="styles.welcomeModal">
-      <div :class="styles.welcomeTitle" style="color: var(--color-danger);">Mobile Notice</div>
-      <div :class="styles.welcomeText">
-        Warning – this game is best experienced on desktop. Many features may not work properly on mobile.
-      </div>
-      <button @click="dismissMobileWarning(true)" :class="styles.welcomeBtn">Dismiss</button>
-    </div>
-  </div>
+  <OverlayModal
+    :show="showMobileWarning"
+    kind="welcome"
+    title="Mobile Notice"
+    text="Warning – this game is best experienced on desktop. Many features may not work properly on mobile."
+    :z-index="10000"
+    :title-style="{ color: 'var(--color-danger)' }"
+    :buttons="[
+      { label: 'Dismiss', onClick: () => dismissMobileWarning(true) }
+    ]"
+  />
 </template>
