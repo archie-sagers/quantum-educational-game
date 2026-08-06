@@ -114,15 +114,6 @@ function getStateProbabilities(state: QuantumState): [number, number] {
   return probs[state];
 }
 
-export function measure(state: QuantumState): number {
-  if (lastQuantumSystem) {
-    const result = lastQuantumSystem.measure();
-    return result[0] ?? 0;
-  }
-  // fallback
-  return Math.random() < 0.5 ? 0 : 1; 
-}
-
 export function measureAll(): number[] {
   if (lastQuantumSystem) {
     return lastQuantumSystem.measure();
