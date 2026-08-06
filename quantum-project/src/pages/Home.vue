@@ -627,6 +627,8 @@ onUnmounted(() => {
         :disabled="automatedRunning"
         :class="[styles.levelIndicator, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'level' }]"
         ref="levelIndicatorRef"
+        aria-haspopup="dialog"
+        :aria-expanded="showLevelSelector"
       >
         {{ currentStageName }}
       </button>
@@ -663,7 +665,7 @@ onUnmounted(() => {
       </div>
 
       <div :class="styles.successBoxContainer">
-        <div v-if="showWin && currentStage === 'main'" :class="styles.successBox">
+        <div v-if="showWin && currentStage === 'main'" :class="styles.successBox" role="status">
           <div :class="styles.successText">ION SUCCESSFULLY EXCITED</div>
           <button
             @click="nextLevel"
@@ -690,7 +692,7 @@ onUnmounted(() => {
         <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
       </div>
 
-      <div :class="[styles.hintContainer, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'hint' }]" ref="hintContainerRef">
+      <div :class="[styles.hintContainer, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'hint' }]" ref="hintContainerRef" aria-live="polite">
         <button
           v-if="!showHint"
           @click="handleShowHint"
@@ -774,77 +776,84 @@ onUnmounted(() => {
 
     <!-- Level selector modal -->
     <div v-if="showLevelSelector" :class="styles.levelSelectorOverlay" @click="showLevelSelector = false">
-      <div :class="styles.levelSelectorModal" @click.stop style="max-height: 90vh; overflow-y: auto;">
+      <div 
+        :class="styles.levelSelectorModal" 
+        @click.stop 
+        style="max-height: 90vh; overflow-y: auto;"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Select a Level"
+      >
 
         <div :class="styles.levelGroup">
           <div :class="styles.levelGroupTitle">Introduction</div>
           <div :class="styles.levelSelectorGrid">
-            <div
+            <button
               @click="selectMinigame('heating')"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'heating' }]"
             >
               1
-            </div>
-            <div
+            </button>
+            <button
               @click="selectMinigame('ionization')"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'ionization' }]"
             >
               2
-            </div>
-            <div
+            </button>
+            <button
               @click="selectMinigame('paul-trap')"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'paul-trap' }]"
             >
               3
-            </div>
-            <div
+            </button>
+            <button
               @click="selectMinigame('cooling')"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'cooling' }]"
             >
               4
-            </div>
+            </button>
           </div>
         </div>
 
         <div :class="styles.levelGroup">
           <div :class="styles.levelGroupTitle">1 Qubit Systems</div>
           <div :class="styles.levelSelectorGrid">
-            <div
+            <button
               v-for="(_, index) in LEVELS.slice(0, 9)"
               :key="'group1-' + index"
               @click="selectLevel(index)"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: index === currentLevelIndex }]"
             >
               {{ index + 1 }}
-            </div>
+            </button>
           </div>
         </div>
 
         <div :class="styles.levelGroup">
           <div :class="styles.levelGroupTitle">2 Qubit Systems</div>
           <div :class="styles.levelSelectorGrid">
-            <div
+            <button
               v-for="(_, index) in LEVELS.slice(9,15)"
               :key="'group2-' + index"
               @click="selectLevel(index + 9)"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: (index + 9) === currentLevelIndex }]"
             >
               {{ index + 10 }}
-            </div>
+            </button>
           </div>
         </div>
 
         <div :class="styles.levelGroup">
           <div :class="styles.levelGroupTitle">3 & 4 Qubit Systems</div>
           <div :class="styles.levelSelectorGrid">
-            <div
+            <button
               v-for="(_, index) in LEVELS.slice(15)"
               :key="'group3-' + index"
               @click="selectLevel(index + 15)"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: (index + 15) === currentLevelIndex }]"
             >
               {{ index + 16 }}
-            </div>
+            </button>
           </div>
         </div>
 
