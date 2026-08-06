@@ -26,8 +26,8 @@ defineEmits<{
 </script>
 
 <template>
-  <aside :class="styles.sidebar">
-    <div :ref="blochPanelRef" :class="[styles.ionWrapper, { [styles.tutorialHighlight as string]: isTutorialStep('bloch') }]">
+  <aside :class="styles.sidebar" aria-label="Quantum state and measurement controls">
+    <div :ref="blochPanelRef" :class="[styles.ionWrapper, { [styles.tutorialHighlight as string]: isTutorialStep('bloch') }]" aria-label="Bloch sphere and ion state panel">
       <BlochSpherePanel
         v-for="(ionState, idx) in ionStates"
         :key="idx"
@@ -43,6 +43,7 @@ defineEmits<{
         @click="$emit('measure')"
         :disabled="!canMeasure || automatedRunning"
         :class="[styles.measureBtn, { [styles.tutorialHighlight as string]: isTutorialStep('measure') }]"
+        :aria-label="canMeasure ? 'Measure ion state' : 'Measure ion state, unavailable right now'"
       >
         Measure
       </button>
@@ -53,16 +54,23 @@ defineEmits<{
         @click="$emit('reset')"
         :disabled="automatedRunning"
         :class="[styles.resetBtn, { [styles.tutorialHighlight as string]: isTutorialStep('reset') }]"
+        aria-label="Reset ion to the ground state"
       >
         Reset Ion (Optical Pumping)
       </button>
 
-      <div :class="styles.infoRow">
+      <div :class="styles.infoRow" aria-live="polite" aria-atomic="true">
         <span :class="styles.infoKey">Last</span>
         <span :class="[styles.infoVal, isOrangeResult ? styles.infoValOrange : styles.infoValCyan]">{{ result }}</span>
       </div>
 
-      <div :ref="historyRef" :class="[styles.history, { [styles.tutorialHighlight as string]: isTutorialStep('history') }]">
+      <div
+        :ref="historyRef"
+        :class="[styles.history, { [styles.tutorialHighlight as string]: isTutorialStep('history') }]"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label="Measurement history"
+      >
         <span :class="styles.infoKey">History</span>
         <span :class="styles.historyBits">
           {{ history.length ? history.map((r) => r.join('')).join(' ') : 'No measurements yet' }}
