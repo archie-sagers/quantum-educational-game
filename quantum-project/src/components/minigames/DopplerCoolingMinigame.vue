@@ -3,6 +3,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import type { Photon } from '@/game/types'
 import './intro-levels.css'
 import styles from '@/pages/Home.module.css'
+import OverlayModal from '@/components/ui/OverlayModal.vue'
 
 const emits = defineEmits<{
   (e: 'complete'): void
@@ -226,20 +227,21 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div v-if="showWelcome" :class="styles.welcomeOverlay">
-      <div :class="styles.welcomeModal">
-        <div :class="styles.welcomeTitle">Initiate Cooling</div>
-        <div :class="styles.welcomeText">Cool the Yb+ ion using Doppler Cooling and then Sideband Cooling. Drag the slider to keep the circle inside the purple zone.</div>
-        <button :class="styles.welcomeBtn" @click="showWelcome = false">Begin</button>
-      </div>
-    </div>
-
-    <div v-if="finished" :class="styles.popupOverlay">
-      <div :class="styles.popupModal" style="border-color: var(--color-success); box-shadow: var(--shadow-glow-success);">
-        <div :class="styles.popupTitle" style="color: var(--color-success);">Ion Stabilised</div>
-        <div :class="styles.popupText">Sideband cooling allows for the ion to remain stable for longer (a longer coherence time). The ion is now ready for further manipulation to store information.</div>
-        <button :class="styles.nextBtn" @click="proceed" style="align-self: flex-end;">Continue</button>
-      </div>
-    </div>
+    <OverlayModal
+      :show="showWelcome"
+      kind="welcome"
+      title="Initiate Cooling"
+      text="Cool the Yb+ ion using Doppler Cooling and then Sideband Cooling. Drag the slider to keep the circle inside the purple zone."
+      :buttons="[{ label: 'Begin', onClick: () => showWelcome = false }]"
+    />
+    <OverlayModal
+      :show="finished"
+      kind="popup"
+      title="Ion Stabilised"
+      :title-style="{ color: 'var(--color-success)' }"
+      :modal-style="{ borderColor: 'var(--color-success)', boxShadow: '0 0 20px rgba(0, 255, 0, 0.2)' }"
+      text="Sideband cooling allows for the ion to remain stable for longer (a longer coherence time). The ion is now ready for further manipulation to store information."
+      :buttons="[{ label: 'Continue', onClick: proceed, class: styles.nextBtn, style: { alignSelf: 'flex-end' } }]"
+    />
   </div>
 </template>

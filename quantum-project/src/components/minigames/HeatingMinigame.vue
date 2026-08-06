@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import './intro-levels.css'
 import styles from '@/pages/Home.module.css'
+import OverlayModal from '@/components/ui/OverlayModal.vue'
 
 const emits = defineEmits<{
   (e: 'complete'): void
@@ -175,31 +176,31 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div v-if="showWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
-      <div :class="styles.welcomeModal">
-
-        <template v-if="welcomeStep === 1">
-          <div :class="styles.welcomeTitle">Introductory Stage</div>
-          <div :class="styles.welcomeText">Welcome to the introductory stage - you will first start by heating Ytterbium in an atomic oven.</div>
-          <button :class="styles.welcomeBtn" @click="welcomeStep = 2">Next</button>
-        </template>
-
-        <template v-else>
-          <div :class="styles.welcomeTitle">Initialise Heating</div>
-          <div :class="styles.welcomeText">Start by dragging the slider on the right and holding it in the correct purple position.</div>
-          <button :class="styles.welcomeBtn" @click="showWelcome = false">Begin</button>
-        </template>
-
-      </div>
-    </div>
-
-    <div v-if="isComplete" :class="styles.popupOverlay">
-      <div :class="styles.popupModal" style="border-color: var(--color-success); box-shadow: var(--shadow-glow-success);">
-        <div :class="styles.popupTitle" style="color: var(--color-success);">Vaporisation Complete</div>
-        <div :class="styles.popupText">The Ytterbium atoms have been successfully vaporised. We are now ready to ionise them.</div>
-        <button :class="styles.nextBtn" @click="proceed" style="align-self: flex-end;">Proceed to Ionisation</button>
-      </div>
-    </div>
+    <OverlayModal
+      :show="showWelcome && welcomeStep === 1"
+      kind="welcome"
+      title="Introductory Stage"
+      text="Welcome to the introductory stage - you will first start by heating Ytterbium in an atomic oven."
+      :z-index="9999"
+      :buttons="[{ label: 'Next', onClick: () => welcomeStep = 2 }]"
+    />
+    <OverlayModal
+      :show="showWelcome && welcomeStep === 2"
+      kind="welcome"
+      title="Initialise Heating"
+      text="Start by dragging the slider on the right and holding it in the correct purple position."
+      :z-index="9999"
+      :buttons="[{ label: 'Begin', onClick: () => showWelcome = false }]"
+    />
+    <OverlayModal
+      :show="isComplete"
+      kind="popup"
+      title="Vaporisation Complete"
+      :title-style="{ color: 'var(--color-success)' }"
+      :modal-style="{ borderColor: 'var(--color-success)', boxShadow: '0 0 20px rgba(0, 255, 0, 0.2)' }"
+      text="The Ytterbium atoms have been successfully vaporised. We are now ready to ionise them."
+      :buttons="[{ label: 'Proceed to Ionisation', onClick: proceed, class: styles.nextBtn, style: { alignSelf: 'flex-end' } }]"
+    />
 
   </div>
 </template>

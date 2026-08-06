@@ -7,6 +7,7 @@ import { type IonQuantumState, type WallType, type LevelConfigLocal } from '@/ga
 
 import GameBoard from '@/components/GameBoard.vue'
 import MobileWarning from '@/components/mobile/MobileWarning.vue'
+import OverlayModal from '@/components/ui/OverlayModal.vue'
 import MeasurementSidebar from '@/components/ui/MeasurementSidebar.vue'
 import LaserGatesModal from '@/components/ui/LaserGatesModal.vue'
 
@@ -741,37 +742,49 @@ function uploadLevel(e: Event) {
         @removeGate="removeLaserGate"
       />
 
-        <div v-if="showWin && mode === 'play'" :class="styles.popupOverlay" @click="showWin = false">
-        <div :class="styles.popupModal" style="text-align: center; border-color: var(--color-success); box-shadow: var(--shadow-glow-success);" @click.stop>
-          <div :class="styles.popupTitle" style="color: var(--color-success); font-size: 20px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">
-            Level Passed!
-          </div>
+        <OverlayModal
+          :show="showWin && mode === 'play'"
+          kind="popup"
+          accent="success"
+          title="Level Passed!"
+          :title-style="{ color: 'var(--color-success)', fontSize: '20px', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }"
+          :modal-style="{ textAlign: 'center' }"
+          close-on-backdrop
+          @backdrop-click="showWin = false"
+          :buttons="[
+            { label: 'Continue Testing', onClick: () => showWin = false, class: 'lab-btn', style: { flex: '1' } },
+            {
+              label: 'Back to Edit',
+              onClick: () => { backToEdit(); showWin = false },
+              class: 'lab-btn',
+              style: { flex: '1', borderColor: 'var(--color-primary)', boxShadow: 'var(--shadow-glow)' }
+            }
+          ]"
+        >
           <div :class="styles.popupText" style="margin-bottom: 24px; font-size: 14px;">
             The win condition (<strong>{{ playLevel?.winCondition }}</strong>) was successfully met.
           </div>
-          <div style="display: flex; gap: 12px; justify-content: center;">
-            <button @click="showWin = false" class="lab-btn" style="flex: 1;">
-              Continue Testing
-            </button>
-            <button @click="backToEdit(); showWin = false" class="lab-btn" style="flex: 1; border-color: var(--color-primary); box-shadow: var(--shadow-glow);">
-              Back to Edit
-            </button>
-          </div>
+        </OverlayModal>
+      <OverlayModal
+        :show="showWelcome"
+        kind="popup"
+        title="Lab Mode"
+        :title-style="{ color: 'var(--color-primary)', fontSize: '20px', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }"
+        :modal-style="{ textAlign: 'center', maxWidth: '400px' }"
+        :z-index="9999"
+        close-on-backdrop
+        @backdrop-click="showWelcome = false"
+        :buttons="[{
+          label: 'Got it',
+          onClick: () => showWelcome = false,
+          class: 'lab-btn',
+          style: { width: '100%', padding: '8px', borderColor: 'var(--color-primary)', boxShadow: 'var(--shadow-glow)' }
+        }]"
+      >
+        <div :class="styles.popupText" style="margin-bottom: 24px; font-size: 14px; line-height: 1.5;">
+          Create your own custom levels in edit mode. Press the test level button on the left to play them. Right click to remove elements.
         </div>
-      </div>
-      <div v-if="showWelcome" :class="styles.popupOverlay" @click="showWelcome = false" style="z-index: 9999;">
-        <div :class="styles.popupModal" style="text-align: center; max-width: 400px;" @click.stop>
-          <div :class="styles.popupTitle" style="color: var(--color-primary); font-size: 20px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">
-            Lab Mode
-          </div>
-          <div :class="styles.popupText" style="margin-bottom: 24px; font-size: 14px; line-height: 1.5;">
-            Create your own custom levels in edit mode. Press the test level button on the left to play them. Right click to remove elements.
-          </div>
-          <button @click="showWelcome = false" class="lab-btn" style="width: 100%; padding: 8px; border-color: var(--color-primary); box-shadow: var(--shadow-glow);">
-            Got it
-          </button>
-        </div>
-      </div>
+      </OverlayModal>
       </div>
 </template>
 

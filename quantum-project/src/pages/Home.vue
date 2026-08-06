@@ -762,15 +762,16 @@ onUnmounted(() => {
     </div>
 
     <!-- Tutorial popup modal -->
-    <div v-if="showPopup && currentPopup" :class="styles.popupOverlay" @click="closePopup()">
-      <div :class="styles.popupModal" @click.stop>
-        <div :class="styles.popupTitle">{{ currentPopup.title }}</div>
-        <div :class="styles.popupText">{{ currentPopup.text }}</div>
-        <button @click="advancePopup()" :class="styles.popupBtn">
-          {{ level.popups.length - 1 > popupIndex ? 'Next' : 'Got it' }}
-        </button>
-      </div>
-    </div>
+    <OverlayModal
+      v-if="currentPopup"
+      :show="showPopup"
+      kind="popup"
+      :title="currentPopup.title"
+      :text="currentPopup.text"
+      close-on-backdrop
+      @backdrop-click="closePopup"
+      :buttons="[{ label: level.popups.length - 1 > popupIndex ? 'Next' : 'Got it', onClick: advancePopup }]"
+    />
     </div>
 
     <!-- Level selector modal -->
@@ -860,40 +861,43 @@ onUnmounted(() => {
       @selectLevel="selectLevel"
     />
 
-    <div v-if="showWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
-        <div :class="styles.welcomeModal">
-          <div :class="styles.welcomeTitle">{{ WELCOME_POPUP.title }}</div>
-          <div :class="styles.welcomeText">{{ WELCOME_POPUP.text }}</div>
-          <button @click="closeWelcome()" :class="styles.welcomeBtn">Continue</button>
-        </div>
-      </div>
+    <OverlayModal
+      :show="showWelcome"
+      kind="welcome"
+      :title="WELCOME_POPUP.title"
+      :text="WELCOME_POPUP.text"
+      :z-index="9999"
+      :buttons="[{ label: 'Continue', onClick: closeWelcome }]"
+    />
 
-    <div v-if="showTutorialWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
-      <div :class="styles.welcomeModal">
-        <div :class="styles.welcomeTitle">Welcome to the Tutorial</div>
-        <div :class="styles.welcomeText">
-          Learn the basics of the game and how X and H gates work before jumping into the main puzzles. You can come back to the tutorial at any time by clicking the "Tutorial" button.
-        </div>
-        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
-          <button @click="beginTutorialTour()" :class="styles.welcomeBtn">Start Tutorial</button>
-          <button
-            @click="skipTutorialWelcome()"
-            :class="styles.welcomeBtn"
-            style="background: none; border: 1px solid var(--color-primary); color: var(--color-primary);"
-          >
-            Skip to Level 1
-          </button>
-        </div>
+    <OverlayModal
+      :show="showTutorialWelcome"
+      kind="welcome"
+      title="Welcome to the Tutorial"
+      :z-index="9999"
+      :buttons="[
+        { label: 'Start Tutorial', onClick: beginTutorialTour },
+        {
+          label: 'Skip to Level 1',
+          onClick: skipTutorialWelcome,
+          style: { background: 'none', border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }
+        }
+      ]"
+    >
+      <div :class="styles.welcomeText">
+        Learn the basics of the game and how X and H gates work before jumping into the main puzzles.
+        You can come back to the tutorial at any time by clicking the "Tutorial" button.
       </div>
-    </div>
+    </OverlayModal>
 
-    <div v-if="showMainWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
-        <div :class="styles.welcomeModal">
-          <div :class="styles.welcomeTitle">{{ MAIN_WELCOME_POPUP.title }}</div>
-          <div :class="styles.welcomeText">{{ MAIN_WELCOME_POPUP.text }}</div>
-          <button @click="showMainWelcome = false" :class="styles.welcomeBtn">Continue</button>
-        </div>
-      </div>
+    <OverlayModal
+      :show="showMainWelcome"
+      kind="welcome"
+      :title="MAIN_WELCOME_POPUP.title"
+      :text="MAIN_WELCOME_POPUP.text"
+      :z-index="9999"
+      :buttons="[{ label: 'Continue', onClick: () => showMainWelcome = false }]"
+    />
 
     <Tutorial
       v-if="tutorialVisible"
@@ -910,37 +914,24 @@ onUnmounted(() => {
       @openManualSection="openManualToSection"
     />
 
-    <div v-if="showCompletionPopup" :class="styles.welcomeOverlay" style="z-index: 9999;">
-      <div :class="styles.welcomeModal">
-        <div :class="styles.welcomeTitle">Congratulations!</div>
-        <div :class="styles.welcomeText">
-          Congratulations on completing the laser puzzle! Read the manual for more info on quantum computing and check out the lab to create and share your own puzzles.
-        </div>
-        
-        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
-          <button 
-            @click="showCompletionPopup = false; showManual = true" 
-            :class="styles.welcomeBtn" 
-            style="flex: 1;"
-          >
-            Manual
-          </button>
-          
-          <button 
-            @click="goToLab" 
-            :class="styles.welcomeBtn" 
-            style="flex: 1; background: var(--color-secondary); color: black;"
-          >
-            Lab
-          </button>
-        </div>
-        
-        <button 
-          @click="showCompletionPopup = false" 
+    <OverlayModal
+      :show="showCompletionPopup"
+      kind="welcome"
+      title="Congratulations!"
+      text="Congratulations on completing the laser puzzle! Read the manual for more info on quantum computing and check out the lab to create and share your own puzzles."
+      :z-index="9999"
+      :buttons="[
+        { label: 'Manual', onClick: () => { showCompletionPopup = false; showManual = true }, style: { flex: '1' } },
+        { label: 'Lab', onClick: goToLab, style: { flex: '1', background: 'var(--color-secondary)', color: 'var(--color-bg)' } }
+      ]"
+    >
+      <template #footer>
+        <button
+          @click="showCompletionPopup = false"
           style="margin-top: 15px; background: none; border: none; color: var(--color-subtle); cursor: pointer; text-decoration: underline;"
         >
           Close
         </button>
-      </div>
-    </div>
+      </template>
+    </OverlayModal>
 </template>

@@ -76,7 +76,7 @@ describe('Lab mode', () => {
     await enabledTestLevelButton!.trigger('click');
     await nextTick();
 
-    expect(wrapper.text()).toContain('Lab ModeDesign your own quantum puzzle levels Edit  Test Level Level InformationName: Custom LevelHint: Design your custom levelGoal: TestWin: anyAdd SourceAdd IonAdd MirrorCanvas Click Measure Last—HistoryNo measurements yet Lab Mode  Create your own custom levels in edit mode. Press the test level button on the left to play them. Right click to remove elements.  Got it');
+    expect(wrapper.text()).toContain('Lab ModeDesign your own quantum puzzle levels Edit  Test Level Level InformationName: Custom LevelHint: Design your custom levelGoal: TestWin: anyAdd SourceAdd IonAdd MirrorCanvas Click Measure Last—HistoryNo measurements yetLab Mode Create your own custom levels in edit mode. Press the test level button on the left to play them. Right click to remove elements. Got it');
     expect(wrapper.text()).toContain('Level Information');
     expect(wrapper.text()).not.toContain('Palette');
   });

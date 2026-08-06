@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import './intro-levels.css'
 import styles from '@/pages/Home.module.css'
+import OverlayModal from '@/components/ui/OverlayModal.vue'
 
 const emit = defineEmits<{
   (e: 'complete'): void
@@ -273,13 +274,14 @@ onUnmounted(() => {
     </div>
 
     <!-- Welcome Modal -->
-    <div v-if="showWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
-      <div :class="styles.welcomeModal">
-        <div :class="styles.welcomeTitle">Ionisation Stage</div>
-        <div :class="styles.welcomeText">Point and click to fire electrons at the Yb atoms and Ionise them.</div>
-        <button :class="styles.welcomeBtn" @click="showWelcome = false">Begin</button>
-      </div>
-    </div>
+    <OverlayModal
+      :show="showWelcome"
+      kind="welcome"
+      title="Ionisation Stage"
+      text="Point and click to fire electrons at the Yb atoms and Ionise them."
+      :z-index="9999"
+      :buttons="[{ label: 'Begin', onClick: () => showWelcome = false }]"
+    />
 
   </div>
 </template>

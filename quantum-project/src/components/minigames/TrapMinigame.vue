@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import type { Ion } from '@/game/types'
 import './intro-levels.css'
 import styles from '@/pages/Home.module.css'
+import OverlayModal from '@/components/ui/OverlayModal.vue'
 
 const emits = defineEmits<{
   (e: 'complete'): void
@@ -229,20 +230,21 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div v-if="showWelcome" :class="styles.welcomeOverlay">
-      <div :class="styles.welcomeModal">
-        <div :class="styles.welcomeTitle">Initialise Trap</div>
-        <div :class="styles.welcomeText">Drag and drop a Yb+ ion into the Paul trap and modulate the magnetic field to keep it in place.</div>
-        <button :class="styles.welcomeBtn" @click="showWelcome = false">Begin</button>
-      </div>
-    </div>
-
-    <div v-if="isComplete" :class="styles.popupOverlay">
-      <div :class="styles.popupModal" style="border-color: var(--color-success); box-shadow: var(--shadow-glow-success);">
-        <div :class="styles.popupTitle" style="color: var(--color-success);">Trap Stabilised</div>
-        <div :class="styles.popupText">The ion is now contained in the Paul trap using modulating magnetic fields. We need to cool it and prepare it for storing information.</div>
-        <button :class="styles.nextBtn" @click="proceed" style="align-self: flex-end;">Proceed to Cooling</button>
-      </div>
-    </div>
+    <OverlayModal
+      :show="showWelcome"
+      kind="welcome"
+      title="Initialise Trap"
+      text="Drag and drop a Yb+ ion into the Paul trap and modulate the magnetic field to keep it in place."
+      :buttons="[{ label: 'Begin', onClick: () => showWelcome = false }]"
+    />
+    <OverlayModal
+      :show="isComplete"
+      kind="popup"
+      title="Trap Stabilised"
+      :title-style="{ color: 'var(--color-success)' }"
+      :modal-style="{ borderColor: 'var(--color-success)', boxShadow: '0 0 20px rgba(0, 255, 0, 0.2)' }"
+      text="The ion is now contained in the Paul trap using modulating magnetic fields. We need to cool it and prepare it for storing information."
+      :buttons="[{ label: 'Proceed to Cooling', onClick: proceed, class: styles.nextBtn, style: { alignSelf: 'flex-end' } }]"
+    />
   </div>
 </template>
