@@ -177,7 +177,6 @@ const {
   isMeasured,
   measuredValues,
 } = measurement
-const resultcolourClass = measurement.resultColourClass(styles)
 
 const gateInv = useGateInventory()
 const {

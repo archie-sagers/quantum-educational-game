@@ -6,7 +6,6 @@ import {
   checkWinCondition,
   getBlochAngle,
   getBlochLabel,
-  measure,
   measureAll,
 } from '../../quantumgame';
 

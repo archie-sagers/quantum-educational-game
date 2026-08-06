@@ -40,7 +40,6 @@ const showLevelSelector = ref(false)
 const showLaserGates = ref(false)
 const ionInitialized = ref(false)
 const automatedRunning = ref(false)
-const automatedDone = ref(false)
 const showPopup = ref(false)
 const popupIndex = ref(0)
 const tempPopup = ref<{ title: string; text: string } | null>(null)
@@ -59,7 +58,6 @@ const {
   isMeasured,
   measuredValues,
 } = measurement
-const resultcolourClass = measurement.resultColourClass(styles)
 
 const gateInv = useGateInventory()
 const {
@@ -421,7 +419,6 @@ function startAutomatedDemo() {
     }
 
     automatedRunning.value = false
-    automatedDone.value = true
 
     tempPopup.value = {
       title: 'Measurement Demo Results',
@@ -541,11 +538,12 @@ function handleMeasure() {
     const states = stateInfo.states ?? []
     const wc = level.winCondition
 
-    if (passedGateCountCheck && checkWinCondition(wc, states)) {
+    const hasWon = passedGateCountCheck && checkWinCondition(wc, states)
+    if (hasWon) {
       showWin.value = true
     }
 
-    if (passedGateCountCheck && checkWinCondition(wc, states) && level.automateMeasurement && !automatedRunning.value) {
+    if (hasWon && level.automateMeasurement && !automatedRunning.value) {
       const allIonsHit = states.every(s => s.state !== '—');
       
       let shouldRunDemo = allIonsHit && states.some(s => s.state === '|+⟩' || s.state === '|-⟩');

@@ -6,8 +6,8 @@ export type QuantumState = '|0⟩' | '|1⟩' | '|+⟩' | '|-⟩';
 export interface IonQuantumState {
   ionIndex: number;
   state: QuantumState | '—';
-  p0: string | '—';
-  p1: string | '—';
+  p0: string;
+  p1: string;
 }
 
 // Level and Game Board Types
