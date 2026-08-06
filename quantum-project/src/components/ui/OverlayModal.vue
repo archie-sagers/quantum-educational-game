@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import styles from '@/pages/Home.module.css'
+
+let overlayModalId = 0
 
 export interface OverlayButton {
   label: string
@@ -29,6 +31,21 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{ (e: 'backdrop-click'): void }>()
 
+const modalRef = ref<HTMLElement | null>(null)
+const instanceId = ++overlayModalId
+const titleId = `overlay-modal-title-${instanceId}`
+const textId = `overlay-modal-text-${instanceId}`
+
+watch(
+  () => props.show,
+  async (show) => {
+    if (show) {
+      await nextTick()
+      modalRef.value?.focus()
+    }
+  },
+)
+
 const overlayClass = computed(() => props.kind === 'welcome' ? styles.welcomeOverlay : styles.popupOverlay)
 const modalClass = computed(() => props.kind === 'welcome' ? styles.welcomeModal : styles.popupModal)
 const titleClass = computed(() => props.kind === 'welcome' ? styles.welcomeTitle : styles.popupTitle)
@@ -53,9 +70,19 @@ function handleBackdropClick() {
 
 <template>
   <div v-if="show" :class="overlayClass" :style="overlayStyle" @click="handleBackdropClick">
-    <div :class="modalClass" :style="combinedModalStyle" @click.stop>
-      <div :class="titleClass" :style="titleStyle">{{ title }}</div>
-      <div v-if="text" :class="textClass">{{ text }}</div>
+    <div
+      ref="modalRef"
+      :class="modalClass"
+      :style="combinedModalStyle"
+      @click.stop
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="titleId"
+      :aria-describedby="text ? textId : undefined"
+      tabindex="-1"
+    >
+      <div :id="titleId" :class="titleClass" :style="titleStyle">{{ title }}</div>
+      <div v-if="text" :id="textId" :class="textClass">{{ text }}</div>
 
       <slot />
 
