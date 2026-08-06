@@ -475,6 +475,9 @@ defineExpose({ resetPhoton, triggerFlash })
       @mousemove="handleCanvasMouseMove"
       @dragover="handleCanvasDragOver"
       @drop="handleCanvasDrop"
+      role="application"
+      aria-label="Interactive quantum puzzle board. Click to place mirrors to direct lasers to the ions."
+      tabindex="0"
     />
   </div>
 </template>

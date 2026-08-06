@@ -43,7 +43,7 @@ defineEmits<{
         @click="$emit('measure')"
         :disabled="!canMeasure || automatedRunning"
         :class="[styles.measureBtn, { [styles.tutorialHighlight as string]: isTutorialStep('measure') }]"
-        :aria-label="canMeasure ? 'Measure ion state' : 'Measure ion state, unavailable right now'"
+        aria-label="Measure ion state"
       >
         Measure
       </button>
