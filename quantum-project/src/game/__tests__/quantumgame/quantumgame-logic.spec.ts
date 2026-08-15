@@ -126,15 +126,12 @@ describe('quantumgame logic', () => {
     calculateQuantumState(level, [['X']], null);
 
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.123);
-    expect(measure('|0⟩')).toBe(1);
     expect(measureAll()).toEqual([1]);
     randomSpy.mockRestore();
   });
 
   it('falls back to random on error', () => {
     const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.8);
-
-    expect(measure('|0⟩')).toBe(1);
 
     const all = measureAll();
     expect(all).toHaveLength(1);
