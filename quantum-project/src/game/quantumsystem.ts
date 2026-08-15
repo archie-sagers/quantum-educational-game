@@ -31,10 +31,10 @@ export class QuantumSystem {
       if ((i & swapMask) === 0) {
         // compares current index against swapMask and flips where the mask has a 1
         const j = i ^ swapMask;
-        const temp = this.stateVector[i];
+        const temp = this.stateVector[i]!;
 
         // Swap the amplitudes of the two states in the state vector
-        this.stateVector[i] = this.stateVector[j];
+        this.stateVector[i] = this.stateVector[j]!;
         this.stateVector[j] = temp;
       }
     }
@@ -55,7 +55,7 @@ export class QuantumSystem {
 
     // Create a new temporary state vector to hold the results of applying the H gate
     const newState: ComplexNumber[] = Array.from({ length: stateSize }, (_, i) => {
-      const amp = this.stateVector[i];
+      const amp = this.stateVector[i]!;
       return new ComplexNumber(amp.real, amp.imaginary);
     });
 
@@ -65,8 +65,8 @@ export class QuantumSystem {
         const j = i | bitMask;
 
         // Get the amplitudes for the two states that will be affected by the H gate
-        const amp0 = this.stateVector[i];
-        const amp1 = this.stateVector[j];
+        const amp0 = this.stateVector[i]!;
+        const amp1 = this.stateVector[j]!;
 
         // add two amplitudes and scale by 1/sqrt(2) (so probabilities sum to 1)
         newState[i] = amp0.add(amp1).scale(factor);
@@ -109,8 +109,8 @@ export class QuantumSystem {
       if ((i & controlMask) !== 0 && (i & targetMask) === 0) {
         const j = i | targetMask;
         // Swap the amplitudes of the two states in the state vector
-        const temp = this.stateVector[i];
-        this.stateVector[i] = this.stateVector[j];
+        const temp = this.stateVector[i]!;
+        this.stateVector[i] = this.stateVector[j]!;
         this.stateVector[j] = temp;
       }
     }
@@ -129,7 +129,7 @@ export class QuantumSystem {
     // Iterate through the state vector
     // For each state, calculate its probability (magnitude squared of the amplitude (Born Rule)) and add it to the cumulative probability
     for (let i = 0; i < this.stateVector.length; i++) {
-      const probability = this.stateVector[i].magnitudeSquared();
+      const probability = this.stateVector[i]!.magnitudeSquared();
       cumulativeProbability += probability;
 
       if (r < cumulativeProbability) {
@@ -149,7 +149,7 @@ export class QuantumSystem {
     this.validateStateIndex(index);
     // Return a new instance of the ComplexNumber 
     // This prevents accidental overwriting of the state by other code
-    const amp = this.stateVector[index];
+    const amp = this.stateVector[index]!;
     return new ComplexNumber(amp.real, amp.imaginary);
   }
 
@@ -184,7 +184,7 @@ export class QuantumSystem {
       // Determine if the target qubit is 0 or 1 in the current state index
       // This is done by right-shifting the index by the qubit index
       const bit = (i >> qubitIndex) & 1;
-      const amplitude = this.stateVector[i].magnitudeSquared();
+      const amplitude = this.stateVector[i]!.magnitudeSquared();
       
       // Add the probability to the appropriate sum based on whether the target qubit is 0 or 1
       if (bit === 0) {
