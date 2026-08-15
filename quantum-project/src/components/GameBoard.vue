@@ -16,6 +16,14 @@ const props = defineProps<{
   disableMirrors?: boolean
 }>()
 
+interface BeamSegment {
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  colours: string[]
+}
+
 const emits = defineEmits<{
   (e: 'canvas-click', col: number, row: number): void
   (e: 'canvas-right-click', col: number, row: number): void
@@ -144,11 +152,11 @@ function draw() {
   globalProgress += dt / TRAVEL_MS
   
   if (globalProgress < 3 && segs.length > 0) { 
-    const paths: any[][] = []
+    const paths: BeamSegment[][] = []
     for (const seg of segs) {
       let added = false
       for (const p of paths) {
-        const lastSeg = p[p.length - 1]
+        const lastSeg = p[p.length - 1]!
         if (Math.abs(seg.x1 - lastSeg.x2) < 1 && Math.abs(seg.y1 - lastSeg.y2) < 1) {
           p.push(seg)
           added = true
@@ -170,8 +178,10 @@ function draw() {
     const GATE_DELAY = 0.1
 
     for (const path of paths) {
-      if (path.length === 0) continue
-      const baseColours = path[0].colours
+    const firstSeg = path[0]
+    if (!firstSeg) continue
+
+    const baseColours = firstSeg.colours
 
       for (let cIdx = 0; cIdx < baseColours.length; cIdx++) {
         const p = globalProgress - (cIdx * GATE_DELAY)
@@ -179,7 +189,7 @@ function draw() {
         if (p >= 0 && p <= 1) {
           const t = p * path.length
           const idx = Math.min(Math.floor(t), path.length - 1)
-          const seg = path[idx]
+          const seg = path[idx]!
           
           let f = t - Math.floor(t)
           if (t >= path.length) f = 1
