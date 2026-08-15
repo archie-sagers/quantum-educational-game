@@ -44,9 +44,9 @@ export function useMeasurement(baseDelayMs = 800) {
     result.value = '—'
   }
 
-    function resultColourClass(styles: Record<string, string>) {
-        return computed(() => (result.value === '1' ? styles.infoValOrange : styles.infoValCyan))
-    }
+  function resultColourClass(styles: Record<string, string>) {
+    return computed(() => (result.value === '1' ? styles.infoValOrange : styles.infoValCyan))
+  }
 
   return {
     result,

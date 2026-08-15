@@ -27,6 +27,7 @@ const emits = defineEmits<{
 const canvas = ref<HTMLCanvasElement | null>(null)
 let ctx: CanvasRenderingContext2D | null = null
 let animationFrameId: number | null = null
+let lastFrameTime = performance.now()
 
 let globalProgress = 1 // Start at 1 so the photon isn't animating upon initial load
 
@@ -71,6 +72,11 @@ function draw() {
   }
 
   if (!ctx) return
+
+  const now = performance.now()
+  let dt = now - lastFrameTime
+  lastFrameTime = now
+  dt = Math.min(dt, 100)
 
   ctx.clearRect(0, 0, canvas.value!.width, canvas.value!.height)
 
@@ -135,7 +141,7 @@ function draw() {
   ctx.shadowBlur = 0
 
   // Photon dots
-  globalProgress += 1 / ((TRAVEL_MS / 1000) * FPS)
+  globalProgress += dt / TRAVEL_MS
   
   if (globalProgress < 3 && segs.length > 0) { 
     const paths: any[][] = []
@@ -303,7 +309,7 @@ function draw() {
   if (flashAlpha > 0) {
     ctx.fillStyle = `rgba(0, 150, 255, ${flashAlpha})`;
     ctx.fillRect(0, 0, canvas.value!.width, canvas.value!.height);
-    flashAlpha -= 0.015;
+    flashAlpha -= dt * 0.0009
   }
 
   animationFrameId = requestAnimationFrame(draw)
@@ -441,7 +447,6 @@ onUnmounted(() => {
   }
   window.removeEventListener('resize', handleResize)
   window.removeEventListener('orientationchange', handleResize)
-  if (animationFrameId) cancelAnimationFrame(animationFrameId)
 })
 
 // Watch for level changes and reset animation frame
