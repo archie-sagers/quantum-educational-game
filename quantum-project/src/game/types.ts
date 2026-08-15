@@ -39,22 +39,10 @@ export interface LevelConfig {
 }
 
 // Lab Level Config Types
-export interface LevelConfigLocal {
-  name: string
-  cols: number
-  rows: number
-  sources: Array<{ col: number; row: number; dir?: string }>
-  ions: Array<{ col: number; row: number }>
-  walls?: Array<{ col: number; row: number; type?: WallType }>
+export interface LevelConfigLocal 
+  extends Pick<LevelConfig, 'name' | 'cols' | 'rows' | 'sources' | 'ions' | 'walls' | 'availableGates' | 'prePlacedGates' | 'lockedGateIndices' | 'gateInventory' | 'hint' | 'goal' | 'winCondition'> {
   mirrors?: Array<{ col: number; row: number; dir: 'fwd' | 'back' }>
-  availableGates?: string[]
-  prePlacedGates?: string[][]
-  lockedGateIndices?: number[]
-  gateInventory?: Record<string, number>
   lockedTo?: Record<string, string>
-  hint?: string
-  goal?: string
-  winCondition?: string
 }
 
 // Segment of laser beam path
