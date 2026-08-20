@@ -242,6 +242,20 @@ defineEmits<{
       <li>It flips a target qubit only when a control qubit is in state |1⟩</li>
       <li>This is a fundamental gate for creating <a @click="$emit('scrollToSection', 'qm-entanglement')" class="manualLink">entanglement</a></li>
     </ul>
+    <p><strong>Effect:</strong></p>
+    <ul>
+      <li>|0⟩|0⟩ -> |0⟩|0⟩</li>
+      <li>|0⟩|1⟩ -> |0⟩|1⟩</li>
+      <li>|1⟩|0⟩ -> |1⟩|1⟩</li>
+      <li>|1⟩|1⟩ -> |1⟩|0⟩</li>
+    </ul>
+    <p>Entanglement</p>
+    <ul>
+        <li>|+⟩|0⟩ -> |+⟩|+⟩</li>
+        <li>|-⟩|0⟩ -> |-⟩|-⟩</li>
+        <li>|+⟩|1⟩ -> |+⟩|+⟩</li>
+        <li>|-⟩|1⟩ -> |-⟩|-⟩</li>
+    </ul>    
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 9)" class="manualLink">Level 10</span> <span @click="$emit('goToLevel', 10)" class="manualLink">Level 11</span></p>
 
     <h2 id="quantum-mechanics" class="manualH2">Quantum Mechanics</h2>

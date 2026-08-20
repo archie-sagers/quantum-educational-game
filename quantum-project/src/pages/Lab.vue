@@ -426,13 +426,14 @@ watch([() => levelConfig.lockedTo, () => levelConfig.sources, () => levelConfig.
   const newLockedIndices: number[] = [];
 
   for (const g of levelConfig.availableGates || []) {
-    const lockedStr = levelConfig.lockedTo[g] || '';
-    // Extracts letters regardless of commas, spaces, or casing
-    const targets = lockedStr.toUpperCase().match(/[A-Z]/g) || [];
+    const lockedStr = String(levelConfig.lockedTo[g] || '');
+    // Extracts numbers regardless of spaces (e.g., "1, 2, 3")
+    const targets = lockedStr.match(/\d+/g) || [];
 
     for (const t of targets) {
-      // 'A' -> 0, 'B' -> 1, etc
-      const sourceIdx = t.charCodeAt(0) - 65;
+      // Parse the string to integer and subtract 1
+      const sourceIdx = parseInt(t, 10) - 1;
+      
       if (sourceIdx >= 0 && sourceIdx < levelConfig.sources.length) {
         newPrePlaced[sourceIdx]!.push(g);
       }
@@ -615,7 +616,7 @@ function uploadLevel(e: Event) {
                     <input
                       type="text"
                       v-model="levelConfig.lockedTo[g]"
-                      placeholder="e.g. A, B"
+                      placeholder="e.g. 1, 2"
                       style="width: 70px; padding: 2px 4px; font-size: 11px;"
                     />
                 </div>

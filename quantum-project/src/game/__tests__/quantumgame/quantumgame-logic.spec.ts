@@ -96,20 +96,38 @@ describe('quantumgame logic', () => {
   });
 
   it('accepts only correlated GHZ states for the GHZ win condition', () => {
+    const level = new Level({
+      name: 'GHZ Check',
+      cols: 4,
+      rows: 1,
+      sources: [{ col: 0, row: 0, dir: 'right' }],
+      ions: [
+        { col: 1, row: 0 },
+        { col: 2, row: 0 },
+        { col: 3, row: 0 },
+      ],
+      walls: [],
+    });
+
+    calculateQuantumState(level, [[]], null);
+
     const ghzStates = [
       { ionIndex: 0, state: '|0⟩' as const, p0: '100%', p1: '0%' },
       { ionIndex: 1, state: '|0⟩' as const, p0: '100%', p1: '0%' },
       { ionIndex: 2, state: '|0⟩' as const, p0: '100%', p1: '0%' },
     ];
-
     expect(checkWinCondition('ghz', ghzStates)).toBe(true);
+
+    calculateQuantumState(level, [['X']], null);
+
     expect(
       checkWinCondition('ghz', [
-        ghzStates[0],
-        { ionIndex: 1, state: '|1⟩', p0: '0%', p1: '100%' },
-        ghzStates[2],
+        { ionIndex: 0, state: '|1⟩' as const, p0: '0%', p1: '100%' },
+        { ionIndex: 1, state: '|0⟩' as const, p0: '100%', p1: '0%' },
+        { ionIndex: 2, state: '|0⟩' as const, p0: '100%', p1: '0%' },
       ]),
     ).toBe(false);
+
     expect(checkWinCondition('ghz', ghzStates.slice(0, 2))).toBe(false);
   });
 
