@@ -133,6 +133,9 @@ $$P(q=b) = \sum_{i \,:\, \text{bit}_q(i) = b} |\alpha_i|^2$$
 git clone https://github.com/<your-username>/<repo-name>.git
 cd <repo-name>
 
+# Go to project root
+cd quantum-project
+
 # Install dependencies
 npm install
 
@@ -174,13 +177,3 @@ Key sources underpinning the pedagogical and technical design. See the full diss
 - Haner, T., & Steiger, D. S. (2017). [0.5 Petabyte Simulation of a 45-Qubit Quantum Circuit](https://doi.org/10.48550/ARXIV.1704.01127).
 - Jones, T., Brown, A., Bush, I., & Benjamin, S. (2018). [QuEST and High Performance Simulation of Quantum Computers](https://doi.org/10.48550/ARXIV.1802.08032).
 - Lekitsch, B. et al. (2015). [Blueprint for a microwave trapped-ion quantum computer](https://doi.org/10.48550/ARXIV.1508.00420).
-
-## Acknowledgements
-
-- **Dr. Giulio Guerrieri**: Project Supervisor, Informatics Department, University of Sussex
-- **Gareth Hopkins**: Quantum Information PhD contributor
-- All participants who playtested the game and shaped its final design
-
----
-
-*Submitted as part requirement for the degree of Computer Science (Conversion) at the University of Sussex, August 2026. Freely copyable and distributable provided the source is acknowledged.*
