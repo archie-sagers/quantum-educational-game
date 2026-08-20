@@ -242,6 +242,20 @@ defineEmits<{
       <li>It flips a target qubit only when a control qubit is in state |1⟩</li>
       <li>This is a fundamental gate for creating <a @click="$emit('scrollToSection', 'qm-entanglement')" class="manualLink">entanglement</a></li>
     </ul>
+    <p><strong>Effect:</strong></p>
+    <ul>
+      <li>|0⟩|0⟩ -> |0⟩|0⟩</li>
+      <li>|0⟩|1⟩ -> |0⟩|1⟩</li>
+      <li>|1⟩|0⟩ -> |1⟩|1⟩</li>
+      <li>|1⟩|1⟩ -> |1⟩|0⟩</li>
+    </ul>
+    <p>Entanglement</p>
+    <ul>
+        <li>|+⟩|0⟩ -> |+⟩|+⟩</li>
+        <li>|-⟩|0⟩ -> |-⟩|-⟩</li>
+        <li>|+⟩|1⟩ -> |+⟩|+⟩</li>
+        <li>|-⟩|1⟩ -> |-⟩|-⟩</li>
+    </ul>    
     <p><strong>Practice:</strong> <span @click="$emit('goToLevel', 9)" class="manualLink">Level 10</span> <span @click="$emit('goToLevel', 10)" class="manualLink">Level 11</span></p>
 
     <h2 id="quantum-mechanics" class="manualH2">Quantum Mechanics</h2>
@@ -395,80 +409,4 @@ defineEmits<{
   </div>
 </template>
 
-<style scoped>
-.manualContent {
-  color: var(--color-text);
-  font-size: 18px;
-  line-height: 1.8;
-  font-family: var(--font-mono);
-}
-
-.manualH1 {
-  color: var(--color-primary);
-  font-size: 30px;
-  font-weight: bold;
-  letter-spacing: 0.1em;
-  margin: 0 0 24px 0;
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 12px;
-}
-
-.manualH2 {
-  color: var(--color-secondary);
-  font-size: 24px;
-  font-weight: bold;
-  letter-spacing: 0.08em;
-  margin: 24px 0 12px 0;
-}
-
-.manualH3 {
-  color: var(--color-primary);
-  font-size: 22px;
-  font-weight: bold;
-  letter-spacing: 0.05em;
-  margin: 16px 0 8px 0;
-}
-
-.manualLink {
-  color: var(--color-secondary);
-  text-decoration: none;
-  transition: 0.2s;
-  cursor: pointer;
-  border-bottom: 1px dotted var(--color-secondary);
-}
-
-.manualLink:hover {
-  color: var(--color-secondary-light);
-  border-bottom: 1px solid var(--color-secondary);
-}
-
-.manualContent p {
-  margin: 8px 0;
-}
-
-.manualContent ul,
-.manualContent ol {
-  margin: 8px 0 8px 20px;
-  padding: 0;
-}
-
-.manualContent li {
-  margin: 6px 0;
-  color: var(--color-text);
-}
-
-.manualContent strong {
-  color: var(--color-text);
-  font-weight: bold;
-}
-
-.manualGif {
-  max-width: 100%;
-  height: auto;
-  display: block;
-  margin: 16px 0;
-  border-radius: 8px;
-  border: 1px solid var(--color-primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-</style>
+<style scoped src="./manual.css"></style>

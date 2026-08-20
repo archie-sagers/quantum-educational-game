@@ -114,15 +114,6 @@ function getStateProbabilities(state: QuantumState): [number, number] {
   return probs[state];
 }
 
-export function measure(state: QuantumState): number {
-  if (lastQuantumSystem) {
-    const result = lastQuantumSystem.measure();
-    return result[0] ?? 0;
-  }
-  // fallback
-  return Math.random() < 0.5 ? 0 : 1; 
-}
-
 export function measureAll(): number[] {
   if (lastQuantumSystem) {
     return lastQuantumSystem.measure();
@@ -271,11 +262,27 @@ export function checkWinCondition(wc: string, states: IonQuantumState[]): boolea
 
   // GHZ State - Valid for 3-6 qubits
   if (wc === 'ghz') {
-    const firstState = states[0]?.state;
-    return states.length >= 3 &&
-          states.length <= 6 &&
-          (firstState === '|0⟩' || firstState === '|1⟩') && 
-          states.every(s => s.state === firstState);
+    if (states.length < 3 || states.length > 6) return false;
+    if (states.some(s => s.state === '—')) return false;
+
+    // Simulate a measurements
+    for (let i = 0; i < 5; i++) {
+      const sample = measureAll();
+      if (!sample.every(val => val === sample[0])) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // Anti-correlation - Valid for 2 qubits (must be |01⟩ or |10⟩
+  if (wc === 'anti-correlated') {
+    if (states.length !== 2) return false;
+    
+      if (states[0]?.state === '—' || states[1]?.state === '—') return false;
+        const sample = measureAll();
+        return sample[0] !== sample[1];
   }
 
   return false;

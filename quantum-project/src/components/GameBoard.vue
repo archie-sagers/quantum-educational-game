@@ -16,6 +16,14 @@ const props = defineProps<{
   disableMirrors?: boolean
 }>()
 
+interface BeamSegment {
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  colours: string[]
+}
+
 const emits = defineEmits<{
   (e: 'canvas-click', col: number, row: number): void
   (e: 'canvas-right-click', col: number, row: number): void
@@ -27,6 +35,7 @@ const emits = defineEmits<{
 const canvas = ref<HTMLCanvasElement | null>(null)
 let ctx: CanvasRenderingContext2D | null = null
 let animationFrameId: number | null = null
+let lastFrameTime = performance.now()
 
 let globalProgress = 1 // Start at 1 so the photon isn't animating upon initial load
 
@@ -71,6 +80,11 @@ function draw() {
   }
 
   if (!ctx) return
+
+  const now = performance.now()
+  let dt = now - lastFrameTime
+  lastFrameTime = now
+  dt = Math.min(dt, 100)
 
   ctx.clearRect(0, 0, canvas.value!.width, canvas.value!.height)
 
@@ -135,14 +149,14 @@ function draw() {
   ctx.shadowBlur = 0
 
   // Photon dots
-  globalProgress += 1 / ((TRAVEL_MS / 1000) * FPS)
+  globalProgress += dt / TRAVEL_MS
   
   if (globalProgress < 3 && segs.length > 0) { 
-    const paths: any[][] = []
+    const paths: BeamSegment[][] = []
     for (const seg of segs) {
       let added = false
       for (const p of paths) {
-        const lastSeg = p[p.length - 1]
+        const lastSeg = p[p.length - 1]!
         if (Math.abs(seg.x1 - lastSeg.x2) < 1 && Math.abs(seg.y1 - lastSeg.y2) < 1) {
           p.push(seg)
           added = true
@@ -164,8 +178,10 @@ function draw() {
     const GATE_DELAY = 0.1
 
     for (const path of paths) {
-      if (path.length === 0) continue
-      const baseColours = path[0].colours
+    const firstSeg = path[0]
+    if (!firstSeg) continue
+
+    const baseColours = firstSeg.colours
 
       for (let cIdx = 0; cIdx < baseColours.length; cIdx++) {
         const p = globalProgress - (cIdx * GATE_DELAY)
@@ -173,7 +189,7 @@ function draw() {
         if (p >= 0 && p <= 1) {
           const t = p * path.length
           const idx = Math.min(Math.floor(t), path.length - 1)
-          const seg = path[idx]
+          const seg = path[idx]!
           
           let f = t - Math.floor(t)
           if (t >= path.length) f = 1
@@ -303,7 +319,7 @@ function draw() {
   if (flashAlpha > 0) {
     ctx.fillStyle = `rgba(0, 150, 255, ${flashAlpha})`;
     ctx.fillRect(0, 0, canvas.value!.width, canvas.value!.height);
-    flashAlpha -= 0.015;
+    flashAlpha -= dt * 0.0009
   }
 
   animationFrameId = requestAnimationFrame(draw)
@@ -441,7 +457,6 @@ onUnmounted(() => {
   }
   window.removeEventListener('resize', handleResize)
   window.removeEventListener('orientationchange', handleResize)
-  if (animationFrameId) cancelAnimationFrame(animationFrameId)
 })
 
 // Watch for level changes and reset animation frame
@@ -475,6 +490,9 @@ defineExpose({ resetPhoton, triggerFlash })
       @mousemove="handleCanvasMouseMove"
       @dragover="handleCanvasDragOver"
       @drop="handleCanvasDrop"
+      role="application"
+      aria-label="Interactive quantum puzzle board. Click to place mirrors to direct lasers to the ions."
+      tabindex="0"
     />
   </div>
 </template>

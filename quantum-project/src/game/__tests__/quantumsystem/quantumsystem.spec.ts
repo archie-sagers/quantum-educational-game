@@ -16,8 +16,8 @@ describe('QuantumSystem', () => {
   });
 
   it('validates qubit bounds', () => {
-    expect(() => new QuantumSystem(0)).toThrow('Number of qubits must be between 1 and 6');
-    expect(() => new QuantumSystem(7)).toThrow('Number of qubits must be between 1 and 6');
+    expect(() => new QuantumSystem(0)).toThrow('Number of qubits must be an integer between 1 and 6');
+    expect(() => new QuantumSystem(7)).toThrow('Number of qubits must be an integer between 1 and 6');
   });
 
   it('applies X gate correctly', () => {

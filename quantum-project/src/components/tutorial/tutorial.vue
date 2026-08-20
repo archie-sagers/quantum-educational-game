@@ -14,11 +14,11 @@ export const TUTORIAL_STEPS = [
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import {calculateQuantumState, getBlochAngle, getBlochLabel, measureAll } from '@/game/quantumgame'
+import {calculateQuantumState, measureAll } from '@/game/quantumgame'
 import type { IonQuantumState, QuantumState } from '@/game/types'
 import styles from './tutorial.module.css'
-import sharedStyles from '@/pages/Home.module.css'
 import { TUTORIAL_LEVEL } from '@/game/levels'
+import BlochSpherePanel from '@/components/ui/BlochSpherePanel.vue'
 
 type TutorialPhase = 'tour' | 'tutorial-sandbox'
 type TutorialGateKey = 'X' | 'H'
@@ -57,8 +57,11 @@ const sandboxMessage = ref('Try applying a gate to the ion to see what happens t
 const sandboxResult = ref('—')
 
 const activeSandboxState = computed(() => sandboxStates.value[0]?.state ?? '—')
-const activeSandboxLabel = computed(() => getBlochLabel(activeSandboxState.value))
-const activeSandboxAngle = computed(() => getBlochAngle(activeSandboxState.value))
+
+const currentIonState = computed<IonQuantumState>(() => 
+  sandboxStates.value[0] || { ionIndex: 0, state: '—', p0: '—', p1: '—' }
+)
+
 const sandboxAvailableGates = computed<TutorialGateKey[]>(() => ['X', 'H'])
 const sandboxSummary = computed(() => {
   const state = activeSandboxState.value
@@ -187,7 +190,7 @@ const popoverStyle = computed(() => {
     return tutorialCardPosition(340, 240)
   }
   const w = typeof window !== 'undefined' ? window.innerWidth * 0.6 : 620
-  const h = typeof window !== 'undefined' ? window.innerHeight * 0.6 : 540
+  const h = typeof window !== 'undefined' ? window.innerHeight * 0.7 : 540
   return tutorialCardPosition(w, h, true)
 })
 
@@ -260,35 +263,11 @@ watch(
           </div>
 
           <div :class="styles.tutorialBlochCard">
-            <div :class="styles.tutorialBlochTitle">Bloch Sphere</div>
-            <svg :class="styles.tutorialBlochSvg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
-                <text x="80" y="14" :class="sharedStyles.blochLabel" text-anchor="middle">|1⟩</text>
-                <text x="80" y="156" :class="sharedStyles.blochLabel" text-anchor="middle">|0⟩</text>
-                <text x="10" y="84" :class="sharedStyles.blochLabel" text-anchor="middle">−</text>
-                <text x="150" y="84" :class="sharedStyles.blochLabel" text-anchor="middle">+</text>
-
-                <circle cx="80" cy="80" r="52" :class="sharedStyles.blochCircle" />
-                <ellipse cx="80" cy="80" rx="52" ry="14" :class="sharedStyles.blochEquator" />
-
-                <g v-if="activeSandboxAngle !== null">
-                    <line
-                    x1="80" y1="80"
-                    :x2="80 + 44 * Math.cos(((activeSandboxAngle ?? 0) * Math.PI) / 180)"
-                    :y2="80 + 44 * Math.sin(((activeSandboxAngle ?? 0) * Math.PI) / 180)"
-                    :class="sharedStyles.blochArrow"
-                    />
-                    <circle
-                    :cx="80 + 46 * Math.cos(((activeSandboxAngle ?? 0) * Math.PI) / 180)"
-                    :cy="80 + 46 * Math.sin(((activeSandboxAngle ?? 0) * Math.PI) / 180)"
-                    r="3"
-                    :class="sharedStyles.blochTip"
-                    />
-                </g>
-
-                <circle cx="80" cy="80" r="3" :class="sharedStyles.blochCenter" />
-                </svg>
-
-            <div :class="styles.tutorialStateLabel">{{ activeSandboxLabel }}</div>
+            <BlochSpherePanel 
+              :ionState="currentIonState" 
+              :ionIndex="0" 
+              :compact="false" 
+            />
             <div :class="styles.tutorialStateSummary">{{ sandboxSummary }}</div>
             <div :class="styles.tutorialStateResult">Measure: {{ sandboxResult }}</div>
           </div>

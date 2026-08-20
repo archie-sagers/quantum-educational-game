@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
-import ManualSidebar from './manual/ManualSidebar.vue'
-import ManualContent from './manual/ManualContent.vue'
+import { ref, watch, nextTick, onUnmounted } from 'vue'
+import ManualSidebar from './ManualSidebar.vue'
+import ManualContent from './ManualContent.vue'
+
+let scrollSaveTimeout: number | null = null
 
 const props = defineProps<{
   isOpen: boolean
@@ -29,8 +31,15 @@ function scrollToSection(id: string) {
 
 function saveScrollPosition(e: Event) {
   const target = e.target as HTMLElement
-  localStorage.setItem('quantum_manual_scroll', target.scrollTop.toString())
+  if (scrollSaveTimeout !== null) clearTimeout(scrollSaveTimeout)
+  scrollSaveTimeout = window.setTimeout(() => {
+    localStorage.setItem('quantum_manual_scroll', target.scrollTop.toString())
+  }, 300) // Save scroll position after 300ms of inactivity
 }
+
+onUnmounted(() => {
+  if (scrollSaveTimeout !== null) clearTimeout(scrollSaveTimeout)
+})
 
 // rstore scroll position when the modal opens
 watch(() => props.isOpen, (newVal) => {
@@ -63,51 +72,4 @@ watch(() => props.isOpen, (newVal) => {
   </div>
 </template>
 
-<style scoped>
-.manualOverlay {
-  position: fixed;
-  inset: 0;
-  background: var(--color-overlay);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 3000;
-}
-
-.manualModal {
-  background: var(--color-bg-light);
-  border: 2px solid var(--color-primary);
-  border-radius: var(--radius-md);
-  padding: var(--space-xl);
-  max-width: 1040px; 
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-glow);
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-xl);
-}
-
-.manualCloseBtn {
-  position: absolute;
-  top: var(--space-lg);
-  right: var(--space-lg);
-  background: transparent;
-  border: none;
-  color: var(--color-primary);
-  font-size: 24px;
-  cursor: pointer;
-  transition: var(--duration-fast);
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.manualCloseBtn:hover {
-  color: var(--color-primary-light);
-  transform: scale(1.2);
-}
-</style>
+<style scoped src="./manual.css"></style>

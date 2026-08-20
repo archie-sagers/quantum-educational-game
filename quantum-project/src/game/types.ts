@@ -6,8 +6,8 @@ export type QuantumState = '|0⟩' | '|1⟩' | '|+⟩' | '|-⟩';
 export interface IonQuantumState {
   ionIndex: number;
   state: QuantumState | '—';
-  p0: string | '—';
-  p1: string | '—';
+  p0: string;
+  p1: string;
 }
 
 // Level and Game Board Types
@@ -36,6 +36,13 @@ export interface LevelConfig {
   lockedGateIndices?: number[];
   gateInventory?: Record<string, number>;
   manualLink?: { label: string; sectionId: string };
+}
+
+// Lab Level Config Types
+export interface LevelConfigLocal 
+  extends Pick<LevelConfig, 'name' | 'cols' | 'rows' | 'sources' | 'ions' | 'walls' | 'availableGates' | 'prePlacedGates' | 'lockedGateIndices' | 'gateInventory' | 'hint' | 'goal' | 'winCondition'> {
+  mirrors?: Array<{ col: number; row: number; dir: 'fwd' | 'back' }>
+  lockedTo?: Record<string, string>
 }
 
 // Segment of laser beam path
@@ -71,3 +78,7 @@ export interface Ion {
   inTrap: boolean;
   timeInTrap: number;
 }
+
+// Tutorial Types
+// ----------------------------------
+export type TutorialStepKey = 'goal' | 'manual' | 'hint' | 'level' | 'walls' | 'reset' | 'measure' | 'history' | 'bloch';

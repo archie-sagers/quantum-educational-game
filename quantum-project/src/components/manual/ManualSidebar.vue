@@ -32,48 +32,4 @@ defineEmits<{
   </nav>
 </template>
 
-<style scoped>
-.manualSidebar {
-  position: sticky;
-  top: 0;
-  width: 200px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.indexTitle {
-  color: var(--color-primary);
-  font-size: 26px;
-  font-weight: bold;
-  letter-spacing: 0.1em;
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--color-primary);
-  padding-bottom: 8px;
-}
-
-.indexLink {
-  display: block;
-  color: var(--color-muted);
-  text-decoration: none;
-  font-family: var(--font-mono);
-  font-size: 20px;
-  margin-bottom: 12px;
-  cursor: pointer;
-  transition: color var(--duration-fast);
-}
-
-.indexLink:hover {
-  color: var(--color-primary);
-}
-
-.indexLinkSub {
-  margin-left: 16px;
-  font-size: 18px;
-  color: var(--color-subtle);
-}
-
-.indexLinkSub:hover {
-  color: var(--color-secondary);
-}
-</style>
+<style scoped src="./manual.css"></style>

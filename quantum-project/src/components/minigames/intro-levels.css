@@ -97,7 +97,7 @@
 
 .score-numbers span.complete-text {
   color: var(--color-secondary);
-  text-shadow: 0 0 15px rgba(162, 0, 255, 0.8);
+  text-shadow: var(--shadow-glow);
 }
 
 /* Heating Game */
@@ -228,13 +228,13 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  box-shadow: 0 0 20px rgba(0, 238, 255, 0.3);
+  box-shadow: var(--shadow-glow);
   text-align: center;
 }
 
 .popup.success {
   border-color: var(--color-success);
-  box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+  box-shadow: var(--shadow-glow-success);
 }
 
 .popup h2 {
@@ -259,7 +259,7 @@
 .primary-btn {
   cursor: pointer;
   background: var(--color-primary);
-  color: #000;
+  color: black;
   border: none;
   padding: 12px 32px;
   font-size: 18px;
@@ -281,6 +281,373 @@
 }
 
 .popup.success .primary-btn:hover {
-  background: #3f3;
-  box-shadow: 0 0 16px var(--color-success);
+  background: var(--color-success-bg-hover);
+  box-shadow: var(--shadow-glow-success);
 }
+
+/* 1 - Heating Minigame Styles */
+.viewport {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.zoom-in {
+  transform: scale(4) translateY(10%);
+}
+
+.warning {
+  position: absolute;
+  top: 10%;
+  color: var(--color-danger);
+  font-weight: bold;
+  font-size: 24px;
+  animation: flash 0.5s infinite alternate;
+}
+
+@keyframes flash {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.ytterbium {
+  width: 180px;
+  height: 120px;
+  background: radial-gradient(circle at 30% 30%, var(--color-danger), var(--color-danger-light));
+  border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--color-text);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+}
+
+.shake {
+  animation: shake 0.2s infinite;
+  box-shadow: 0 0 40px rgba(255, 68, 68, 0.6);
+}
+
+@keyframes shake {
+  0%   { transform: translate(2px, 1px); }
+  40%  { transform: translate(-3px, -1px) rotate(-1deg); }
+  100% { transform: translate(1px, 2px) rotate(1deg); }
+}
+
+.bubble {
+  position: absolute;
+  background: rgba(255, 200, 100, 0.6);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* 2 - Ionisation Minigame Styles */
+.container {
+  cursor: crosshair;
+}
+
+.viewport {
+  overflow: hidden;
+  --zoom-x: 50%;
+  --zoom-y: 50%;
+  transform-origin: var(--zoom-x) var(--zoom-y);
+  transition: transform 2.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.zoom-in {
+  transform: scale(8);
+}
+
+.atom {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle at 30% 30%, var(--color-border), var(--color-bg-dark));
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 18px;
+  color: var(--color-text-dim);
+  transform: translate(-50%, -50%);
+  transition: all 0.2s ease-out;
+  box-shadow: var(--shadow-sm);
+}
+
+.atom.ionized {
+  background: radial-gradient(circle at 30% 30%, var(--color-secondary), var(--color-secondary));
+  border-color: var(--color-secondary);
+  color: var(--color-text);
+  box-shadow: var(--shadow-glow);
+}
+
+.pulse {
+  position: absolute;
+  width: 24px;
+  height: 6px;
+  background: var(--color-primary);
+  border-radius: 4px;
+  box-shadow: 0 0 15px var(--color-primary-light);
+}
+
+.electron {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: var(--color-danger);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: black;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px var(--color-danger-light);
+}
+
+.gun {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  width: 70px;
+  height: 16px;
+  background: var(--color-primary);
+  border-radius: 4px;
+  transform-origin: left center;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+  margin-bottom: -6px;
+}
+
+/* 3 - Paul Trap Minigame Styles */
+.viewport {
+  user-select: none;
+}
+
+.sidebar {
+  z-index: 20;
+}
+
+.trap-bounds {
+  position: absolute;
+  left: 25%;
+  top: 25%;
+  right: 25%;
+  bottom: 25%;
+  border: 1px dashed var(--color-border);
+  background: radial-gradient(circle at center, rgba(0, 238, 255, 0.05), transparent 70%);
+}
+
+.electrode {
+  position: absolute;
+  background: var(--color-primary);
+  box-shadow: 0 0 10px var(--color-primary-light);
+  transition: all var(--transition) cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--border-radius);
+  opacity: 0.6;
+}
+
+.electrode.active {
+  background: var(--color-secondary);
+  box-shadow: 0 0 20px var(--color-secondary-light);
+  opacity: 1;
+  z-index: 5;
+}
+
+/* BAse states */
+.electrode.top { top: 23%; left: 30%; right: 30%; height: 6px; }
+.electrode.bottom { bottom: 23%; left: 30%; right: 30%; height: 6px; }
+.electrode.left { left: 23%; top: 30%; bottom: 30%; width: 6px; }
+.electrode.right { right: 23%; top: 30%; bottom: 30%; width: 6px; }
+
+/* Active states */
+.electrode.top.active { top: 20%; left: 25%; right: 25%; height: 16px; }
+.electrode.bottom.active { bottom: 20%; left: 25%; right: 25%; height: 16px; }
+.electrode.left.active { left: 20%; top: 25%; bottom: 25%; width: 16px; }
+.electrode.right.active { right: 20%; top: 25%; bottom: 25%; width: 16px; }
+
+.ion {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: grab;
+  z-index: 10;
+}
+
+.ion.dragging {
+  cursor: grabbing;
+  z-index: 100;
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.ion-label {
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle at 30% 30%, var(--color-secondary), var(--color-bg));
+  border: 2px solid var(--color-secondary-light);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: var(--color-text);
+  box-shadow: 0 0 15px var(--color-secondary);
+  position: relative;
+  z-index: 2;
+}
+
+.progress-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  z-index: 1;
+  opacity: 0.8;
+  mask: radial-gradient(transparent 26px, black 27px);
+  -webkit-mask: radial-gradient(transparent 26px, black 27px);
+}
+
+.modulate-btn {
+  margin-top: 50px;
+  width: 100%;
+  padding: 20px 15px;
+  background: var(--color-bg-light);
+  border: 2px solid var(--color-secondary);
+  color: var(--color-text);
+  font-size: 20px;
+  font-weight: bold;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-transform: uppercase;
+}
+
+.modulate-btn:hover:not(:disabled) {
+  background: var(--color-secondary);
+  box-shadow: 0 0 20px var(--color-secondary-light);
+}
+
+.modulate-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.modulate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--color-text-dim);
+}
+
+/* 4 - Doppler Cooling Minigame Styles */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(0, 238, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 238, 255, 0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.laser-emitter {
+  position: absolute;
+  left: 8%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  background: var(--color-danger);
+  color: black;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  transition: background 0.3s;
+}
+
+.laser-emitter.locked {
+  background: var(--color-primary);
+}
+
+.beam {
+  position: absolute;
+  left: calc(8% + 32px);
+  right: 15%;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: var(--color-danger);
+  box-shadow: 0 0 8px var(--color-danger);
+  opacity: 0.7;
+  transition: background 0.3s, box-shadow 0.3s;
+  z-index: 3;
+}
+
+.beam.locked {
+  background: var(--color-primary);
+  box-shadow: 0 0 8px var(--color-primary);
+  opacity: 1;
+}
+
+.ion {
+  position: absolute;
+  right: 15%;
+  top: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.ion-label {
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle at 30% 30%, var(--color-secondary), var(--color-bg));
+  border: 2px solid var(--color-secondary-light);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: var(--color-text);
+  box-shadow: 0 0 15px var(--color-secondary);
+  position: relative;
+  z-index: 2;
+  transition: all 1.5s ease-in-out;
+}
+
+.ion.stable .ion-label {
+  background: radial-gradient(circle at 30% 30%, var(--color-primary), var(--color-bg));
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 20px var(--color-primary);
+}
+
+.photon {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  box-shadow: 0 0 6px var(--color-primary);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.dials {
+  display: flex;
+  gap: 24px;
+  margin-top: 20px;
+}
+

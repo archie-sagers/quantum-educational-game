@@ -1,30 +1,20 @@
 <script setup lang="ts">
 import { reactive, ref, computed, watch } from 'vue'
 defineOptions({ name: 'LabPage' })
-import styles from './Home.module.css'
-import GameBoard from '@/components/GameBoard.vue'
-import { Level, measureAll, getBlochAngle, checkWinCondition, getBlochLabel, calculateQuantumState } from '@/game/quantumgame'
-import { type IonQuantumState, type WallType } from '@/game/types'
-import MobileWarning from '@/components/MobileWarning.vue'
 
-// Level config interface
-interface LevelConfigLocal {
-  name: string
-  cols: number
-  rows: number
-  sources: Array<{ col: number; row: number; dir?: string }>
-  ions: Array<{ col: number; row: number }>
-  walls?: Array<{ col: number; row: number; type?: WallType }>
-  mirrors?: Array<{ col: number; row: number; dir: 'fwd' | 'back' }>
-  availableGates?: string[]
-  prePlacedGates?: string[][]
-  lockedGateIndices?: number[]
-  gateInventory?: Record<string, number>
-  lockedTo?: Record<string, string>
-  hint?: string
-  goal?: string
-  winCondition?: string
-}
+import { Level, checkWinCondition, calculateQuantumState } from '@/game/quantumgame'
+import { type IonQuantumState, type WallType, type LevelConfigLocal } from '@/game/types'
+
+import GameBoard from '@/components/GameBoard.vue'
+import MobileWarning from '@/components/mobile/MobileWarning.vue'
+import OverlayModal from '@/components/ui/OverlayModal.vue'
+import MeasurementSidebar from '@/components/ui/MeasurementSidebar.vue'
+import LaserGatesModal from '@/components/ui/LaserGatesModal.vue'
+
+import { useGateInventory } from '@/components/gamelogic/usegateinventory'
+import { useMeasurement } from '@/components/gamelogic/usemeasurement'
+
+import styles from './Home.module.css'
 
 const showWelcome = ref(true)
 
@@ -171,23 +161,30 @@ function handleWinConditionChange(index: number, event: Event) {
 // -----------------------------------------
 const gameBoardRef = ref<InstanceType<typeof GameBoard> | null>(null)
 const playLevel = ref<Level | null>(null)
-const playSourceGates = ref<string[][]>([])
 const ionStates = ref<IonQuantumState[]>([])
-const canMeasure = ref(false)
-const isMeasured = ref(false)
-const measuredValues = ref<number[] | null>(null)
-const result = ref('—')
-const history = ref<number[][]>([])
-const showWin = ref(false)
 const showLaserGates = ref(false)
-const activeSourceIndex = ref<number>(0)
-const playGateInventory = ref<Record<string, number>>({})
-const activeGates = computed(() => playSourceGates.value[activeSourceIndex.value] ?? [])
+const blochPanelRef = ref<HTMLElement | null>(null)
+const measureBtnRef = ref<HTMLElement | null>(null)
+const resetBtnRef = ref<HTMLElement | null>(null)
+const historyRef = ref<HTMLElement | null>(null)
 
-const resultcolourClass = computed(() => {
-  if (result.value === '1') return styles.infoValOrange;
-  return styles.infoValCyan;
-})
+const measurement = useMeasurement()
+const {
+  result,
+  history,
+  showWin,
+  canMeasure,
+  isMeasured,
+  measuredValues,
+} = measurement
+
+const gateInv = useGateInventory()
+const {
+  sourceGates: playSourceGates,
+  gateInventory: playGateInventory,
+  activeSourceIndex,
+  activeGates,
+} = gateInv
 
 function updatePlayState() {
   if (!playLevel.value) return
@@ -202,14 +199,11 @@ function handleMeasure() {
 
   gameBoardRef.value?.resetPhoton()
 
-  const maxGates = Math.max(1, ...playSourceGates.value.map(g => g ? g.length : 0))
-  const dynamicDelayMs = 800 * (1 + (maxGates - 1) * 0.1)
+  const dynamicDelayMs = measurement.computeDynamicDelay(playSourceGates.value)
 
   setTimeout(() => {
     if (isMeasured.value) {
-      result.value = measuredValues.value ? measuredValues.value.join(',') : '—'
-      history.value.push(measuredValues.value!)
-      if (history.value.length > 20) history.value.shift()
+      measurement.repeatLastMeasurement()
       canMeasure.value = true
       return
     }
@@ -219,14 +213,8 @@ function handleMeasure() {
     const wc = playLevel.value?.winCondition || 'any';
     const hasWon = checkWinCondition(wc, uncollapsedStates);
 
-    const measResults = measureAll()
-    measuredValues.value = measResults
-    isMeasured.value = true
+    measurement.collapseMeasurement()
     updatePlayState()
-
-    result.value = measResults.join(',')
-    history.value.push(measResults)
-    if (history.value.length > 20) history.value.shift()
 
     canMeasure.value = true
 
@@ -237,9 +225,7 @@ function handleMeasure() {
 }
 
 function handleReset() {
-  isMeasured.value = false
-  measuredValues.value = null
-  result.value = '—'
+  measurement.resetMeasurementState()
   showWin.value = false
   updatePlayState()
 }
@@ -247,7 +233,7 @@ function handleReset() {
 // Laser Gate Handlers
 function handleGameBoardClick(col: number, row: number) {
   if (mode.value !== 'play' || !playLevel.value) return;
-  const clickedSourceIdx = playLevel.value.sources.findIndex(s => s.col === col && s.row === row);
+  const clickedSourceIdx = gateInv.findSourceIndexAt(playLevel.value, col, row);
 
   if (clickedSourceIdx !== -1 && playLevel.value.availableGates.length > 0) {
     activeSourceIndex.value = clickedSourceIdx;
@@ -256,36 +242,17 @@ function handleGameBoardClick(col: number, row: number) {
 }
 
 function onGateDragStart(e: DragEvent, gateType: string) {
-  const available = playGateInventory.value[gateType] ?? -1
-  if (available === 0) {
-    e.preventDefault()
-    return
-  }
-  e.dataTransfer!.effectAllowed = 'copy'
-  e.dataTransfer!.setData('gateType', gateType)
+  gateInv.onGateDragStart(e, gateType)
 }
 
 function onLaserDragOver(e: DragEvent) {
-  e.preventDefault()
-  e.dataTransfer!.dropEffect = 'copy'
+  gateInv.onLaserDragOver(e)
 }
 
 function onLaserDrop(e: DragEvent) {
-  e.preventDefault()
-  const gateType = e.dataTransfer!.getData('gateType')
-  if (gateType) {
-    if (playGateInventory.value[gateType] !== undefined) {
-      if (playGateInventory.value[gateType]! > 0) {
-        playGateInventory.value[gateType]!--
-      } else {
-        return
-      }
-    }
-    const idx = activeSourceIndex.value
-    if (!playSourceGates.value[idx]) playSourceGates.value[idx] = []
-    playSourceGates.value[idx].push(gateType)
-
-    // Reset measurement state when a gate is added
+  if (!playLevel.value) return
+  const changed = gateInv.onLaserDrop(e, playLevel.value)
+  if (changed) {
     isMeasured.value = false
     measuredValues.value = null
     updatePlayState()
@@ -293,30 +260,18 @@ function onLaserDrop(e: DragEvent) {
 }
 
 function removeLaserGate(index: number) {
-  const activeIdx = activeSourceIndex.value  
-  if (isGateLocked(index)) {
-    return;
+  if (!playLevel.value) return
+  const changed = gateInv.removeLaserGate(playLevel.value, index)
+  if (changed) {
+    isMeasured.value = false
+    measuredValues.value = null
+    updatePlayState()
   }
-
-  const gate = playSourceGates.value[activeIdx]?.[index];
-  if (!gate) return;
-
-  playSourceGates.value[activeIdx]!.splice(index, 1);
-
-  if (playGateInventory.value[gate] !== undefined) {
-    playGateInventory.value[gate]!++
-  }
-
-  // Reset measurement state when a gate is removed
-  isMeasured.value = false
-  measuredValues.value = null
-  updatePlayState()
 }
 
 function isGateLocked(localIndex: number) {
-  const activeIdx = activeSourceIndex.value;
-  const prePlacedCount = playLevel.value?.prePlacedGates?.[activeIdx]?.length || 0;
-  return localIndex < prePlacedCount;
+  if (!playLevel.value) return false
+  return gateInv.isGateLocked(playLevel.value, localIndex)
 }
 
 // Edit Mode
@@ -324,7 +279,7 @@ function isGateLocked(localIndex: number) {
 const paletteItems = [
   { type: 'source', label: 'Laser Source', icon: '■', color: 'var(--color-primary)' },
   { type: 'ion', label: 'Ion', icon: '●', color: 'var(--color-danger)' },
-  { type: 'mirror', label: 'Fixed Mirror', icon: '⤡', color: '#888' },
+  { type: 'mirror', label: 'Fixed Mirror', icon: '⤡', color: 'var(--color-subtle)' },
   { type: 'wall-standard', label: 'Wall (Blocks All)', icon: '✕', color: 'var(--color-danger)' },
   { type: 'wall-cyan', label: 'Wall (Cyan)', icon: '✕', color: 'var(--color-primary)' },
   { type: 'wall-purple', label: 'Wall (Purple)', icon: '✕', color: 'var(--color-secondary)' },
@@ -424,18 +379,8 @@ function testLevel() {
       return originalIsFixed(c, r);
     }
 
-    playSourceGates.value = (cfg.prePlacedGates || []).map((g: string[]) => [...g])
-    playGateInventory.value = { ...(levelConfig.gateInventory || {}) }
-
-    const flatLocked = playSourceGates.value.flat()
-    for (const idx of cfg.lockedGateIndices ?? []) {
-      if (idx < flatLocked.length) {
-        const gate = flatLocked[idx]
-        if (gate && playGateInventory.value[gate] !== undefined && playGateInventory.value[gate] > 0) {
-          playGateInventory.value[gate]--
-        }
-      }
-    }
+    gateInv.setSourceGatesFromLevel(playLevel.value)
+    gateInv.resetGateInventory(levelConfig.gateInventory || {}, cfg.lockedGateIndices ?? [], true)
 
     // Reset Play state
     isMeasured.value = false
@@ -481,13 +426,14 @@ watch([() => levelConfig.lockedTo, () => levelConfig.sources, () => levelConfig.
   const newLockedIndices: number[] = [];
 
   for (const g of levelConfig.availableGates || []) {
-    const lockedStr = levelConfig.lockedTo[g] || '';
-    // Extracts letters regardless of commas, spaces, or casing
-    const targets = lockedStr.toUpperCase().match(/[A-Z]/g) || [];
+    const lockedStr = String(levelConfig.lockedTo[g] || '');
+    // Extracts numbers regardless of spaces (e.g., "1, 2, 3")
+    const targets = lockedStr.match(/\d+/g) || [];
 
     for (const t of targets) {
-      // 'A' -> 0, 'B' -> 1, etc
-      const sourceIdx = t.charCodeAt(0) - 65;
+      // Parse the string to integer and subtract 1
+      const sourceIdx = parseInt(t, 10) - 1;
+      
       if (sourceIdx >= 0 && sourceIdx < levelConfig.sources.length) {
         newPrePlaced[sourceIdx]!.push(g);
       }
@@ -581,7 +527,7 @@ function uploadLevel(e: Event) {
             lineHeight: '1.4',
             color: statusTone === 'success' ? 'var(--color-success)' : 'var(--color-danger)',
             borderColor: statusTone === 'success' ? 'var(--color-success)' : 'var(--color-danger)',
-            background: statusTone === 'success' ? 'rgba(0, 160, 110, 0.1)' : 'rgba(220, 70, 70, 0.12)'
+            background: statusTone === 'success' ? 'var(--color-success-bg-soft)' : 'var(--color-danger-bg-soft)'
           }"
         >
           {{ statusMessage }}
@@ -605,7 +551,7 @@ function uploadLevel(e: Event) {
             </label>
             
             <div style="display: block; margin-top: 6px;">
-              <span style="display: block; margin-bottom: 6px; font-size: 12px; color: #ccc;">Win Condition</span>
+              <span style="display: block; margin-bottom: 6px; font-size: 12px; color: var(--color-text-soft);">Win Condition</span>
               <div v-if="levelConfig.ions.length === 0" style="padding: 8px; background: rgba(255,255,255,0.05); border: 1px dashed var(--color-border); border-radius: 3px; font-size: 11px; color: var(--color-subtle); text-align: center;">
                 Place an ion to set win conditions
               </div>
@@ -657,7 +603,7 @@ function uploadLevel(e: Event) {
                 </label>
 
                 <div v-if="levelConfig.availableGates?.includes(g) && levelConfig.gateInventory && levelConfig.lockedTo" style="padding-left: 20px; display: flex; align-items: center; gap: 6px;">
-                  <span style="font-size: 11px; color: #888;">Count:</span>
+                  <span style="font-size: 11px; color: var(--color-subtle);">Count:</span>
                     <input
                       type="number"
                       v-model.number="levelConfig.gateInventory[g]"
@@ -670,7 +616,7 @@ function uploadLevel(e: Event) {
                     <input
                       type="text"
                       v-model="levelConfig.lockedTo[g]"
-                      placeholder="e.g. A, B"
+                      placeholder="e.g. 1, 2"
                       style="width: 70px; padding: 2px 4px; font-size: 11px;"
                     />
                 </div>
@@ -730,7 +676,7 @@ function uploadLevel(e: Event) {
               fontWeight: 'bold',
               textAlign: 'center',
               userSelect: 'none',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
+              boxShadow: 'var(--shadow-sm)',
               opacity: (item.type === 'ion' && levelConfig.ions.length >= 6) ? 0.3 : 1,
             }"
           >
@@ -761,202 +707,90 @@ function uploadLevel(e: Event) {
         />
       </div>
 
-  <aside v-if="mode === 'play'" :class="styles.sidebar" style="flex: 0 0 400px; background: var(--color-bg-light); border-left: 1px solid var(--color-border); display: flex; flex-direction: column; padding: 0; overflow: hidden;">
-
-        <div style="flex: 0 0 auto; padding: 30px 20px 10px;">
-          <h3 style="margin: 0; font-size: 12px; color: var(--color-subtle); text-transform: uppercase;">Test Results</h3>
-        </div>
-
-          <div :class="styles.ionWrapper" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; padding: 10px; flex: 0 1 auto; min-height: min-content;">
-            <div
-              v-for="(ionState, idx) in ionStates"
-              :key="idx"
-              :class="[styles.ionSection, { [styles.ionSectionCompact as string]: ionStates.length >= 3 }]"
-            >
-            <div :class="[styles.blochPanel, { [styles.blochPanelCompact as string]: ionStates.length >= 3 }]">
-              <div :class="styles.blochTitle">
-                Ion {{ String.fromCharCode(65 + idx) }}<span v-if="ionStates.length < 3"> - Bloch Sphere</span>
-              </div>
-              <svg :class="[styles.blochSvg, { [styles.blochSvgCompact as string]: ionStates.length >= 2 }]" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
-                <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>
-                <text x="80" y="156" :class="styles.blochLabel" text-anchor="middle">|0⟩</text>
-                <text x="10" y="84" :class="styles.blochLabel" text-anchor="middle">−</text>
-                <text x="150" y="84" :class="styles.blochLabel" text-anchor="middle">+</text>
-
-                <circle cx="80" cy="80" r="52" :class="styles.blochCircle" />
-                <ellipse cx="80" cy="80" rx="52" ry="14" :class="styles.blochEquator" />
-
-                <g v-if="getBlochAngle(ionState.state) !== null">
-                  <line
-                    x1="80" y1="80"
-                    :x2="80 + 44 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
-                    :y2="80 + 44 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
-                    :class="styles.blochArrow"
-                  />
-                  <circle
-                    :cx="80 + 46 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
-                    :cy="80 + 46 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
-                    r="3"
-                    :class="styles.blochTip"
-                  />
-                </g>
-
-                <circle cx="80" cy="80" r="3" :class="styles.blochCenter" />
-              </svg>
-
-              <div :class="{
-                [styles.blochState as string]: true,
-                [styles.blochStateSuperposition as string]: ionState.state === '|+⟩' || ionState.state === '|-⟩'
-              }">
-                {{ getBlochLabel(ionState.state) }}
-              </div>
-            </div>
-
-            <div v-if="ionStates.length < 3" :class="styles.infoPanel">
-              <div :class="styles.infoRow">
-                <span :class="styles.infoKey">State</span>
-                <span :class="[styles.infoVal, ionState.state === '|+⟩' || ionState.state === '|-⟩' ? styles.infoValPurple : ionState.state === '|1⟩' ? styles.infoValOrange : styles.infoValCyan]">{{ ionState.state }}</span>
-              </div>
-              <div :class="styles.infoRow">
-                <span :class="styles.infoKey">P(|0⟩)</span>
-                <span :class="styles.infoVal">{{ ionState.p0 }}</span>
-              </div>
-              <div :class="styles.infoRow">
-                <span :class="styles.infoKey">P(|1⟩)</span>
-                <span :class="styles.infoVal">{{ ionState.p1 }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div :class="styles.sharedControls" style="flex: 0 0 auto; padding: 20px; border-top: 1px solid #1a1a1a;">
-          <button
-            @click="handleMeasure"
-            :disabled="!canMeasure"
-            :class="styles.measureBtn"
-            style="width: 100%; margin-bottom: 10px;"
-          >
-            Measure
-          </button>
-
-          <button
-            v-if="ionStates.length > 0"
-            @click="handleReset"
-            :class="styles.resetBtn"
-            style="width: 100%; margin-bottom: 20px;"
-          >
-            Reset Ion
-          </button>
-
-          <div :class="styles.infoRow">
-            <span :class="styles.infoKey">Last</span>
-            <span :class="[styles.infoVal, resultcolourClass]">{{ result }}</span>
-          </div>
-          <div v-if="history.length" :class="styles.history" style="margin-top: 10px;">
-            <span :class="styles.infoKey">History</span>
-            <span :class="styles.historyBits">{{ history.map((r: number[]) => r.join('')).join(' ') }}</span>
-          </div>
-        </div>
-
-      </aside>
+      <MeasurementSidebar
+        v-if="mode === 'play'"
+        class="lab-sidebar-override"
+        :ionStates="ionStates"
+        :canMeasure="canMeasure"
+        :automatedRunning="false"
+        :showResetButton="ionStates.length > 0"
+        :result="result"
+        :isOrangeResult="result === '1'"
+        :history="history"
+        :tutorialVisible="false"
+        :isTutorialStep="() => false"
+        :blochPanelRef="(el) => blochPanelRef = el"
+        :measureBtnRef="(el) => measureBtnRef = el"
+        :resetBtnRef="(el) => resetBtnRef = el"
+        :historyRef="(el) => historyRef = el"
+        @measure="handleMeasure"
+        @reset="handleReset"
+      />
       </div>
 
-      <div v-if="showLaserGates && playLevel" :class="styles.laserGatesOverlay" @click="showLaserGates = false">
-        <div :class="styles.laserGatesModal" @click.stop>
-          <div :class="styles.laserGatesTitle">Laser Gates</div>
+      <LaserGatesModal
+        v-if="showLaserGates && playLevel"
+        :activeGates="activeGates"
+        :displayedGateProgress="null" 
+        :availableGates="playLevel.availableGates"
+        :gateInventory="playGateInventory"
+        :isGateLocked="isGateLocked"
+        @close="showLaserGates = false"
+        @gateDragStart="onGateDragStart"
+        @laserDragOver="onLaserDragOver"
+        @laserDrop="onLaserDrop"
+        @removeGate="removeLaserGate"
+      />
 
-          <div :class="styles.gateContainer">
-            <div :class="styles.appliedSection">
-              <div :class="styles.sectionLabel">Applied to Laser</div>
-              <div
-                @dragover="onLaserDragOver"
-                @drop="onLaserDrop"
-                :class="styles.laserDropZone"
-              >
-                <div v-if="activeGates.length > 0" :class="styles.gateStack">
-                  <div
-                    v-for="(gate, index) in activeGates"
-                    :key="`laser-gate-${index}`"
-                    :class="[
-                      styles.laserGate,
-                      { [styles.laserGateX as string]: gate === 'X' },
-                      { [styles.laserGateH as string]: gate === 'H' },
-                      { [styles.laserGateCNOT as string]: gate === 'CNOT' }
-                    ]"
-                  >
-                  <button v-if="!isGateLocked(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
-                    <div>{{ gate }}</div>
-                  </div>
-                </div>
-                <div v-else :class="styles.dropHint">Drag gates here</div>
-              </div>
-            </div>
-
-            <div :class="styles.divider"></div>
-
-            <div :class="styles.gatesSection">
-              <div :class="styles.sectionLabel">Available Gates</div>
-              <div :class="styles.gateGrid">
-                <div
-                    v-for="(gate, index) in playLevel.availableGates"
-                    :key="`gate-${index}`"
-                    draggable="true"
-                    @dragstart="onGateDragStart($event, gate)"
-                    :class="[styles.gateItem,
-                      { [styles.gateItemX as string]: gate === 'X' },
-                      { [styles.gateItemH as string]: gate === 'H' },
-                      { [styles.gateItemCNOT as string]: gate === 'CNOT' },
-                      { [styles.gateItemDisabled as string]: (playGateInventory[gate] ?? -1) === 0 }
-                    ]"
-                  >
-                  <div>{{ gate }}</div>
-                  <div v-if="playGateInventory[gate] !== undefined" :class="styles.gateItemCount">
-                    {{ playGateInventory[gate] }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <button @click="showLaserGates = false" :class="styles.doneBtn">Done</button>
-        </div>
-      </div>
-        <div v-if="showWin && mode === 'play'" :class="styles.popupOverlay" @click="showWin = false">
-        <div :class="styles.popupModal" style="text-align: center; border-color: #0f8; box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);" @click.stop>
-          <div :class="styles.popupTitle" style="color: #0f8; font-size: 20px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">
-            Level Passed!
-          </div>
+        <OverlayModal
+          :show="showWin && mode === 'play'"
+          kind="popup"
+          accent="success"
+          title="Level Passed!"
+          :title-style="{ color: 'var(--color-success)', fontSize: '20px', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }"
+          :modal-style="{ textAlign: 'center' }"
+          close-on-backdrop
+          @backdrop-click="showWin = false"
+          :buttons="[
+            { label: 'Continue Testing', onClick: () => showWin = false, class: 'lab-btn', style: { flex: '1' } },
+            {
+              label: 'Back to Edit',
+              onClick: () => { backToEdit(); showWin = false },
+              class: 'lab-btn',
+              style: { flex: '1', borderColor: 'var(--color-primary)', boxShadow: 'var(--shadow-glow)' }
+            }
+          ]"
+        >
           <div :class="styles.popupText" style="margin-bottom: 24px; font-size: 14px;">
             The win condition (<strong>{{ playLevel?.winCondition }}</strong>) was successfully met.
           </div>
-          <div style="display: flex; gap: 12px; justify-content: center;">
-            <button @click="showWin = false" class="lab-btn" style="flex: 1;">
-              Continue Testing
-            </button>
-            <button @click="backToEdit(); showWin = false" class="lab-btn" style="flex: 1; border-color: #0ef; box-shadow: 0 0 8px rgba(0, 238, 255, 0.3);">
-              Back to Edit
-            </button>
-          </div>
+        </OverlayModal>
+      <OverlayModal
+        :show="showWelcome"
+        kind="popup"
+        title="Lab Mode"
+        :title-style="{ color: 'var(--color-primary)', fontSize: '20px', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }"
+        :modal-style="{ textAlign: 'center', maxWidth: '400px' }"
+        :z-index="9999"
+        close-on-backdrop
+        @backdrop-click="showWelcome = false"
+        :buttons="[{
+          label: 'Got it',
+          onClick: () => showWelcome = false,
+          class: 'lab-btn',
+          style: { width: '100%', padding: '8px', borderColor: 'var(--color-primary)', boxShadow: 'var(--shadow-glow)' }
+        }]"
+      >
+        <div :class="styles.popupText" style="margin-bottom: 24px; font-size: 14px; line-height: 1.5;">
+          Create your own custom levels in edit mode. Press the test level button on the left to play them. Right click to remove elements.
         </div>
-      </div>
-      <div v-if="showWelcome" :class="styles.popupOverlay" @click="showWelcome = false" style="z-index: 9999;">
-        <div :class="styles.popupModal" style="text-align: center; max-width: 400px;" @click.stop>
-          <div :class="styles.popupTitle" style="color: var(--color-primary); font-size: 20px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">
-            Lab Mode
-          </div>
-          <div :class="styles.popupText" style="margin-bottom: 24px; font-size: 14px; line-height: 1.5;">
-            Create your own custom levels in edit mode. Press the test level button on the left to play them. Right click to remove elements.
-          </div>
-          <button @click="showWelcome = false" class="lab-btn" style="width: 100%; padding: 8px; border-color: var(--color-primary); box-shadow: 0 0 8px rgba(0, 238, 255, 0.3);">
-            Got it
-          </button>
-        </div>
-      </div>
+      </OverlayModal>
       </div>
 </template>
 
 <style scoped>
 .active {
-  outline: 2px solid #0ef;
+  outline: 2px solid var(--color-primary);
 }
 
 input[type='number'],
@@ -987,8 +821,8 @@ select:focus {
 }
 
 .lab-button:hover:not(:disabled) {
-  background: #2a2a2a;
-  border-color: #555;
+  background: var(--color-panel-hover);
+  border-color: var(--color-border-muted);
 }
 
 .lab-button:disabled {
@@ -1002,6 +836,33 @@ section h3 {
 
 label {
   font-size: 12px;
-  color: #ccc;
+  color: var(--color-text-soft);
+}
+
+/* Override styles for the MeasurementSidebar component to fit the lab mode layout*/
+:deep(.lab-sidebar-override) {
+  flex: 0 0 320px !important;
+  background: var(--color-bg-light) !important;
+  border-left: 1px solid var(--color-border) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+:deep(.lab-sidebar-override > div:first-child) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 15px !important;
+  padding: 10px !important;
+  flex: 0 1 auto !important;
+  min-height: min-content !important;
+  overflow-y: auto !important;
+}
+
+:deep(.lab-sidebar-override > div:nth-child(2)) {
+  flex: 0 0 auto !important;
+  padding: 20px !important;
+  border-top: 1px solid var(--color-bg-dark) !important;
 }
 </style>

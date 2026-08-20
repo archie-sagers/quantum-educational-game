@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { measureAll, getBlochAngle, getBlochLabel, checkWinCondition, calculateQuantumState, WELCOME_POPUP, MAIN_WELCOME_POPUP,  Level} from '@/game/quantumgame'
+import { measureAll, checkWinCondition, calculateQuantumState, WELCOME_POPUP, MAIN_WELCOME_POPUP,  Level} from '@/game/quantumgame'
 import { type IonQuantumState } from '@/game/types'
 import { LEVELS, TUTORIAL_LEVEL } from '@/game/levels'
-import ManualModal from '@/components/ManualModal.vue'
-import GameBoard from '@/components/GameBoard.vue'
-import Tutorial, { TUTORIAL_STEPS } from '@/components/tutorial.vue'
+
 import styles from './Home.module.css'
-import MobileWarning from '@/components/MobileWarning.vue'
+
+import ManualModal from '@/components/manual/ManualModal.vue'
+import OverlayModal from '@/components/ui/OverlayModal.vue'
+import GameBoard from '@/components/GameBoard.vue'
+import Tutorial, { TUTORIAL_STEPS } from '@/components/tutorial/tutorial.vue'
+import { useTutorial } from '@/components/tutorial/usetutorial'
+import MobileWarning from '@/components/mobile/MobileWarning.vue'
+import LaserGatesModal from '@/components/ui/LaserGatesModal.vue'
+import MeasurementSidebar from '@/components/ui/MeasurementSidebar.vue'
+
+import { useGateInventory } from '@/components/gamelogic/usegateinventory'
+import { useMeasurement } from '@/components/gamelogic/usemeasurement'
 
 // Minigame Imports
 import HeatingMinigame from '@/components/minigames/HeatingMinigame.vue'
@@ -27,29 +36,36 @@ const TRAVEL_MS = 800
 const gameBoardRef = ref<InstanceType<typeof GameBoard> | null>(null)
 const currentLevelIndex = ref(0)
 const ionStates = ref<IonQuantumState[]>([])
-const result = ref('—')
-const history = ref<number[][]>([])
-const showWin = ref(false)
-const canMeasure = ref(false)
 const showLevelSelector = ref(false)
 const showLaserGates = ref(false)
-const sourceGates = ref<string[][]>([])
-const activeSourceIndex = ref<number>(0)
-const isMeasured = ref(false)
-const measuredValues = ref<number[] | null>(null)
 const ionInitialized = ref(false)
 const automatedRunning = ref(false)
-const automatedDone = ref(false)
 const showPopup = ref(false)
 const popupIndex = ref(0)
 const tempPopup = ref<{ title: string; text: string } | null>(null)
 const showManual = ref(false)
-const gateInventory = ref<Record<string, number>>({})
 const showCompletionPopup = ref(false)
-const draggedGateIndex = ref<number | null>(null)
 const showHint = ref(false)
 const manualGlowActive = ref(false)
 const manualGlowLockedLevels = ref(new Set<number>())
+
+const measurement = useMeasurement(TRAVEL_MS)
+const {
+  result,
+  history,
+  showWin,
+  canMeasure,
+  isMeasured,
+  measuredValues,
+} = measurement
+
+const gateInv = useGateInventory()
+const {
+  sourceGates,
+  gateInventory,
+  activeSourceIndex,
+  activeGates,
+} = gateInv
 
 const MANUAL_GLOW_INTERVAL_MS = 15000
 
@@ -75,18 +91,6 @@ const currentPopup = computed(() => {
   return currentLevel.popups[popupIndex.value]
 })
 
-// Tutorial
-// ------------------
-const tutorialStep = ref(-1)
-const tutorialActive = ref(false)
-const tutorialTargetRect = ref<DOMRect | null>(null)
-const tutorialPhase = computed(() => (tutorialStep.value < TUTORIAL_STEPS.length ? 'tour' : 'tutorial-sandbox'))
-const tutorialCompleteLabel = computed(() => (tutorialStep.value >= TUTORIAL_STEPS.length ? 'Tutorial Sandbox' : 'Tutorial'))
-
-type TutorialStepKey = (typeof TUTORIAL_STEPS)[number]['key']
-const tutorialStepData = computed(() => (tutorialStep.value >= 0 ? TUTORIAL_STEPS[tutorialStep.value] ?? null : null))
-const tutorialVisible = computed(() => tutorialActive.value)
-
 const goalBoxRef = ref<HTMLElement | null>(null)
 const manualBtnRef = ref<HTMLElement | null>(null)
 const hintContainerRef = ref<HTMLElement | null>(null)
@@ -97,7 +101,11 @@ const measureBtnRef = ref<HTMLElement | null>(null)
 const historyRef = ref<HTMLElement | null>(null)
 const blochPanelRef = ref<HTMLElement | null>(null)
 
-const tutorialTargetMap: Record<TutorialStepKey, typeof goalBoxRef> = {
+let level: Level = LEVELS[currentLevelIndex.value]!
+const shownPopupIndices = ref(new Set<number>())
+let lastPopupTrigger: string | null = null
+
+const tutorialTargetRefs = {
   goal: goalBoxRef,
   manual: manualBtnRef,
   hint: hintContainerRef,
@@ -109,88 +117,44 @@ const tutorialTargetMap: Record<TutorialStepKey, typeof goalBoxRef> = {
   bloch: blochPanelRef,
 }
 
-function updateTutorialTargetRect() {
-  if (!tutorialVisible.value || !tutorialStepData.value) {
-    tutorialTargetRect.value = null
-    return
-  }
-  const target = tutorialTargetMap[tutorialStepData.value.key]?.value
-  tutorialTargetRect.value = target ? target.getBoundingClientRect() : null
-}
-
-async function startTutorial() {
-  if (currentStage.value !== 'main' || currentLevelIndex.value !== 0) {
-    await selectLevel(0)
-  }
-  showManual.value = false
-  showLaserGates.value = false
-  showLevelSelector.value = false
-  showPopup.value = false
-  isMeasured.value = false
-  measuredValues.value = null
-  level = TUTORIAL_LEVEL
-  ionInitialized.value = TUTORIAL_LEVEL.preInitialized
-  initLevelGates()
-  updateStateForTracing()
-  showTutorialWelcome.value = true
-}
-
-async function beginTutorialTour() {
-  showTutorialWelcome.value = false
-  tutorialActive.value = true
-  tutorialStep.value = 0
-  await nextTick()
-  updateTutorialTargetRect()
-}
-
-function skipTutorialWelcome() {
-  showTutorialWelcome.value = false
-  finishTutorial()
-}
-
-async function nextTutorialStep() {
-  if (tutorialStep.value < TUTORIAL_STEPS.length - 1) {
-    tutorialStep.value += 1
-    await nextTick()
-    updateTutorialTargetRect()
-    return
-  }
-
-  tutorialStep.value = TUTORIAL_STEPS.length
-  await nextTick()
-  updateTutorialTargetRect()
-}
-
-function finishTutorial() {
-  showManual.value = false
-  showLaserGates.value = false
-  showLevelSelector.value = false
-  showPopup.value = false
-  tutorialActive.value = false
-  tutorialStep.value = -1
-  localStorage.setItem('quantum_tutorial_completed', 'true')
-  level = LEVELS[0]!
-  currentStage.value = 'main'
-  selectLevel(0)
-}
-
-function skipTutorial() {
-  finishTutorial()
-}
-
-watch([tutorialStep, currentLevelIndex, showHint, showLaserGates, () => history.value.length, ionStates], () => {
-  if (tutorialVisible.value) {
-    nextTick(() => updateTutorialTargetRect())
-  }
+const {
+  tutorialStep,
+  tutorialVisible,
+  tutorialPhase,
+  tutorialCompleteLabel,
+  tutorialStepData,
+  tutorialTargetRect,
+  showTutorialWelcome,
+  startTutorial,
+  beginTutorialTour,
+  nextTutorialStep,
+  finishTutorial,
+  skipTutorial,
+  skipTutorialWelcome,
+  isTutorialStep: checkTutorialStep,
+} = useTutorial({
+  currentLevelIndex,
+  showHint,
+  showManual,
+  showLaserGates,
+  showLevelSelector,
+  showPopup,
+  isMeasured,
+  measuredValues,
+  history,
+  ionStates,
+  selectLevel,
+  updateStateForTracing,
+  configureTutorialLevel: () => {
+    level = TUTORIAL_LEVEL
+    ionInitialized.value = TUTORIAL_LEVEL.preInitialized
+  },
+  configureMainLevel: () => {
+    level = LEVELS[0]!
+    currentStage.value = 'main'
+  },
+  targetRefs: tutorialTargetRefs,
 })
-
-function handleWindowResize() {
-  updateTutorialTargetRect()
-}
-
-let level: Level = LEVELS[currentLevelIndex.value]!
-const shownPopupIndices = ref(new Set<number>())
-let lastPopupTrigger: string | null = null
 
 // MINIGAMES
 // ------------------
@@ -243,7 +207,7 @@ function selectMinigame(stage: string) {
 }
 
 const currentStageName = computed(() =>
-  tutorialActive.value
+  tutorialVisible.value
     ? 'Tutorial'
     : currentStage.value === 'main'
       ? `Level ${currentLevelIndex.value + 1}`
@@ -251,7 +215,7 @@ const currentStageName = computed(() =>
 )
 
 const currentStageGoal = computed(() =>
-  tutorialActive.value
+  tutorialVisible.value
     ? TUTORIAL_LEVEL.goal
     : currentStage.value === 'main'
       ? LEVELS[currentLevelIndex.value]?.goal
@@ -288,14 +252,6 @@ const displayedGateProgress = computed(() => {
   }
 })
 
-const activeGates = computed(() => sourceGates.value[activeSourceIndex.value] ?? [])
-
-const resultcolourClass = computed(() => {
-  if (result.value === '1') return styles.infoValOrange;
-  return styles.infoValCyan;
-})
-
-
 // Level Progression
 // ------------------
 function nextLevel() {
@@ -328,12 +284,6 @@ function updateStateForTracing() {
   canMeasure.value = result.canMeasure;
 }
 
-function initLevelGates() {
-  sourceGates.value = level.sources.map((_, i) => {
-    return level.prePlacedGates && level.prePlacedGates[i] ? [...level.prePlacedGates[i]!] : [];
-  });
-}
-
 async function selectLevel(index: number) {
   currentStage.value = 'main';
   showLevelSelector.value = false;
@@ -347,20 +297,9 @@ async function selectLevel(index: number) {
   lastPopupTrigger = null;
   stopManualGlow();
 
-  gateInventory.value = { ...level.gateInventory };
-
   await nextTick();
-  initLevelGates();
-
-  const flatLocked = sourceGates.value.flat();
-  for (const idx of level.lockedGateIndices) {
-    if (idx < flatLocked.length) {
-      const gate = flatLocked[idx]!;
-      if (gateInventory.value[gate] !== undefined) {
-        gateInventory.value[gate]--;
-      }
-    }
-  }
+  gateInv.setSourceGatesFromLevel(level);
+  gateInv.resetGateInventory(level.gateInventory, level.lockedGateIndices);
 
   updateStateForTracing();
   result.value = '—';
@@ -379,127 +318,51 @@ function openLaserGates() {
   }
 }
 
+function isGateLocked(localIndex: number) {
+  return gateInv.isGateLocked(level, localIndex)
+}
+
 function onGateDragStart(e: DragEvent, gateType: string) {
-  const available = gateInventory.value[gateType] ?? -1
-  if (available === 0) {
-    e.preventDefault()
-    return
-  }
-  draggedGateIndex.value = null
-  e.dataTransfer!.effectAllowed = 'copy'
-  e.dataTransfer!.setData('gateType', gateType)
+  gateInv.onGateDragStart(e, gateType)
 }
 
 function onPlacedGateDragStart(e: DragEvent, index: number, gateType: string) {
-  if (isGateLocked(index)) {
-    e.preventDefault()
-    return
-  }
-  draggedGateIndex.value = index
-  e.dataTransfer!.effectAllowed = 'move'
-  e.dataTransfer!.setData('gateType', gateType)
-}
-
-function handleDrop(e: DragEvent, dropIndex?: number) {
-  e.preventDefault()
-  const gateType = e.dataTransfer!.getData('gateType')
-  if (!gateType) return
-
-  const idx = activeSourceIndex.value
-  if (!sourceGates.value[idx]) sourceGates.value[idx] = []
-  const list = sourceGates.value[idx]!
-
-  // Protect locked gates
-  const lockedCount = level.prePlacedGates?.[idx]?.length || 0
-  let safeDropIndex = dropIndex !== undefined ? Math.max(dropIndex, lockedCount) : list.length
-
-  if (draggedGateIndex.value !== null) {
-    const oldIndex = draggedGateIndex.value
-    if (oldIndex === safeDropIndex) return 
-
-    const [movedGate] = list.splice(oldIndex, 1)
-    
-    if (oldIndex < safeDropIndex && dropIndex !== undefined) {
-      safeDropIndex--
-    }
-    
-    list.splice(safeDropIndex, 0, movedGate!)
-  } else {
-    if (gateInventory.value[gateType] !== undefined) {
-      if (gateInventory.value[gateType]! > 0) {
-        gateInventory.value[gateType]!--
-      } else {
-        return
-      }
-    }
-    list.splice(safeDropIndex, 0, gateType)
-  }
-
-  draggedGateIndex.value = null
-  isMeasured.value = false
-  measuredValues.value = null
-  updateStateForTracing()
+  gateInv.onPlacedGateDragStart(e, level, index, gateType)
 }
 
 function onLaserDragOver(e: DragEvent) {
-  e.preventDefault()
-  e.dataTransfer!.dropEffect = draggedGateIndex.value !== null ? 'move' : 'copy'
+  gateInv.onLaserDragOver(e)
 }
 
-function onLaserDrop(e: DragEvent) {
-  handleDrop(e) 
-}
-
-function onPlacedGateDrop(e: DragEvent, dropIndex: number) {
-  handleDrop(e, dropIndex)
-}
-
-function removeLaserGate(index: number) {
-  const activeIdx = activeSourceIndex.value;
-
-  if (isGateLocked(index)) {
-    return;
-  }
-
-  const gate = sourceGates.value[activeIdx]![index]!;
-  sourceGates.value[activeIdx]!.splice(index, 1);
-
-  if (gateInventory.value[gate] !== undefined) {
-    gateInventory.value[gate]!++;
-  }
-
-  isMeasured.value = false;
-  measuredValues.value = null;
-  updateStateForTracing();
-}
-
-function isGateLocked(localIndex: number) {
-  const activeIdx = activeSourceIndex.value;
-  const prePlacedCount = level.prePlacedGates?.[activeIdx]?.length || 0;
-  return localIndex < prePlacedCount;
-}
-
-const showWelcome = ref(currentStage.value === 'heating')
-const showMainWelcome = ref(currentStage.value === 'main')
-const showTutorialWelcome = ref(false)
-
-// Mobile
-// ----------------
-function addGateToActive(gateType: string) {
-  const available = gateInventory.value[gateType] ?? -1
-  if (available === 0) return
-  if (gateInventory.value[gateType] !== undefined) {
-    gateInventory.value[gateType]!--
-  }
-  const idx = activeSourceIndex.value
-  if (!sourceGates.value[idx]) sourceGates.value[idx] = []
-  sourceGates.value[idx].push(gateType)
+function afterGateChange(changed: boolean) {
+  if (!changed) return
   isMeasured.value = false
   measuredValues.value = null
   updateStateForTracing()
 }
+
+function onLaserDrop(e: DragEvent) {
+  afterGateChange(gateInv.onLaserDrop(e, level))
+}
+
+function onPlacedGateDrop(e: DragEvent, dropIndex: number) {
+  afterGateChange(gateInv.onPlacedGateDrop(e, level, dropIndex))
+}
+
+function removeLaserGate(index: number) {
+  afterGateChange(gateInv.removeLaserGate(level, index))
+}
+
+function addGateToActive(gateType: string) {
+  afterGateChange(gateInv.addGateToActive(gateType))
+}
+
 // Popup Control
 // ------------------
+
+const showWelcome = ref(currentStage.value === 'heating')
+const showMainWelcome = ref(currentStage.value === 'main')
+
 function closeWelcome() {
   showWelcome.value = false
 }
@@ -548,21 +411,14 @@ function startAutomatedDemo() {
       gameBoardRef.value?.triggerFlash();
       await new Promise((res) => setTimeout(res, TRAVEL_MS))
 
-      const measResults = measureAll()
+      const measResults = measurement.collapseMeasurement(50)
       results.push(measResults)
-
-      measuredValues.value = measResults
-      isMeasured.value = true
       updateStateForTracing()
-      result.value = measResults.join(',')
-      history.value.push(measResults)
-      if (history.value.length > 50) history.value.shift()
 
       await new Promise((res) => setTimeout(res, 50))
     }
 
     automatedRunning.value = false
-    automatedDone.value = true
 
     tempPopup.value = {
       title: 'Measurement Demo Results',
@@ -646,26 +502,17 @@ function handleMeasure() {
 
   gameBoardRef.value?.resetPhoton()
 
-  const maxGates = Math.max(1, ...sourceGates.value.map(g => g ? g.length : 0))
-  const dynamicDelayMs = 800 * (1 + (maxGates - 1) * 0.1)
+  const dynamicDelayMs = measurement.computeDynamicDelay(sourceGates.value)
 
   setTimeout(() => {
     if (isMeasured.value) {
-      result.value = measuredValues.value ? measuredValues.value.join(',') : '—'
-      history.value.push(measuredValues.value!)
-      if (history.value.length > 20) history.value.shift()
+      measurement.repeatLastMeasurement()
       canMeasure.value = true
       return
     }
 
-    const measResults = measureAll()
-    measuredValues.value = measResults
-    isMeasured.value = true
-
+    measurement.collapseMeasurement()
     updateStateForTracing()
-    result.value = measResults.join(',')
-    history.value.push(measResults)
-    if (history.value.length > 20) history.value.shift()
 
     canMeasure.value = true
     let passedGateCountCheck = true
@@ -691,11 +538,12 @@ function handleMeasure() {
     const states = stateInfo.states ?? []
     const wc = level.winCondition
 
-    if (passedGateCountCheck && checkWinCondition(wc, states)) {
+    const hasWon = passedGateCountCheck && checkWinCondition(wc, states)
+    if (hasWon) {
       showWin.value = true
     }
 
-    if (passedGateCountCheck && checkWinCondition(wc, states) && level.automateMeasurement && !automatedRunning.value) {
+    if (hasWon && level.automateMeasurement && !automatedRunning.value) {
       const allIonsHit = states.every(s => s.state !== '—');
       
       let shouldRunDemo = allIonsHit && states.some(s => s.state === '|+⟩' || s.state === '|-⟩');
@@ -732,16 +580,14 @@ function handleMeasure() {
 
 function handleReset() {
   ionInitialized.value = true
-  isMeasured.value = false
-  measuredValues.value = null
-  result.value = '—'
+  measurement.resetMeasurementState()
   updateStateForTracing()
   gameBoardRef.value?.triggerFlash()
   showPopupByTrigger('onReset')
 }
 
 function handleGameBoardClick(col: number, row: number) {
-  const clickedSourceIdx = level.sources.findIndex(s => s.col === col && s.row === row)
+  const clickedSourceIdx = gateInv.findSourceIndexAt(level, col, row)
   if (clickedSourceIdx !== -1 && level.availableGates.length > 0) {
     activeSourceIndex.value = clickedSourceIdx
     openLaserGates()
@@ -754,12 +600,12 @@ function handleGameBoardClick(col: number, row: number) {
 onMounted(() => {
   level = LEVELS[currentLevelIndex.value]!
   ionInitialized.value = level.preInitialized
-  initLevelGates()
+  gateInv.setSourceGatesFromLevel(level)
+  gateInv.resetGateInventory(level.gateInventory, level.lockedGateIndices)
   updateStateForTracing()
   popupIndex.value = 0
   showPopupByTrigger('onLoad')
   manualGlowInterval = setInterval(() => pulseManualGlow(), MANUAL_GLOW_INTERVAL_MS)
-  window.addEventListener('resize', handleWindowResize)
 })
 
 onUnmounted(() => {
@@ -767,7 +613,6 @@ onUnmounted(() => {
     clearInterval(manualGlowInterval)
     manualGlowInterval = null
   }
-  window.removeEventListener('resize', handleWindowResize)
 })
 </script>
 
@@ -782,6 +627,8 @@ onUnmounted(() => {
         :disabled="automatedRunning"
         :class="[styles.levelIndicator, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'level' }]"
         ref="levelIndicatorRef"
+        aria-haspopup="dialog"
+        :aria-expanded="showLevelSelector"
       >
         {{ currentStageName }}
       </button>
@@ -818,7 +665,7 @@ onUnmounted(() => {
       </div>
 
       <div :class="styles.successBoxContainer">
-        <div v-if="showWin && currentStage === 'main'" :class="styles.successBox">
+        <div v-if="showWin && currentStage === 'main'" :class="styles.successBox" role="status">
           <div :class="styles.successText">ION SUCCESSFULLY EXCITED</div>
           <button
             @click="nextLevel"
@@ -845,7 +692,7 @@ onUnmounted(() => {
         <button @click="clearMirrors" :class="styles.clearBtn">Clear Mirrors</button>
       </div>
 
-      <div :class="[styles.hintContainer, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'hint' }]" ref="hintContainerRef">
+      <div :class="[styles.hintContainer, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'hint' }]" ref="hintContainerRef" aria-live="polite">
         <button
           v-if="!showHint"
           @click="handleShowHint"
@@ -876,281 +723,137 @@ onUnmounted(() => {
         />
       </div>
 
-      <!-- Sidebar: Bloch sphere + measurement info for each ion -->
-      <aside :class="styles.sidebar">
-
-        <div :class="[styles.ionWrapper, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'bloch' }]" ref="blochPanelRef">
-          <div
-            v-for="(ionState, idx) in ionStates"
-            :key="idx"
-            :class="[styles.ionSection, { [styles.ionSectionCompact as string]: ionStates.length >= 3 }]"
-          >
-            <div :class="[styles.blochPanel, { [styles.blochPanelCompact as string]: ionStates.length >= 3 }]" style="text-align: center;">
-              <div :class="styles.blochTitle">
-                Ion {{ String.fromCharCode(65 + idx) }}<span v-if="ionStates.length < 3"> - Bloch Sphere</span>
-              </div>
-
-              <svg
-                :class="[styles.blochSvg, { [styles.blochSvgCompact as string]: ionStates.length >= 3 }]"
-                viewBox="0 0 160 160"
-                xmlns="http://www.w3.org/2000/svg"
-                :style="ionStates.length >= 3 ? 'max-width: 90px; height: auto; margin: 0 auto;' : 'max-width: 100%; height: auto; margin: 0 auto;'"
-              >
-                <text x="80" y="14" :class="styles.blochLabel" text-anchor="middle">|1⟩</text>
-                <text x="80" y="156" :class="styles.blochLabel" text-anchor="middle">|0⟩</text>
-                <text x="10" y="84" :class="styles.blochLabel" text-anchor="middle">−</text>
-                <text x="150" y="84" :class="styles.blochLabel" text-anchor="middle">+</text>
-
-                <circle cx="80" cy="80" r="52" :class="styles.blochCircle" />
-
-                <ellipse cx="80" cy="80" rx="52" ry="14" :class="styles.blochEquator" />
-
-                <g v-if="getBlochAngle(ionState.state) !== null">
-                  <line
-                    x1="80" y1="80"
-                    :x2="80 + 44 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
-                    :y2="80 + 44 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
-                    :class="styles.blochArrow"
-                  />
-                  <circle
-                    :cx="80 + 46 * Math.cos(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
-                    :cy="80 + 46 * Math.sin(((getBlochAngle(ionState.state) ?? 0) * Math.PI) / 180)"
-                    r="3"
-                    :class="styles.blochTip"
-                  />
-                </g>
-
-                <circle cx="80" cy="80" r="3" :class="styles.blochCenter" />
-              </svg>
-
-              <div
-                :class="{
-                  [styles.blochState as string]: true,
-                  [styles.blochStateSuperposition as string]: ionState.state === '|+⟩' || ionState.state === '|-⟩'
-                }"
-                :style="ionStates.length >= 3 ? 'max-width: 90px; white-space: normal !important; word-wrap: break-word; line-height: 1.2; margin: 0 auto;' : 'max-width: 100%; white-space: normal !important; word-wrap: break-word; line-height: 1.2; margin: 0 auto;'"
-              >
-                {{ getBlochLabel(ionState.state) }}
-              </div>
-            </div>
-
-            <div v-if="ionStates.length < 3" :class="styles.infoPanel">
-              <div :class="styles.infoRow">
-                <span :class="styles.infoKey">State</span>
-                <span :class="[styles.infoVal, ionState.state === '|+⟩' || ionState.state === '|-⟩' ? styles.infoValPurple : ionState.state === '|1⟩' ? styles.infoValOrange : styles.infoValCyan]">{{ ionState.state }}</span>
-              </div>
-              <div :class="styles.infoRow">
-                <span :class="styles.infoKey">P(|0⟩)</span>
-                <span :class="styles.infoVal">{{ ionState.p0 }}</span>
-              </div>
-              <div :class="styles.infoRow">
-                <span :class="styles.infoKey">P(|1⟩)</span>
-                <span :class="styles.infoVal">{{ ionState.p1 }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div :class="styles.sharedControls">
-          <button
-            @click="handleMeasure"
-            :disabled="!canMeasure || automatedRunning"
-            :class="[styles.measureBtn, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'measure' }]"
-            ref="measureBtnRef"
-          >
-            Measure
-          </button>
-
-          <button
-            v-if="level.showResetButton"
-            @click="handleReset"
-            :disabled="automatedRunning"
-            :class="[styles.resetBtn, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'reset' }]"
-            ref="resetBtnRef"
-          >
-            Reset Ion (Optical Pumping)
-          </button>
-
-          <div :class="styles.infoRow">
-            <span :class="styles.infoKey">Last</span>
-            <span :class="[styles.infoVal, resultcolourClass]">{{ result }}</span>
-          </div>
-          <div :class="[styles.history, { [styles.tutorialHighlight as string]: tutorialVisible && tutorialStepData?.key === 'history' }]" ref="historyRef">
-            <span :class="styles.infoKey">History</span>
-            <span :class="styles.historyBits">
-              {{ history.length ? history.map((r: number[]) => r.join('')).join(' ') : 'No measurements yet' }}
-            </span>
-          </div>
-        </div>
-
-      </aside>
+      <MeasurementSidebar
+        :ionStates="ionStates"
+        :canMeasure="canMeasure"
+        :automatedRunning="automatedRunning"
+        :showResetButton="level.showResetButton"
+        :result="result"
+        :isOrangeResult="result === '1'"
+        :history="history"
+        :tutorialVisible="tutorialVisible"
+        :isTutorialStep="checkTutorialStep"
+        :blochPanelRef="(el) => blochPanelRef = el"
+        :measureBtnRef="(el) => measureBtnRef = el"
+        :resetBtnRef="(el) => resetBtnRef = el"
+        :historyRef="(el) => historyRef = el"
+        @measure="handleMeasure"
+        @reset="handleReset"
+      />
     </div>
-    <!-- End main-area -->
 
-    <!-- Laser Gates modal -->
-    <div v-if="showLaserGates" :class="styles.laserGatesOverlay" @click="showLaserGates = false">
-      <div :class="styles.laserGatesModal" @click.stop>
-        <div :class="styles.laserGatesTitle">Laser Gates</div>
-
-        <div :class="styles.gateContainer">
-          <!-- Applied gates -->
-          <div :class="styles.appliedSection">
-            <div :class="styles.sectionLabel">Applied to Laser
-                <span v-if="displayedGateProgress !== null" :class="styles.gateCount">
-                  {{ displayedGateProgress }}
-              </span>
-            </div>
-            <div
-              @dragover="onLaserDragOver"
-              @drop="onLaserDrop"
-              :class="styles.laserDropZone"
-            >
-              <div v-if="activeGates.length > 0" :class="styles.gateStack">
-                <div
-                  v-for="(gate, index) in activeGates"
-                  :key="`laser-gate-${index}`"
-                  :class="[
-                    styles.laserGate,
-                    { [styles.laserGateX as string]: gate === 'X' },
-                    { [styles.laserGateH as string]: gate === 'H' },
-                    { [styles.laserGateCNOT as string]: gate === 'CNOT' },
-                    { [styles.draggableGate as string]: !isGateLocked(index) }
-                  ]"
-                  :draggable="!isGateLocked(index)"
-                  @dragstart="onPlacedGateDragStart($event, index, gate)"
-                  @dragover.prevent
-                  @drop.stop="onPlacedGateDrop($event, index)"
-                >
-                  <div>{{ gate === 'X' ? 'X-Gate' : gate }}</div>
-                  <button v-if="!isGateLocked(index)" @click="removeLaserGate(index)" :class="styles.removeBtn">✕</button>
-                </div>
-              </div>
-              <div v-else :class="styles.dropHint">Drag gates here</div>
-            </div>
-          </div>
-
-          <!-- Divider -->
-          <div :class="styles.divider"></div>
-
-          <!-- Available gates -->
-          <div :class="styles.gatesSection">
-            <div :class="styles.sectionLabel">Available Gates</div>
-            <div :class="styles.gateGrid">
-              <div
-                  v-for="(gate, index) in level.availableGates"
-                  :key="`gate-${index}`"
-                  draggable="true"
-                  @dragstart="onGateDragStart($event, gate)"
-                  @click="addGateToActive(gate)"
-                  :class="[styles.gateItem,
-                    { [styles.gateItemX as string]: gate === 'X' },
-                    { [styles.gateItemH as string]: gate === 'H' },
-                    { [styles.gateItemCNOT as string]: gate === 'CNOT' },
-                    { [styles.gateItemDisabled as string]: (gateInventory[gate] ?? -1) === 0 }
-                  ]"
-                >
-                  <button
-                    type="button"
-                    :class="styles.gateInfoBtn"
-                    @click.stop="openGateManual(gate)"
-                  >
-                    i
-                  </button>
-                  <div>{{ gate }}-Gate</div>
-                </div>
-              </div>
-              <button @click="showLaserGates = false" :class="styles.doneBtn">Done</button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <LaserGatesModal
+      v-if="showLaserGates"
+      :activeGates="activeGates"
+      :displayedGateProgress="displayedGateProgress"
+      :availableGates="level.availableGates"
+      :gateInventory="gateInventory"
+      :isGateLocked="isGateLocked"
+      @close="showLaserGates = false"
+      @gateDragStart="onGateDragStart"
+      @placedGateDragStart="onPlacedGateDragStart"
+      @laserDragOver="onLaserDragOver"
+      @laserDrop="onLaserDrop"
+      @placedGateDrop="onPlacedGateDrop"
+      @removeGate="removeLaserGate"
+      @addGate="addGateToActive"
+      @openGateManual="openGateManual"
+    />
     </div>
 
     <!-- Tutorial popup modal -->
-    <div v-if="showPopup && currentPopup" :class="styles.popupOverlay" @click="closePopup()">
-      <div :class="styles.popupModal" @click.stop>
-        <div :class="styles.popupTitle">{{ currentPopup.title }}</div>
-        <div :class="styles.popupText">{{ currentPopup.text }}</div>
-        <button @click="advancePopup()" :class="styles.popupBtn">
-          {{ level.popups.length - 1 > popupIndex ? 'Next' : 'Got it' }}
-        </button>
-      </div>
-    </div>
+    <OverlayModal
+      v-if="currentPopup"
+      :show="showPopup"
+      kind="popup"
+      :title="currentPopup.title"
+      :text="currentPopup.text"
+      close-on-backdrop
+      @backdrop-click="closePopup"
+      :buttons="[{ label: level.popups.length - 1 > popupIndex ? 'Next' : 'Got it', onClick: advancePopup }]"
+    />
     </div>
 
     <!-- Level selector modal -->
     <div v-if="showLevelSelector" :class="styles.levelSelectorOverlay" @click="showLevelSelector = false">
-      <div :class="styles.levelSelectorModal" @click.stop style="max-height: 90vh; overflow-y: auto;">
+      <div 
+        :class="styles.levelSelectorModal" 
+        @click.stop 
+        style="max-height: 90vh; overflow-y: auto;"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Select a Level"
+      >
 
         <div :class="styles.levelGroup">
           <div :class="styles.levelGroupTitle">Introduction</div>
           <div :class="styles.levelSelectorGrid">
-            <div
+            <button
               @click="selectMinigame('heating')"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'heating' }]"
             >
               1
-            </div>
-            <div
+            </button>
+            <button
               @click="selectMinigame('ionization')"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'ionization' }]"
             >
               2
-            </div>
-            <div
+            </button>
+            <button
               @click="selectMinigame('paul-trap')"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'paul-trap' }]"
             >
               3
-            </div>
-            <div
+            </button>
+            <button
               @click="selectMinigame('cooling')"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: currentStage === 'cooling' }]"
             >
               4
-            </div>
+            </button>
           </div>
         </div>
 
         <div :class="styles.levelGroup">
           <div :class="styles.levelGroupTitle">1 Qubit Systems</div>
           <div :class="styles.levelSelectorGrid">
-            <div
+            <button
               v-for="(_, index) in LEVELS.slice(0, 9)"
               :key="'group1-' + index"
               @click="selectLevel(index)"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: index === currentLevelIndex }]"
             >
               {{ index + 1 }}
-            </div>
+            </button>
           </div>
         </div>
 
         <div :class="styles.levelGroup">
           <div :class="styles.levelGroupTitle">2 Qubit Systems</div>
           <div :class="styles.levelSelectorGrid">
-            <div
+            <button
               v-for="(_, index) in LEVELS.slice(9,15)"
               :key="'group2-' + index"
               @click="selectLevel(index + 9)"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: (index + 9) === currentLevelIndex }]"
             >
               {{ index + 10 }}
-            </div>
+            </button>
           </div>
         </div>
 
         <div :class="styles.levelGroup">
           <div :class="styles.levelGroupTitle">3 & 4 Qubit Systems</div>
           <div :class="styles.levelSelectorGrid">
-            <div
+            <button
               v-for="(_, index) in LEVELS.slice(15)"
               :key="'group3-' + index"
               @click="selectLevel(index + 15)"
               :class="[styles.levelSelectorSquare, { [styles.levelSelectorActive as string]: (index + 15) === currentLevelIndex }]"
             >
               {{ index + 16 }}
-            </div>
+            </button>
           </div>
         </div>
 
@@ -1165,40 +868,46 @@ onUnmounted(() => {
       @selectLevel="selectLevel"
     />
 
-    <div v-if="showWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
-        <div :class="styles.welcomeModal">
-          <div :class="styles.welcomeTitle">{{ WELCOME_POPUP.title }}</div>
-          <div :class="styles.welcomeText">{{ WELCOME_POPUP.text }}</div>
-          <button @click="closeWelcome()" :class="styles.welcomeBtn">Continue</button>
-        </div>
-      </div>
+    <OverlayModal
+      :show="showWelcome"
+      kind="welcome"
+      :title="WELCOME_POPUP.title"
+      :text="WELCOME_POPUP.text"
+      :z-index="9999"
+      :buttons="[{ label: 'Continue', onClick: closeWelcome }]"
+    />
 
-    <div v-if="showTutorialWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
-      <div :class="styles.welcomeModal">
-        <div :class="styles.welcomeTitle">Welcome to the Tutorial</div>
-        <div :class="styles.welcomeText">
-          Learn the basics of the game and how X and H gates work before jumping into the main puzzles. You can come back to the tutorial at any time by clicking the "Tutorial" button.
-        </div>
-        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
-          <button @click="beginTutorialTour()" :class="styles.welcomeBtn">Start Tutorial</button>
-          <button
-            @click="skipTutorialWelcome()"
-            :class="styles.welcomeBtn"
-            style="background: none; border: 1px solid var(--color-primary); color: var(--color-primary);"
-          >
-            Skip to Level 1
-          </button>
-        </div>
+    <OverlayModal
+      :show="showTutorialWelcome"
+      kind="welcome"
+      title="Welcome to the Tutorial"
+      :z-index="9999"
+      :buttons="[
+        { label: 'Start Tutorial', onClick: beginTutorialTour },
+        {
+          label: 'Skip to Level 1',
+          onClick: skipTutorialWelcome,
+          style: { background: 'none', border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }
+        }
+      ]"
+    >
+      <div :class="styles.welcomeText">
+        Learn the basics of the game and how X and H gates work before jumping into the main puzzles.
+        You can come back to the tutorial at any time by clicking the "Tutorial" button.
       </div>
-    </div>
+      <div :class="styles.welcomeText">
+        ** Note - If you experience issues with the UI, please try changing the browser zoom level **
+      </div>
+    </OverlayModal>
 
-    <div v-if="showMainWelcome" :class="styles.welcomeOverlay" style="z-index: 9999;">
-        <div :class="styles.welcomeModal">
-          <div :class="styles.welcomeTitle">{{ MAIN_WELCOME_POPUP.title }}</div>
-          <div :class="styles.welcomeText">{{ MAIN_WELCOME_POPUP.text }}</div>
-          <button @click="showMainWelcome = false" :class="styles.welcomeBtn">Continue</button>
-        </div>
-      </div>
+    <OverlayModal
+      :show="showMainWelcome"
+      kind="welcome"
+      :title="MAIN_WELCOME_POPUP.title"
+      :text="MAIN_WELCOME_POPUP.text"
+      :z-index="9999"
+      :buttons="[{ label: 'Continue', onClick: () => showMainWelcome = false }]"
+    />
 
     <Tutorial
       v-if="tutorialVisible"
@@ -1215,37 +924,24 @@ onUnmounted(() => {
       @openManualSection="openManualToSection"
     />
 
-    <div v-if="showCompletionPopup" :class="styles.welcomeOverlay" style="z-index: 9999;">
-      <div :class="styles.welcomeModal">
-        <div :class="styles.welcomeTitle">Congratulations!</div>
-        <div :class="styles.welcomeText">
-          Congratulations on completing the laser puzzle! Read the manual for more info on quantum computing and check out the lab to create and share your own puzzles.
-        </div>
-        
-        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
-          <button 
-            @click="showCompletionPopup = false; showManual = true" 
-            :class="styles.welcomeBtn" 
-            style="flex: 1;"
-          >
-            Manual
-          </button>
-          
-          <button 
-            @click="goToLab" 
-            :class="styles.welcomeBtn" 
-            style="flex: 1; background: purple; color: white;"
-          >
-            Lab
-          </button>
-        </div>
-        
-        <button 
-          @click="showCompletionPopup = false" 
-          style="margin-top: 15px; background: none; border: none; color: gray; cursor: pointer; text-decoration: underline;"
+    <OverlayModal
+      :show="showCompletionPopup"
+      kind="welcome"
+      title="Congratulations!"
+      text="Congratulations on completing the laser puzzle! Read the manual for more info on quantum computing and check out the lab to create and share your own puzzles."
+      :z-index="9999"
+      :buttons="[
+        { label: 'Manual', onClick: () => { showCompletionPopup = false; showManual = true }, style: { flex: '1' } },
+        { label: 'Lab', onClick: goToLab, style: { flex: '1', background: 'var(--color-secondary)', color: 'var(--color-bg)' } }
+      ]"
+    >
+      <template #footer>
+        <button
+          @click="showCompletionPopup = false"
+          style="margin-top: 15px; background: none; border: none; color: var(--color-subtle); cursor: pointer; text-decoration: underline;"
         >
           Close
         </button>
-      </div>
-    </div>
+      </template>
+    </OverlayModal>
 </template>

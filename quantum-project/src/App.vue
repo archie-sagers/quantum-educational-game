@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { onErrorCaptured } from 'vue'
+import { useRoute } from 'vue-router'
 import { appError, clearAppError, reportAppError } from './stores/appError'
+
+const route = useRoute()
 
 onErrorCaptured((error, instance, info) => {
   reportAppError(error, info)
@@ -16,7 +19,7 @@ function reloadPage() {
   <nav class="navbar">
     <router-link to="/" class="navLink">Home</router-link>
     <router-link to="/lab" class="navLink">Lab</router-link>
-    <a href="https://discord.gg/g69tKjpwg" target="_blank" rel="noopener noreferrer" class="navLink discordLink" title="Join our Discord">
+    <a v-if="route.path !== '/lab'" href="https://discord.gg/XwGvJazzsS" target="_blank" rel="noopener noreferrer" class="navLink discordLink" title="Join our Discord">
       Discord
     </a>
   </nav>
@@ -66,8 +69,8 @@ body, html, #app {
   padding: 24px;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
-  background: rgba(10, 10, 12, 0.92);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  background: var(--color-panel);
+  box-shadow: var(--shadow-lg);
 }
 
 .errorLabel {
@@ -140,7 +143,7 @@ body, html, #app {
 
 .navLink:hover {
   background: var(--color-bg-dark);
-  box-shadow: 0 0 8px var(--color-primary);
+  box-shadow: var(--shadow-glow);
 }
 
 .discordLink {
