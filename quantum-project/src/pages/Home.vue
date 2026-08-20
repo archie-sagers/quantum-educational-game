@@ -895,6 +895,9 @@ onUnmounted(() => {
         Learn the basics of the game and how X and H gates work before jumping into the main puzzles.
         You can come back to the tutorial at any time by clicking the "Tutorial" button.
       </div>
+      <div :class="styles.welcomeText">
+        ** Note - If you experience issues with the UI, please try changing the browser zoom level **
+      </div>
     </OverlayModal>
 
     <OverlayModal
