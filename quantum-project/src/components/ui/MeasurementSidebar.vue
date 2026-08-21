@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { IonQuantumState } from '@/game/types'
 import BlochSpherePanel from './BlochSpherePanel.vue'
 import styles from '@/pages/Home.module.css'
@@ -23,6 +24,10 @@ defineEmits<{
   (e: 'measure'): void
   (e: 'reset'): void
 }>()
+
+const sharedControlsHighlight = computed(() =>
+  props.isTutorialStep('measure') || props.isTutorialStep('reset') || props.isTutorialStep('history')
+)
 </script>
 
 <template>
@@ -37,7 +42,7 @@ defineEmits<{
       />
     </div>
 
-    <div :class="styles.sharedControls">
+    <div :class="[styles.sharedControls, { [styles.tutorialStackingFix as string]: sharedControlsHighlight }]">
       <button
         :ref="measureBtnRef"
         @click="$emit('measure')"
