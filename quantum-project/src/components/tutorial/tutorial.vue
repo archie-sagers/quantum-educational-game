@@ -138,6 +138,7 @@ function openGateInfo(gate: TutorialGateKey) {
 function tutorialCardPosition(width: number, height: number, fixedHeight = false) {
   const rect = props.targetRect
   const padding = 16
+  const leftGap = 48
 
   const baseStyle: Record<string, string> = {
     width: `${width}px`,
@@ -172,7 +173,7 @@ function tutorialCardPosition(width: number, height: number, fixedHeight = false
 
   let left = rect.right + 16
   if (spaceRight < width + 24 && spaceLeft >= width + 24) {
-    left = rect.left - width - 16
+    left = rect.left - width - leftGap   // ← was: rect.left - width - 16
   } else if (spaceRight < width + 24 && spaceLeft < width + 24) {
     left = Math.min(Math.max(rect.left + rect.width / 2 - width / 2, padding), window.innerWidth - width - padding)
   }

@@ -940,6 +940,10 @@
   bottom: 0;
 }
 
+.tutorialStackingFix {
+  z-index: 1002;
+}
+
 .ionSectionCompact {
   flex: 1 1 45%;
   min-width: 120px;
